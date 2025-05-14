@@ -1,0 +1,15 @@
+{
+  "name": "registro-actividad-criminal",
+  "version": "1.0.0",
+  "description": "Sistema de Registro de Actividad Criminal",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'No build step needed'"
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
