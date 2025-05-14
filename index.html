@@ -15,11 +15,6 @@
 </head>
     </head>
 <body>
-    <div class="admin-access">
-        <button id="adminButton" class="btn btn-primary" onclick="window.location.href='admin.html'">
-            <i class="fas fa-shield-alt"></i> Panel de Administración
-        </button>
-    </div>
 
 
 
@@ -27,13 +22,10 @@
 
 
 
-    <div class="container">
+    <div class="container text-center">
         <div class="header">
             <h2>Registro de Actividad Criminal</h2>
-            <div class="user-info-container"> <div class="user-info">
-                    <span>Usuario: <strong id="usuarioInfo"></strong></span>
-                    <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button> </div>
-            </div>
+
         </div>
         <form id="actividadCriminalForm">
             <table class="form-table">
@@ -143,37 +135,10 @@
 
 
 
-            <!-- Modal de Autenticación para Limpiar Top 20 -->
-            <div class="modal fade" id="modalLimpiezaTop20" tabindex="-1" role="dialog">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Autenticación Requerida</h5>
-                            <button type="button" class="close" data-dismiss="modal">
-                                <span>&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="adminUsuario">Usuario Administrador:</label>
-                                <input type="text" class="form-control" id="adminUsuario" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="adminPassword">Contraseña:</label>
-                                <input type="password" class="form-control" id="adminPassword" required>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                            <button type="button" class="btn btn-danger" onclick="event.preventDefault(); limpiarTop20();">Confirmar Limpieza</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <div id="reporte-perdidas-trimestrales-anchor"></div>
             
-            <div class="mt-30"> <h3 class="section-title">Reporte de Pérdidas Trimestrales</h3>
+            <div class="section-container mt-30">
+                <h3 class="section-title">Reporte de Pérdidas Trimestrales</h3>
                 <div class="tabla-perdidas-container">
                     <table id="tablaPerdidas" class="table table-bordered">
                         <thead>
@@ -401,21 +366,12 @@
                         </tfoot>
                     </table>
                     <div class="text-right mt-2">
-                        <button type="button" class="btn btn-danger" onclick="event.preventDefault(); mostrarModalLimpiezaTop20();">Limpiar Top 20</button>
+
                     </div>
                 </div>
             </div>
 
-            <div class="mt-30">
-                <h3 class="section-title">Distribución de Casos por Tipo de Delito</h3>
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="chart-container">
-                            <canvas id="tiposDelitosChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             
             <div class="actions-container">
                 <button type="button" class="btn btn-primary" onclick="mostrarVistaPrevia()">Guardar documento</button>

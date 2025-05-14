@@ -214,31 +214,6 @@ function actualizarTop20() {
     console.log('Top 20 actualizado:', productosTop20); // Para depuración
 }
 
-function mostrarModalLimpiezaTop20() {
-    // Prevenir cualquier comportamiento por defecto
-    event.preventDefault();
-    
-    // Asegurarnos de que el modal está inicializado
-    if (!$('#modalLimpiezaTop20').data('bs.modal')) {
-        $('#modalLimpiezaTop20').modal({
-            backdrop: 'static',
-            keyboard: false
-        });
-    }
-    
-    // Mostrar el modal
-    $('#modalLimpiezaTop20').modal('show');
-    
-    // Limpiar campos por si acaso
-    document.getElementById('adminUsuario').value = '';
-    document.getElementById('adminPassword').value = '';
-    
-    // Enfocar el campo de usuario
-    setTimeout(() => {
-        document.getElementById('adminUsuario').focus();
-    }, 500);
-}
-
 function actualizarReportePerdidas() {
     const filas = document.querySelectorAll('#tablaCasos tbody tr:not(.total-row)');
     const reportePorMes = {
