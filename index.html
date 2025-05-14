@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Actividad Criminal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <script>
+        window.jspdf = window.jspdf || {};
+    </script>
+    
+</head>
+    </head>
+<body>
+    <div class="admin-access">
+        <button id="adminButton" class="btn btn-primary" onclick="window.location.href='admin.html'">
+            <i class="fas fa-shield-alt"></i> Panel de Administración
+        </button>
+    </div>
+
+
+
+
+
+
+
+    <div class="container">
+        <div class="header">
+            <h2>Registro de Actividad Criminal</h2>
+            <div class="user-info-container"> <div class="user-info">
+                    <span>Usuario: <strong id="usuarioInfo"></strong></span>
+                    <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button> </div>
+            </div>
+        </div>
+        <form id="actividadCriminalForm">
+            <table class="form-table">
+                <tr>
+                    <td>Empresa:</td>
+                    <td>
+                        <input type="text" id="empresa" name="empresa" required pattern="[A-Za-z0-9\s]+" 
+                               title="Solo se permiten caracteres alfanuméricos">
+                    </td>
+                    <td><strong>Fecha:</strong></td>
+                    <td>
+                        <input type="text" id="fecha" name="fecha" value="26 de marzo de 2025" readonly class="input-fecha-destacada"> 
+                    </td>
+                </tr>
+                <tr>
+                    <td>Responsable de Seguridad:</td>
+                    <td>
+                        <input type="text" id="responsable" name="responsable" required>
+                    </td>
+                    <td>Trimestre:</td>
+                    <td>
+                        <select id="trimestre" name="trimestre" required>
+                            <option value="Q1">1er Trimestre</option>
+                            <option value="Q2">2do Trimestre</option>
+                            <option value="Q3">3er Trimestre</option>
+                            <option value="Q4">4to Trimestre</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Cédula:</td>
+                    <td colspan="3">
+                        <input type="text" id="cedula" name="cedula" required 
+                               pattern="^([PE]|N|E)-?\d{1,2}-?\d{1,4}-?\d{1,5}$|^\d{1,2}-\d{1,4}-\d{1,5}$" 
+                               title="Formato válido: P-00-0000-00000 o E-00-0000-00000 o N-00-0000-00000 o 00-0000-00000"
+                               placeholder="Ej: P-00-0000-00000">
+                    </td>
+                </tr>
+            </table>
+
+            <div class="section-title">CASOS DELICTIVOS OCURRIDOS EN EL TRIMESTRE</div>
+            
+            <table id="tablaCasosDelictivos" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">Tipificación</th>
+                        <th style="width: 120px;">Fecha</th>
+                        <th style="width: 100px;">Cantidad</th>
+                        <th style="width: 120px;">Cuantía (B/.)</th>
+                        <th style="width: 100px;">Denuncias</th>
+                        <th style="width: 150px;">Producto/Mercancía</th>
+                        <th style="width: 200px;">Observaciones</th>
+                        <th style="width: 80px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="width: 120px;">
+                            <select name="tipificacion[]" class="form-control tipificacion-select" required>
+                                <option value="Hurto">Hurto</option>
+                                <option value="Robo">Robo</option>
+                                <option value="Fraude">Fraude</option>
+                                <option value="Vandalismo">Vandalismo</option>
+                                <option value="Extorsión">Extorsión</option>
+                                <option value="Estafa">Estafa</option>
+                                <option value="Secuestro">Secuestro</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </td>
+                        <td style="width: 120px;">
+                            <input type="text" name="fecha[]" class="form-control fecha-input input-fecha-delito" placeholder="DD/MM/AAAA" style="width: 100%; box-sizing: border-box;" required>
+                        </td>
+                        <td style="width: 100px;">
+                            <input type="number" min="0" name="cantidad[]" class="form-control cantidad-input" style="width: 100%;" required placeholder="0">
+                        </td>
+                        <td style="width: 120px;">
+                            <input type="number" min="0" step="0.01" name="cuantia[]" class="form-control cuantia-input" style="width: 100%;" required placeholder="0.00">
+                        </td>
+                        <td style="width: 100px;">
+                            <input type="number" min="0" name="denuncias[]" class="form-control denuncias-input" style="width: 100%;" required placeholder="0">
+                        </td>
+                        <td style="width: 150px;">
+                            <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
+                        </td>
+                        <td style="width: 200px;">
+                            <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required>
+                        </td>
+                        <td style="width: 80px; text-align: center;">
+                            <div style="display: flex; justify-content: center; gap: 5px;">
+                                <button type="button" class="btn btn-success btn-sm" title="Agregar" onclick="agregarFilaEditable(this)">+</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="placeholder-casos" style="display:none;"> <td colspan="8" class="text-center-content placeholder-text">Agregue un caso delictivo usando el botón +</td> </tr>
+                    <tr class="total-row">
+                        <td><strong>TOTAL</strong></td>
+                        <td></td>
+                        <td id="totalCantidad" class="text-center-content">0</td>
+                        <td id="totalCuantia" class="text-center-content">B/. 0.00</td>
+                        <td id="totalDenuncias" class="text-center-content">0</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+
+            <!-- Modal de Autenticación para Limpiar Top 20 -->
+            <div class="modal fade" id="modalLimpiezaTop20" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Autenticación Requerida</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="adminUsuario">Usuario Administrador:</label>
+                                <input type="text" class="form-control" id="adminUsuario" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="adminPassword">Contraseña:</label>
+                                <input type="password" class="form-control" id="adminPassword" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-danger" onclick="event.preventDefault(); limpiarTop20();">Confirmar Limpieza</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="reporte-perdidas-trimestrales-anchor"></div>
+            
+            <div class="mt-30"> <h3 class="section-title">Reporte de Pérdidas Trimestrales</h3>
+                <div class="tabla-perdidas-container">
+                    <table id="tablaPerdidas" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Casos</th>
+                                <th>Pérdidas (B/.)</th>
+                                <th>Rango de Fechas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="reporte-abril">
+                                <td>Abril</td>
+                                <td class="casos">0</td>
+                                <td class="perdidas">B/. 0.000</td>
+                                <td class="rango-fechas">-</td>
+                            </tr>
+                            <tr id="reporte-mayo">
+                                <td>Mayo</td>
+                                <td class="casos">0</td>
+                                <td class="perdidas">B/. 0.000</td>
+                                <td class="rango-fechas">-</td>
+                            </tr>
+                            <tr id="reporte-junio">
+                                <td>Junio</td>
+                                <td class="casos">0</td>
+                                <td class="perdidas">B/. 0.000</td>
+                                <td class="rango-fechas">-</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td><strong>TOTAL</strong></td>
+                                <td class="casos">0</td>
+                                <td class="perdidas">B/. 0.000</td>
+                                <td class="rango-fechas">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-title mt-4">DELINCUENTES CAPTURADOS</div>
+            
+            <div class="tabla-container">
+                <table id="tablaDelincuentes" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre y Apellido</th>
+                            <th>Cédula</th>
+                            <th>Edad</th>
+                            <th>Dirección</th>
+                            <th>Vehículo</th>
+                            <th>Placa</th>
+                            <th>Color</th>
+                            <th>Lugar</th>
+                            <th>Fecha de Captura</th>
+                            <th>Delito Cometido</th>
+                            <th>Productos</th>
+                            <th>Cuantía (B/.)</th>
+                            <th>N° Denuncia/Resolución</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="filaNoDelincuentes">
+                            <td>1</td>
+                            <td colspan="13" style="text-align: center;">No hay delincuentes registrados</td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn btn-success btn-sm" onclick="agregarDelincuente()">+</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="tablas-container mt-4">
+                <div class="tabla-historial">
+                    <div class="section-title mb-3">HISTORIAL DE DELINCUENTES CAPTURADOS</div>
+                    <div class="tabla-container">
+                        <table id="tablaHistorialDelincuentes" class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre y Apellido</th>
+                                    <th>Cédula</th>
+                                    <th>Edad</th>
+                                    <th>Fecha de Captura</th>
+                                    <th>Delito Cometido</th>
+                                    <th>Cuantía (B/.)</th>
+                                    <th>N° Denuncia/Resolución</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="filaNoHistorial">
+                                    <td colspan="8" style="text-align: center;">No hay registros en el historial</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tabla-productos">
+                    <div>
+                        <h3 class="section-title">Top 20 Productos y Mercancías Robadas</h3>
+                    </div>
+                    <table id="tablaProductos" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Producto/Mercancía</th>
+                                <th>Cantidad Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 20 filas fijas para el Top 20 -->
+                            <tr id="producto-row-1">
+                                <td>1</td>
+                                <td id="nombre-1"></td>
+                                <td id="cantidad-1"></td>
+                            </tr>
+                            <tr id="producto-row-2">
+                                <td>2</td>
+                                <td id="nombre-2"></td>
+                                <td id="cantidad-2"></td>
+                            </tr>
+                            <tr id="producto-row-3">
+                                <td>3</td>
+                                <td id="nombre-3"></td>
+                                <td id="cantidad-3"></td>
+                            </tr>
+                            <tr id="producto-row-4">
+                                <td>4</td>
+                                <td id="nombre-4"></td>
+                                <td id="cantidad-4"></td>
+                            </tr>
+                            <tr id="producto-row-5">
+                                <td>5</td>
+                                <td id="nombre-5"></td>
+                                <td id="cantidad-5"></td>
+                            </tr>
+                            <tr id="producto-row-6">
+                                <td>6</td>
+                                <td id="nombre-6"></td>
+                                <td id="cantidad-6"></td>
+                            </tr>
+                            <tr id="producto-row-7">
+                                <td>7</td>
+                                <td id="nombre-7"></td>
+                                <td id="cantidad-7"></td>
+                            </tr>
+                            <tr id="producto-row-8">
+                                <td>8</td>
+                                <td id="nombre-8"></td>
+                                <td id="cantidad-8"></td>
+                            </tr>
+                            <tr id="producto-row-9">
+                                <td>9</td>
+                                <td id="nombre-9"></td>
+                                <td id="cantidad-9"></td>
+                            </tr>
+                            <tr id="producto-row-10">
+                                <td>10</td>
+                                <td id="nombre-10"></td>
+                                <td id="cantidad-10"></td>
+                            </tr>
+                            <tr id="producto-row-11">
+                                <td>11</td>
+                                <td id="nombre-11"></td>
+                                <td id="cantidad-11"></td>
+                            </tr>
+                            <tr id="producto-row-12">
+                                <td>12</td>
+                                <td id="nombre-12"></td>
+                                <td id="cantidad-12"></td>
+                            </tr>
+                            <tr id="producto-row-13">
+                                <td>13</td>
+                                <td id="nombre-13"></td>
+                                <td id="cantidad-13"></td>
+                            </tr>
+                            <tr id="producto-row-14">
+                                <td>14</td>
+                                <td id="nombre-14"></td>
+                                <td id="cantidad-14"></td>
+                            </tr>
+                            <tr id="producto-row-15">
+                                <td>15</td>
+                                <td id="nombre-15"></td>
+                                <td id="cantidad-15"></td>
+                            </tr>
+                            <tr id="producto-row-16">
+                                <td>16</td>
+                                <td id="nombre-16"></td>
+                                <td id="cantidad-16"></td>
+                            </tr>
+                            <tr id="producto-row-17">
+                                <td>17</td>
+                                <td id="nombre-17"></td>
+                                <td id="cantidad-17"></td>
+                            </tr>
+                            <tr id="producto-row-18">
+                                <td>18</td>
+                                <td id="nombre-18"></td>
+                                <td id="cantidad-18"></td>
+                            </tr>
+                            <tr id="producto-row-19">
+                                <td>19</td>
+                                <td id="nombre-19"></td>
+                                <td id="cantidad-19"></td>
+                            </tr>
+                            <tr id="producto-row-20">
+                                <td>20</td>
+                                <td id="nombre-20"></td>
+                                <td id="cantidad-20"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td></td>
+                                <td><strong>TOTAL</strong></td>
+                                <td class="total-cantidad">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="text-right mt-2">
+                        <button type="button" class="btn btn-danger" onclick="event.preventDefault(); mostrarModalLimpiezaTop20();">Limpiar Top 20</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-30">
+                <h3 class="section-title">Distribución de Casos por Tipo de Delito</h3>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="chart-container">
+                            <canvas id="tiposDelitosChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions-container">
+                <button type="button" class="btn btn-primary" onclick="mostrarVistaPrevia()">Guardar documento</button>
+            </div>
+
+            <div class="modal fade" id="vistaPreviaModal" tabindex="-1" role="dialog" aria-labelledby="vistaPreviaModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="vistaPreviaModalLabel">Vista Previa del Documento</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="pdfViewer" class="pdf-viewer-style"></div> </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-success" onclick="imprimirDocumento()">Imprimir</button>
+                            <button type="button" class="btn btn-primary" onclick="guardarDocumentoLocal()">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Sección de estadísticas de seguridad eliminada -->
+    </div>
+
+    <!-- Modal para seleccionar tipificación - Diseño moderno -->
+    <div class="modal fade" id="modalTipificacion" tabindex="-1" role="dialog" aria-labelledby="modalTipificacionLabel" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                <div class="modal-header bg-primary text-white" style="border-bottom: none; padding: 15px 20px;">
+                    <h5 class="modal-title" id="modalTipificacionLabel" style="font-weight: 600;">Seleccionar Tipificación</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 1;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 0;">
+                    <div class="tipificacion-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px;">
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Hurto" style="background: linear-gradient(135deg, #4e73df, #224abe); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-hand-holding-usd" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Hurto</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Robo" style="background: linear-gradient(135deg, #e74a3b, #be2617); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-mask" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Robo</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Fraude" style="background: linear-gradient(135deg, #f6c23e, #dda20a); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-file-signature" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Fraude</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Vandalismo" style="background: linear-gradient(135deg, #1cc88a, #13855c); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-spray-can" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Vandalismo</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Extorsión" style="background: linear-gradient(135deg, #36b9cc, #258391); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-money-bill-wave" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Extorsión</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Estafa" style="background: linear-gradient(135deg, #6f42c1, #4e2d89); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-user-secret" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Estafa</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Secuestro" style="background: linear-gradient(135deg, #5a5c69, #373840); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-user-lock" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Secuestro</span>
+                        </div>
+                        <div class="tipificacion-card" tabindex="0" role="button" data-value="Otro" style="background: linear-gradient(135deg, #858796, #60616f); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-question-circle" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Otro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bibliotecas externas necesarias -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Scripts esenciales para la aplicación (mínimos necesarios) -->
+    <script src="script.js"></script>
+</body>
+</html>
