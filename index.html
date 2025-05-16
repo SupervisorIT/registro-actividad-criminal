@@ -826,5 +826,57 @@ function guardarNuevoDelincuente() {
 }
 </script>
 
+<!-- Botón para abrir el modal del README/manual de uso -->
+<button id="openReadmeModalBtn" style="position:fixed;bottom:20px;right:20px;z-index:2000;background:#3498db;color:#fff;border:none;border-radius:50px;padding:12px 22px;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.18);cursor:pointer;">Manual de uso / Ayuda</button>
+
+<!-- Modal del README/manual de uso -->
+<div id="readmeModal" class="modal" style="display:none;position:fixed;z-index:3000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+  <div style="background:#fff;max-width:700px;width:95vw;max-height:90vh;overflow-y:auto;padding:32px 24px;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.22);position:relative;">
+    <button id="closeReadmeModalBtn" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:28px;color:#444;cursor:pointer;">&times;</button>
+    <h2 style="margin-top:0;color:#2c3e50;">Manual de Uso y Estado del Sistema</h2>
+    <div style="margin-bottom:18px;padding:12px 18px;background:#fff3cd;color:#856404;border-radius:6px;border:1px solid #ffeeba;">
+      <b>⚠️ Estado del proyecto: EN DESARROLLO / SUJETO A CAMBIOS</b><br>
+      Este sistema está siendo actualizado y mejorado constantemente. Puede contener errores o cambios inesperados. Si eres cliente o usuario, ten en cuenta que la funcionalidad puede variar y algunos módulos pueden estar en revisión.
+    </div>
+    <h3>¿Qué hace esta aplicación?</h3>
+    <ul>
+      <li>Registrar casos delictivos por trimestre y empresa.</li>
+      <li>Gestionar delincuentes capturados: alta, visualización y almacenamiento local.</li>
+      <li>Generar reportes y tablas estadísticas.</li>
+      <li>Interfaz amigable y moderna, adaptable para escritorio y dispositivos móviles.</li>
+    </ul>
+    <h3>¿Cómo se usa?</h3>
+    <ol>
+      <li><b>Abrir la aplicación:</b> Accede a la URL pública desplegada en Render o abre <code>index.html</code> localmente.</li>
+      <li><b>Registrar un caso:</b> Completa los datos de empresa, responsable, fecha y trimestre. Añade los casos delictivos ocurridos, su tipificación, fecha, cuantía y observaciones.</li>
+      <li><b>Agregar delincuente capturado:</b> Haz clic en el botón <b>+</b> en la sección correspondiente, completa el formulario y guarda el registro. Los datos se almacenan en el navegador (localStorage) y se muestran en la tabla.</li>
+      <li><b>Exportar o visualizar reportes:</b> Usa las opciones de la interfaz para generar reportes o consultar estadísticas.</li>
+    </ol>
+    <h3>Notas importantes</h3>
+    <ul>
+      <li><b>Persistencia:</b> Los datos se guardan en el navegador del usuario. Si borras el caché/localStorage, se perderán los registros.</li>
+      <li><b>Despliegue:</b> El sitio está publicado en Render. Cada actualización en GitHub se refleja automáticamente en la web.</li>
+      <li><b>Estado:</b> El sistema puede presentar errores menores o cambios frecuentes mientras esté en desarrollo activo.</li>
+    </ul>
+    <h3>Contacto</h3>
+    <p>Para reportar errores, sugerencias o solicitar soporte, abre un <a href="https://github.com/SupervisorIT/registro-actividad-criminal/issues" target="_blank">issue en GitHub</a> o contacta al administrador del proyecto.</p>
+    <hr>
+    <div style="text-align:center;color:#888;font-size:15px;">¡Gracias por tu comprensión y colaboración mientras mejoramos la aplicación!</div>
+  </div>
+</div>
+<script>
+// Mostrar y ocultar el modal del README/manual
+const openReadmeModalBtn = document.getElementById('openReadmeModalBtn');
+const readmeModal = document.getElementById('readmeModal');
+const closeReadmeModalBtn = document.getElementById('closeReadmeModalBtn');
+if(openReadmeModalBtn && readmeModal && closeReadmeModalBtn) {
+  openReadmeModalBtn.onclick = () => { readmeModal.style.display = 'flex'; };
+  closeReadmeModalBtn.onclick = () => { readmeModal.style.display = 'none'; };
+  readmeModal.onclick = (e) => {
+    if (e.target === readmeModal) readmeModal.style.display = 'none';
+  };
+}
+</script>
+
 </body>
 </html>
