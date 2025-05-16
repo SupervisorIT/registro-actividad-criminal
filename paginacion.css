@@ -1,0 +1,23 @@
+/* Estilos para la paginación */
+.paginacion-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagina-info {
+    margin: 0 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+/* Estilos para los botones de paginación */
+.paginacion-container .btn {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+/* Estilos para cuando hay pocos registros */
+.paginacion-container.hidden {
+    display: none;
+}

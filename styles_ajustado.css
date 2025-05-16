@@ -1,0 +1,629 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+.container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+.header h2 {
+    margin: 0;
+    color: #2c3e50;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #3498db;
+    display: inline-block;
+}
+.fecha-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+.fecha-container input {
+    width: 100px;
+    text-align: center;
+    padding: 4px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+}
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    gap: 20px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+}
+.form-group label {
+    margin-bottom: 5px;
+    color: #2c3e50;
+    font-weight: normal;
+}
+.form-group input, 
+.form-group select {
+    min-width: 200px;
+    padding: 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.form-group input:focus, 
+.form-group select:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52,152,219,0.3);
+}
+.form-group input:read-only {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    border: none;
+}
+.form-table td {
+    padding: 8px;
+    vertical-align: middle;
+    border: none;
+}
+.form-table td:nth-child(odd) {
+    text-align: right;
+    width: 20%;
+    color: #2c3e50;
+    font-weight: normal;
+    padding-right: 15px;
+    white-space: nowrap;
+}
+.form-table td:nth-child(even) {
+    width: 30%;
+    text-align: left;
+}
+.form-table input, 
+.form-table select {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.form-table input:focus, 
+.form-table select:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52,152,219,0.3);
+}
+.form-table input:read-only {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+}
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    color: #2c3e50;
+}
+tr:hover {
+    background-color: #f5f5f5;
+}
+.section-title {
+    background-color: #2c3e50;
+    color: white;
+    padding: 10px;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.reporte-perdidas-title,
+.top-20-title {
+    background-color: #2c3e50;
+    color: white;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    border-radius: 4px;
+    text-align: left;
+}
+.casos-delictivos-header,
+.casos-delictivos-title,
+.casos-delictivos {
+    display: none;
+}
+.btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+.btn-success {
+    background-color: #2ecc71;
+    color: white;
+}
+.btn-success:hover {
+    background-color: #27ae60;
+}
+.btn-warning {
+    background-color: #f39c12;
+    color: white;
+}
+.btn-warning:hover {
+    background-color: #d35400;
+}
+.denuncias-input {
+    width: 80px !important;
+    text-align: right;
+}
+td {
+    vertical-align: middle;
+}
+.total-row {
+    font-weight: bold;
+    background-color: #f2f2f2;
+}
+.total-row td {
+    border-top: 2px solid #ddd;
+}
+.productos-container {
+    margin-top: 15px;
+    margin-bottom: 30px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+.producto-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.producto-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.tabla-delincuentes-container {
+    margin-top: 15px;
+    overflow-x: auto;
+    max-width: 100%;
+}
+#tablaDelincuentes {
+    min-width: 100%;
+    border-collapse: collapse;
+}
+#tablaDelincuentes th, 
+#tablaDelincuentes td {
+    padding: 6px;
+    text-align: left;
+    border: 1px solid #ddd;
+    font-size: 0.9em;
+}
+#tablaDelincuentes th {
+    background-color: #2c3e50;
+    color: white;
+    position: sticky;
+    top: 0;
+}
+#tablaDelincuentes input, 
+#tablaDelincuentes select {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 14px;
+}
+.monto-input {
+    text-align: right;
+}
+#tablaDelincuentes th:nth-child(1) { width: 3%; }   /* # */
+#tablaDelincuentes th:nth-child(2) { width: 8%; }   /* Nombre */
+#tablaDelincuentes th:nth-child(3) { width: 8%; }   /* Apellido */
+#tablaDelincuentes th:nth-child(4) { width: 12%; }  /* Cédula */
+#tablaDelincuentes th:nth-child(5) { width: 10%; }  /* Nacionalidad */
+#tablaDelincuentes th:nth-child(6) { width: 10%; }  /* Edad */
+#tablaDelincuentes th:nth-child(7) { width: 15%; }  /* Lugar */
+#tablaDelincuentes th:nth-child(8) { width: 8%; }  /* Fecha */
+#tablaDelincuentes th:nth-child(9) { width: 8%; }  /* Delito */
+#tablaDelincuentes th:nth-child(10) { width: 12%; } /* Productos */
+#tablaDelincuentes th:nth-child(11) { width: 6%; }  /* Monto */
+#tablaDelincuentes th:nth-child(12) { width: 2%; }  /* Acción */
+.actions-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 600px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    animation: modalopen 0.3s;
+}
+
+@keyframes modalopen {
+    from {opacity: 0; transform: translateY(-50px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+.modal-header {
+    padding: 15px;
+    background-color: #007bff;
+    color: white;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-body {
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #ddd;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: #f8f9fa;
+    text-decoration: none;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+table th, table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+table th {
+    background-color: #2c3e50;
+    color: white;
+    text-align: left;
+}
+table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+table tr:hover {
+    background-color: #ddd;
+}
+.total-row {
+    font-weight: bold;
+    background-color: #e9ecef !important;
+}
+table input[type="text"], 
+table input[type="number"] {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+.btn-success {
+    background-color: #2ecc71;
+    color: white;
+}
+.btn-success:hover {
+    background-color: #27ae60;
+}
+.btn-warning {
+    background-color: #f39c12;
+    color: white;
+}
+.btn-warning:hover {
+    background-color: #d35400;
+}
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 0.8em;
+}
+
+/* Estilos para el formulario modal de delincuentes */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0 15px;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+/* Estilos para la sección de estadísticas */
+.seccion-estadisticas {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.seccion-estadisticas h3 {
+    color: #1a237e;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #1a237e;
+    padding-bottom: 0.5rem;
+}
+
+.estadisticas-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.estadistica-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.estadistica-item h4 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.estadistica-item p {
+    font-size: 1.25rem;
+    color: #1a237e;
+    font-weight: bold;
+    margin: 0;
+}
+
+.estadistica-item ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.estadistica-item li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.estadistica-item li:last-child {
+    border-bottom: none;
+}
+
+/* Estilos para la tabla de delincuentes */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-collapse: collapse;
+}
+
+.table-responsive th {
+    background-color: #2c3e50;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.table-responsive td {
+    padding: 6px;
+    font-size: 0.9em;
+    vertical-align: middle;
+}
+
+.tabla-delincuentes-container {
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#tablaDelincuentes tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+#tablaDelincuentes tr:hover {
+    background-color: #e9ecef;
+}
+
+.table-container {
+    margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .form-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .form-table td:nth-child(odd) {
+        font-weight: bold;
+        background-color: #f8f9fa;
+        padding-bottom: 0;
+    }
+    
+    .producto-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-top: 5px;
+    }
+}

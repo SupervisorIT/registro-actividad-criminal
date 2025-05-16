@@ -1,0 +1,24 @@
+# Ignora entornos virtuales y dependencias
+venv/
+node_modules/
+
+# Ignora bases de datos y archivos temporales
+*.db
+*.bak
+*.ps1
+*.txt
+*.log
+
+# Ignora archivos de backup, fixes y pruebas
+*backup*
+*final*
+*fix*
+*limpiar*
+corregir-*
+nuevo_formulario.txt
+
+# Ignora carpetas innecesarias
+Nueva carpeta/
+backup/
+config/
+templates/

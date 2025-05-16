@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Actividad Criminal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles_ajustado.css">
+    <link rel="stylesheet" href="fix-producto-campo.css">
+    <link rel="stylesheet" href="fix-tabla-historial.css">
+    <link rel="stylesheet" href="tabla-fix.css">
+    <link rel="stylesheet" href="tabla-delincuentes-fix.css">
+    <link rel="stylesheet" href="paginacion.css">
+    <link rel="stylesheet" href="modal-delincuentes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="js/session-check.js"></script>
+    
+    <script>
+        window.jspdf = window.jspdf || {};
+    </script>
+    
+    </head>
+<body>
+    <div class="admin-access">
+        <button id="adminButton" class="btn btn-primary" onclick="window.location.href='admin.html'">
+            <i class="fas fa-shield-alt"></i> Panel de Administración
+        </button>
+    </div>
+
+
+    <div class="container">
+        <div class="header">
+            <h2>Registro de Actividad Criminal</h2>
+            <div class="user-info-container"> <div class="user-info">
+                    <span>Usuario: <strong id="usuarioInfo"></strong></span>
+                    <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button> </div>
+            </div>
+        </div>
+        <form id="actividadCriminalForm">
+            <table class="form-table">
+                <tr>
+                    <td>Empresa:</td>
+                    <td>
+                        <input type="text" id="empresa" name="empresa" required pattern="[A-Za-z0-9\s]+" 
+                               title="Solo se permiten caracteres alfanuméricos">
+                    </td>
+                    <td><strong>Fecha:</strong></td>
+                    <td>
+                        <input type="text" id="fecha" name="fecha" value="26 de marzo de 2025" readonly class="form-control fecha-input input-fecha-delito" placeholder="DD/MM/AAAA" style="width: 100%; box-sizing: border-box;" required data-formateo-inicializado="true"> </td>
+                </tr>
+                <tr>
+                    <td>Responsable de Seguridad:</td>
+                    <td>
+                        <input type="text" id="responsable" name="responsable" required>
+                    </td>
+                    <td>Trimestre:</td>
+                    <td>
+                        <select id="trimestre" name="trimestre" required>
+                            <option value="Q1">1er Trimestre</option>
+                            <option value="Q2">2do Trimestre</option>
+                            <option value="Q3">3er Trimestre</option>
+                            <option value="Q4">4to Trimestre</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Cédula:</td>
+                    <td colspan="3">
+                        <input type="text" id="cedula" name="cedula" required 
+                               pattern="^([PE]|N|E)-?\d{1,2}-?\d{1,4}-?\d{1,5}$|^\d{1,2}-\d{1,4}-\d{1,5}$" 
+                               title="Formato válido: P-00-0000-00000 o E-00-0000-00000 o N-00-0000-00000 o 00-0000-00000"
+                               placeholder="Ej: P-00-0000-00000">
+                    </td>
+                </tr>
+            </table>
+
+            <div class="section-title">CASOS DELICTIVOS OCURRIDOS EN EL TRIMESTRE</div>
+            
+            <table id="tablaCasosDelictivos" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">Tipificación</th>
+                        <th style="width: 120px;">Fecha</th>
+                        <th style="width: 100px;">Cantidad</th>
+                        <th style="width: 120px;">Cuantía (B/.)</th>
+                        <th style="width: 100px;">Denuncias</th>
+                        <th style="width: 150px;">Producto/Mercancía</th>
+                        <th style="width: 200px;">Observaciones</th>
+                        <th style="width: 80px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="width: 120px;">
+                            <div class="tipificacion-container">
+                                <span class="tipificacion-texto">Hurto</span>
+                                <button type="button" class="btn btn-xs btn-primary tipificacion-selector-btn" style="padding: 2px 5px; font-size: 10px; margin-left: 5px;" onclick="abrirModalTipificacion(this)">...</button>
+                                <input type="hidden" name="tipificacion[]" value="Hurto" class="tipificacion-input" required>
+                            </div>
+                        </td>
+                        <td style="width: 120px;">
+                            <input type="text" name="fecha[]" class="form-control fecha-input input-fecha-delito" placeholder="DD/MM/AAAA" style="width: 100%; box-sizing: border-box;" required>
+                        </td>
+                        <td style="width: 100px;">
+                            <input type="number" min="0" name="cantidad[]" class="form-control cantidad-input" style="width: 100%;" required placeholder="0">
+                        </td>
+                        <td style="width: 120px;">
+                            <input type="number" min="0" step="0.01" name="cuantia[]" class="form-control cuantia-input" style="width: 100%;" required placeholder="0.00">
+                        </td>
+                        <td style="width: 100px;">
+                            <input type="number" min="0" name="denuncias[]" class="form-control denuncias-input" style="width: 100%;" required placeholder="0">
+                        </td>
+                        <td style="width: 150px;">
+                            <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
+                        </td>
+                        <td style="width: 200px;">
+                            <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required> <!-- input simple, sin desplegable -->
+                        </td>
+                        <td style="width: 80px; text-align: center;">
+                            <div style="display: flex; justify-content: center; gap: 5px;">
+                                <button type="button" class="btn btn-success btn-sm" title="Agregar" onclick="agregarFilaEditable(this)">+</button>
+<button type="button" class="btn btn-danger btn-sm" title="Eliminar" onclick="eliminarFila(this)">X</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="placeholder-casos" style="display:none;"> <td colspan="8" class="text-center-content placeholder-text">Agregue un caso delictivo usando el botón +</td> </tr>
+                    <tr class="total-row">
+                        <td><strong>TOTAL</strong></td>
+                        <td></td>
+                        <td id="totalCantidad" class="text-center-content">0</td>
+                        <td id="totalCuantia" class="text-center-content">B/. 0.00</td>
+                        <td id="totalDenuncias" class="text-center-content">0</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div id="reporte-perdidas-trimestrales-anchor"></div>
+            
+            <div class="mt-30"> <h3 class="section-title">Reporte de Pérdidas Trimestrales</h3>
+                <div class="tabla-perdidas-container">
+                    <table id="tablaPerdidas" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Casos</th>
+                                <th>Pérdidas (B/.)</th>
+                                <th>Rango de Fechas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Aquí se generarán dinámicamente las filas de meses -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td><strong>TOTAL</strong></td>
+                                <td id="totalCasosPerdidas">0</td>
+                                <td id="totalPerdidasMonto">B/. 0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-30">
+    <h3>Delincuentes Capturados</h3>
+    <table id="tablaDelincuentes">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre y Apellido</th>
+                <th>Cédula</th>
+                <th>Edad</th>
+                <th>Dirección</th>
+                <th>Vehículo</th>
+                <th>Placa</th>
+                <th>Color</th>
+                <th>Lugar</th>
+                <th>Fecha de Captura</th>
+                <th>Delito Cometido</th>
+                <th>Productos</th>
+                <th>Cuantía (B/.)</th>
+                <th>N° Denuncia/Resolución</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            <tr id="filaAgregarDelincuente">
+                <td colspan="15" style="text-align: center;">
+                    <button type="button" class="btn btn-success btn-sm" title="Agregar Delincuente" onclick="abrirModalNuevoDelincuente()">+
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+            
+            <div class="mt-30" style="display: flex; flex-wrap: wrap;">
+                <div class="tabla-delincuentes-persistentes-container">
+                    <div style="width: 600px;">
+                        <h3 class="section-title">Historial de Delincuentes Capturados</h3>
+                    </div>
+                    <table id="tablaDelincuentesPersistentes" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre y Apellido</th>
+                                <th>Cédula</th>
+                                <th>Edad</th>
+                                <th>Delito Cometido</th>
+                                <th>Cuantía (B/.)</th>
+                                <th>N° Denuncia/Resolución</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 20 filas fijas para el historial de delincuentes -->
+                            <tr id="delincuente-row-1">
+                                <td>1</td>
+                                <td id="delincuente-nombre-1"></td>
+                                <td id="delincuente-cedula-1"></td>
+                                <td id="delincuente-edad-1"></td>
+                                <td id="delincuente-delito-1"></td>
+                                <td id="delincuente-cuantia-1"></td>
+                                <td id="delincuente-denuncia-1"></td>
+                            </tr>
+                            <tr id="delincuente-row-2">
+                                <td>2</td>
+                                <td id="delincuente-nombre-2"></td>
+                                <td id="delincuente-cedula-2"></td>
+                                <td id="delincuente-edad-2"></td>
+                                <td id="delincuente-delito-2"></td>
+                                <td id="delincuente-cuantia-2"></td>
+                                <td id="delincuente-denuncia-2"></td>
+                            </tr>
+                            <tr id="delincuente-row-3">
+                                <td>3</td>
+                                <td id="delincuente-nombre-3"></td>
+                                <td id="delincuente-cedula-3"></td>
+                                <td id="delincuente-edad-3"></td>
+                                <td id="delincuente-delito-3"></td>
+                                <td id="delincuente-cuantia-3"></td>
+                                <td id="delincuente-denuncia-3"></td>
+                            </tr>
+                            <tr id="delincuente-row-4">
+                                <td>4</td>
+                                <td id="delincuente-nombre-4"></td>
+                                <td id="delincuente-cedula-4"></td>
+                                <td id="delincuente-edad-4"></td>
+                                <td id="delincuente-delito-4"></td>
+                                <td id="delincuente-cuantia-4"></td>
+                                <td id="delincuente-denuncia-4"></td>
+                            </tr>
+                            <tr id="delincuente-row-5">
+                                <td>5</td>
+                                <td id="delincuente-nombre-5"></td>
+                                <td id="delincuente-cedula-5"></td>
+                                <td id="delincuente-edad-5"></td>
+                                <td id="delincuente-delito-5"></td>
+                                <td id="delincuente-cuantia-5"></td>
+                                <td id="delincuente-denuncia-5"></td>
+                            </tr>
+                            <tr id="delincuente-row-6">
+                                <td>6</td>
+                                <td id="delincuente-nombre-6"></td>
+                                <td id="delincuente-cedula-6"></td>
+                                <td id="delincuente-edad-6"></td>
+                                <td id="delincuente-delito-6"></td>
+                                <td id="delincuente-cuantia-6"></td>
+                                <td id="delincuente-denuncia-6"></td>
+                            </tr>
+                            <tr id="delincuente-row-7">
+                                <td>7</td>
+                                <td id="delincuente-nombre-7"></td>
+                                <td id="delincuente-cedula-7"></td>
+                                <td id="delincuente-edad-7"></td>
+                                <td id="delincuente-delito-7"></td>
+                                <td id="delincuente-cuantia-7"></td>
+                                <td id="delincuente-denuncia-7"></td>
+                            </tr>
+                            <tr id="delincuente-row-8">
+                                <td>8</td>
+                                <td id="delincuente-nombre-8"></td>
+                                <td id="delincuente-cedula-8"></td>
+                                <td id="delincuente-edad-8"></td>
+                                <td id="delincuente-delito-8"></td>
+                                <td id="delincuente-cuantia-8"></td>
+                                <td id="delincuente-denuncia-8"></td>
+                            </tr>
+                            <tr id="delincuente-row-9">
+                                <td>9</td>
+                                <td id="delincuente-nombre-9"></td>
+                                <td id="delincuente-cedula-9"></td>
+                                <td id="delincuente-edad-9"></td>
+                                <td id="delincuente-delito-9"></td>
+                                <td id="delincuente-cuantia-9"></td>
+                                <td id="delincuente-denuncia-9"></td>
+                            </tr>
+                            <tr id="delincuente-row-10">
+                                <td>10</td>
+                                <td id="delincuente-nombre-10"></td>
+                                <td id="delincuente-cedula-10"></td>
+                                <td id="delincuente-edad-10"></td>
+                                <td id="delincuente-delito-10"></td>
+                                <td id="delincuente-cuantia-10"></td>
+                                <td id="delincuente-denuncia-10"></td>
+                            </tr>
+                            <tr id="delincuente-row-11">
+                                <td>11</td>
+                                <td id="delincuente-nombre-11"></td>
+                                <td id="delincuente-cedula-11"></td>
+                                <td id="delincuente-edad-11"></td>
+                                <td id="delincuente-delito-11"></td>
+                                <td id="delincuente-cuantia-11"></td>
+                                <td id="delincuente-denuncia-11"></td>
+                            </tr>
+                            <tr id="delincuente-row-12">
+                                <td>12</td>
+                                <td id="delincuente-nombre-12"></td>
+                                <td id="delincuente-cedula-12"></td>
+                                <td id="delincuente-edad-12"></td>
+                                <td id="delincuente-delito-12"></td>
+                                <td id="delincuente-cuantia-12"></td>
+                                <td id="delincuente-denuncia-12"></td>
+                            </tr>
+                            <tr id="delincuente-row-13">
+                                <td>13</td>
+                                <td id="delincuente-nombre-13"></td>
+                                <td id="delincuente-cedula-13"></td>
+                                <td id="delincuente-edad-13"></td>
+                                <td id="delincuente-delito-13"></td>
+                                <td id="delincuente-cuantia-13"></td>
+                                <td id="delincuente-denuncia-13"></td>
+                            </tr>
+                            <tr id="delincuente-row-14">
+                                <td>14</td>
+                                <td id="delincuente-nombre-14"></td>
+                                <td id="delincuente-cedula-14"></td>
+                                <td id="delincuente-edad-14"></td>
+                                <td id="delincuente-delito-14"></td>
+                                <td id="delincuente-cuantia-14"></td>
+                                <td id="delincuente-denuncia-14"></td>
+                            </tr>
+                            <tr id="delincuente-row-15">
+                                <td>15</td>
+                                <td id="delincuente-nombre-15"></td>
+                                <td id="delincuente-cedula-15"></td>
+                                <td id="delincuente-edad-15"></td>
+                                <td id="delincuente-delito-15"></td>
+                                <td id="delincuente-cuantia-15"></td>
+                                <td id="delincuente-denuncia-15"></td>
+                            </tr>
+                            <tr id="delincuente-row-16">
+                                <td>16</td>
+                                <td id="delincuente-nombre-16"></td>
+                                <td id="delincuente-cedula-16"></td>
+                                <td id="delincuente-edad-16"></td>
+                                <td id="delincuente-delito-16"></td>
+                                <td id="delincuente-cuantia-16"></td>
+                                <td id="delincuente-denuncia-16"></td>
+                            </tr>
+                            <tr id="delincuente-row-17">
+                                <td>17</td>
+                                <td id="delincuente-nombre-17"></td>
+                                <td id="delincuente-cedula-17"></td>
+                                <td id="delincuente-edad-17"></td>
+                                <td id="delincuente-delito-17"></td>
+                                <td id="delincuente-cuantia-17"></td>
+                                <td id="delincuente-denuncia-17"></td>
+                            </tr>
+                            <tr id="delincuente-row-18">
+                                <td>18</td>
+                                <td id="delincuente-nombre-18"></td>
+                                <td id="delincuente-cedula-18"></td>
+                                <td id="delincuente-edad-18"></td>
+                                <td id="delincuente-delito-18"></td>
+                                <td id="delincuente-cuantia-18"></td>
+                                <td id="delincuente-denuncia-18"></td>
+                            </tr>
+                            <tr id="delincuente-row-19">
+                                <td>19</td>
+                                <td id="delincuente-nombre-19"></td>
+                                <td id="delincuente-cedula-19"></td>
+                                <td id="delincuente-edad-19"></td>
+                                <td id="delincuente-delito-19"></td>
+                                <td id="delincuente-cuantia-19"></td>
+                                <td id="delincuente-denuncia-19"></td>
+                            </tr>
+                            <tr id="delincuente-row-20">
+                                <td>20</td>
+                                <td id="delincuente-nombre-20"></td>
+                                <td id="delincuente-cedula-20"></td>
+                                <td id="delincuente-edad-20"></td>
+                                <td id="delincuente-delito-20"></td>
+                                <td id="delincuente-cuantia-20"></td>
+                                <td id="delincuente-denuncia-20"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="6">TOTAL</td>
+                                <td id="totalDelincuentes">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-10" style="display: flex; justify-content: space-between; align-items: center;">
+                        <button id="limpiarDelincuentesBtn" class="btn btn-danger" onclick="limpiarDelincuentesPersistentes()">Limpiar Delincuentes</button>
+                        <div id="paginacionDelincuentes" class="paginacion-container"></div>
+                    </div>
+                </div>
+                
+                <div class="tabla-productos-container">
+                    <div style="width: 300px;">
+                        <h3 class="section-title">Top 20 Productos y Mercancías Robadas</h3>
+                    </div>
+                    <table id="tablaProductos" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Producto/Mercancía</th>
+                                <th>Cantidad Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 20 filas fijas para el Top 20 -->
+                            <tr id="producto-row-1">
+                                <td>1</td>
+                                <td id="nombre-1"></td>
+                                <td id="cantidad-1"></td>
+                            </tr>
+                            <tr id="producto-row-2">
+                                <td>2</td>
+                                <td id="nombre-2"></td>
+                                <td id="cantidad-2"></td>
+                            </tr>
+                            <tr id="producto-row-3">
+                                <td>3</td>
+                                <td id="nombre-3"></td>
+                                <td id="cantidad-3"></td>
+                            </tr>
+                            <tr id="producto-row-4">
+                                <td>4</td>
+                                <td id="nombre-4"></td>
+                                <td id="cantidad-4"></td>
+                            </tr>
+                            <tr id="producto-row-5">
+                                <td>5</td>
+                                <td id="nombre-5"></td>
+                                <td id="cantidad-5"></td>
+                            </tr>
+                            <tr id="producto-row-6">
+                                <td>6</td>
+                                <td id="nombre-6"></td>
+                                <td id="cantidad-6"></td>
+                            </tr>
+                            <tr id="producto-row-7">
+                                <td>7</td>
+                                <td id="nombre-7"></td>
+                                <td id="cantidad-7"></td>
+                            </tr>
+                            <tr id="producto-row-8">
+                                <td>8</td>
+                                <td id="nombre-8"></td>
+                                <td id="cantidad-8"></td>
+                            </tr>
+                            <tr id="producto-row-9">
+                                <td>9</td>
+                                <td id="nombre-9"></td>
+                                <td id="cantidad-9"></td>
+                            </tr>
+                            <tr id="producto-row-10">
+                                <td>10</td>
+                                <td id="nombre-10"></td>
+                                <td id="cantidad-10"></td>
+                            </tr>
+                            <tr id="producto-row-11">
+                                <td>11</td>
+                                <td id="nombre-11"></td>
+                                <td id="cantidad-11"></td>
+                            </tr>
+                            <tr id="producto-row-12">
+                                <td>12</td>
+                                <td id="nombre-12"></td>
+                                <td id="cantidad-12"></td>
+                            </tr>
+                            <tr id="producto-row-13">
+                                <td>13</td>
+                                <td id="nombre-13"></td>
+                                <td id="cantidad-13"></td>
+                            </tr>
+                            <tr id="producto-row-14">
+                                <td>14</td>
+                                <td id="nombre-14"></td>
+                                <td id="cantidad-14"></td>
+                            </tr>
+                            <tr id="producto-row-15">
+                                <td>15</td>
+                                <td id="nombre-15"></td>
+                                <td id="cantidad-15"></td>
+                            </tr>
+                            <tr id="producto-row-16">
+                                <td>16</td>
+                                <td id="nombre-16"></td>
+                                <td id="cantidad-16"></td>
+                            </tr>
+                            <tr id="producto-row-17">
+                                <td>17</td>
+                                <td id="nombre-17"></td>
+                                <td id="cantidad-17"></td>
+                            </tr>
+                            <tr id="producto-row-18">
+                                <td>18</td>
+                                <td id="nombre-18"></td>
+                                <td id="cantidad-18"></td>
+                            </tr>
+                            <tr id="producto-row-19">
+                                <td>19</td>
+                                <td id="nombre-19"></td>
+                                <td id="cantidad-19"></td>
+                            </tr>
+                            <tr id="producto-row-20">
+                                <td>20</td>
+                                <td id="nombre-20"></td>
+                                <td id="cantidad-20"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2">TOTAL</td>
+                                <td id="totalCantidadProductos">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <button id="limpiarProductosBtn" class="btn btn-danger mt-10" onclick="limpiarProductos()">Limpiar Productos</button>
+                </div>
+            </div>
+
+                        
+            <div class="actions-container">
+                <button type="button" class="btn btn-primary" onclick="mostrarVistaPrevia()">Guardar documento</button>
+            </div>
+
+            <div class="modal fade" id="vistaPreviaModal" tabindex="-1" role="dialog" aria-labelledby="vistaPreviaModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="vistaPreviaModalLabel">Vista Previa del Documento</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="pdfViewer" class="pdf-viewer-style"></div> </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-success" onclick="imprimirDocumento()">Imprimir</button>
+                            <button type="button" class="btn btn-primary" onclick="guardarDocumentoLocal()">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Sección de estadísticas de seguridad eliminada -->
+    </div>
+
+    <!-- Modal para seleccionar tipificación - Diseño moderno -->
+    <div class="modal fade" id="modalTipificacion" tabindex="-1" role="dialog" aria-labelledby="modalTipificacionLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                <div class="modal-header bg-primary text-white" style="border-bottom: none; padding: 15px 20px;">
+                    <h5 class="modal-title" id="modalTipificacionLabel" style="font-weight: 600;">Seleccionar Tipificación</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 1;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 0;">
+                    <div class="tipificacion-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px;">
+                        <div class="tipificacion-card" data-value="Hurto" style="background: linear-gradient(135deg, #4e73df, #224abe); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-hand-holding-usd" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Hurto</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Robo" style="background: linear-gradient(135deg, #e74a3b, #be2617); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-mask" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Robo</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Fraude" style="background: linear-gradient(135deg, #f6c23e, #dda20a); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-file-signature" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Fraude</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Vandalismo" style="background: linear-gradient(135deg, #1cc88a, #13855c); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-spray-can" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Vandalismo</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Extorsión" style="background: linear-gradient(135deg, #36b9cc, #258391); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-money-bill-wave" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Extorsión</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Estafa" style="background: linear-gradient(135deg, #6f42c1, #4e2d89); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-user-secret" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Estafa</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Secuestro" style="background: linear-gradient(135deg, #5a5c69, #373840); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-user-lock" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Secuestro</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Otro" style="background: linear-gradient(135deg, #858796, #60616f); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-question-circle" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Otro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- <script src="https://apis.google.com/js/api.js"></script> -->
+    <!-- <script src="drive-service.js"></script> -->
+    <script src="js/simple-chart.js"></script>
+    <script src="formatear-moneda.js"></script>
+    <script src="formatear-fecha.js"></script>
+    <!-- Scripts principales de la aplicación -->
+    <script src="script.js"></script>
+    <script src="script_productos.js"></script>
+    <script src="script_casos.js"></script>
+    <script src="admin.js"></script>
+    <script src="sincronizar-tablas.js"></script>
+    
+    <!-- Scripts para la funcionalidad de delincuentes -->
+    <script src="script_delincuentes_nuevo.js"></script>
+    <!-- <script src="delincuentes-persistentes-fix.js"></script> -->
+    <!-- <script src="fix-perdidas-pdf.js"></script> -->
+    <!-- <script src="limpiar-top20-delincuentes-nuevo.js"></script> -->
+    <!-- <script src="limpiar-estadisticas.js"></script> -->
+    
+    <!-- Scripts para la funcionalidad de productos -->
+    <script src="productos-persistentes.js"></script>
+    
+    <!-- Script para el nuevo formato de tipificación con botón pequeño -->
+    <script src="tipificacion-selector.js"></script>
+    
+    <!-- Script para manejar el historial de delincuentes -->
+    <script src="historial-delincuentes.js"></script>
+    <!-- Scripts comentados por limpieza antes de despliegue. Si algo deja de funcionar, descomentar el script correspondiente. -->
+<!-- Modal Moderno para Registrar Delincuente -->
+<div id="nuevoDelincuenteModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="nuevoDelincuenteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered card-modal" role="document">
+    <div class="modal-content card-modal-content">
+      <div class="modal-barra-superior">
+        <div class="modal-barra-titulo">
+          <i class="fas fa-user-plus"></i> <span>Registrar Delincuente</span>
+        </div>
+        <button type="button" class="close-barra" aria-label="Cerrar" onclick="cerrarModalNuevoDelincuente()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="formNuevoDelincuente" autocomplete="off">
+  <div class="form-row">
+    <div class="form-group">
+      <label for="nuevoNombreCompleto">Nombre y Apellido <span style="color:red">*</span></label>
+      <input type="text" class="form-control" id="nuevoNombreCompleto" required>
+    </div>
+    <div class="form-group">
+      <label for="nuevoCedula">Cédula <span style="color:red">*</span></label>
+      <input type="text" class="form-control" id="nuevoCedula" required>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="nuevoEdad">Edad <span style="color:red">*</span></label>
+      <input type="number" class="form-control" id="nuevoEdad" min="12" max="120" required>
+    </div>
+    <div class="form-group">
+      <label for="nuevoDireccion">Dirección</label>
+      <input type="text" class="form-control" id="nuevoDireccion">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="nuevoVehiculo">Vehículo</label>
+      <input type="text" class="form-control" id="nuevoVehiculo">
+    </div>
+    <div class="form-group">
+      <label for="nuevoPlaca">Placa</label>
+      <input type="text" class="form-control" id="nuevoPlaca">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="nuevoColor">Color</label>
+      <input type="text" class="form-control" id="nuevoColor">
+    </div>
+    <div class="form-group">
+      <label for="nuevoLugar">Lugar <span style="color:red">*</span></label>
+      <input type="text" class="form-control" id="nuevoLugar" required>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="nuevoFecha">Fecha de Captura <span style="color:red">*</span></label>
+      <input type="date" class="form-control" id="nuevoFecha" required>
+    </div>
+    <div class="form-group">
+      <label for="nuevoDelito">Delito Cometido <span style="color:red">*</span></label>
+      <input type="text" class="form-control" id="nuevoDelito" required>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label for="nuevoProductos">Productos</label>
+      <input type="text" class="form-control" id="nuevoProductos">
+    </div>
+    <div class="form-group">
+      <label for="nuevoCuantia">Cuantía (B/.)</label>
+      <input type="number" class="form-control" id="nuevoCuantia" min="0" step="0.01">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group" style="flex: 1 1 100%;">
+      <label for="nuevoDenuncia">N° Denuncia/Resolución</label>
+      <input type="text" class="form-control" id="nuevoDenuncia">
+    </div>
+  </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="cerrarModalNuevoDelincuente()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarNuevoDelincuente()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function abrirModalNuevoDelincuente() {
+  var modal = document.getElementById('nuevoDelincuenteModal');
+  modal.classList.add('show');
+  modal.style.display = 'flex';
+}
+function cerrarModalNuevoDelincuente() {
+  var modal = document.getElementById('nuevoDelincuenteModal');
+  modal.classList.remove('show');
+  modal.style.display = 'none';
+}
+function guardarNuevoDelincuente() {
+  var form = document.getElementById('formNuevoDelincuente');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  // Recoger los datos del formulario
+  var delincuente = {
+    nombreCompleto: document.getElementById('nuevoNombreCompleto').value,
+    cedula: document.getElementById('nuevoCedula').value,
+    edad: document.getElementById('nuevoEdad').value,
+    direccion: document.getElementById('nuevoDireccion').value,
+    vehiculo: document.getElementById('nuevoVehiculo').value,
+    placa: document.getElementById('nuevoPlaca').value,
+    colorVehiculo: document.getElementById('nuevoColor').value,
+    lugar: document.getElementById('nuevoLugar').value,
+    fecha: document.getElementById('nuevoFecha').value,
+    delito: document.getElementById('nuevoDelito').value,
+    mercancias: document.getElementById('nuevoProductos').value,
+    monto: document.getElementById('nuevoCuantia').value,
+    denuncia: document.getElementById('nuevoDenuncia').value
+  };
+
+  // Obtener o inicializar el array de delincuentes
+  var delincuentes = [];
+  if (localStorage.getItem('delincuentes')) {
+    try {
+      delincuentes = JSON.parse(localStorage.getItem('delincuentes'));
+      if (!Array.isArray(delincuentes)) delincuentes = [];
+    } catch (e) {
+      delincuentes = [];
+    }
+  }
+
+  // Agregar el nuevo delincuente
+  delincuentes.push(delincuente);
+  localStorage.setItem('delincuentes', JSON.stringify(delincuentes));
+
+  // Actualizar la tabla visual si existe
+  if (typeof actualizarTablaDelincuentes === 'function') {
+    actualizarTablaDelincuentes();
+  } else {
+    // Si no hay función, agregar manualmente a la tabla si existe
+    var tabla = document.querySelector('#tablaDelincuentes tbody');
+    if (tabla) {
+      var fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${delincuentes.length}</td>
+        <td>${delincuente.nombreCompleto}</td>
+        <td>${delincuente.cedula}</td>
+        <td>${delincuente.edad}</td>
+        <td>${delincuente.direccion}</td>
+        <td>${delincuente.vehiculo}</td>
+        <td>${delincuente.placa}</td>
+        <td>${delincuente.colorVehiculo}</td>
+        <td>${delincuente.lugar}</td>
+        <td>${delincuente.fecha}</td>
+        <td>${delincuente.delito}</td>
+        <td>${delincuente.mercancias}</td>
+        <td>${delincuente.monto}</td>
+        <td>${delincuente.denuncia}</td>
+      `;
+      tabla.appendChild(fila);
+    }
+  }
+
+  cerrarModalNuevoDelincuente();
+  // Mensaje de éxito
+  alert('Delincuente guardado correctamente.');
+  form.reset();
+}
+</script>
+
+</body>
+</html>
