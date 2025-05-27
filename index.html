@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="tabla-delincuentes-fix.css">
     <link rel="stylesheet" href="paginacion.css">
     <link rel="stylesheet" href="modal-delincuentes.css">
-    <link rel="stylesheet" href="render-layout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="js/session-check.js"></script>
@@ -151,133 +150,9 @@
             
             <div id="reporte-perdidas-trimestrales-anchor"></div>
 
-            <!-- Top 20 Productos y Mercancías Robadas -->
-            <div class="section-title">Top 20 Productos y Mercancías Robadas</div>
-            <div class="tabla-productos-container" style="overflow-x:auto; width:100%;">
-                <table id="tablaProductos" class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Producto/Mercancía</th>
-                            <th>Cantidad Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- 20 filas fijas para el Top 20 -->
-                        <tr id="producto-row-1">
-                            <td>1</td>
-                            <td id="nombre-1"></td>
-                            <td id="cantidad-1"></td>
-                        </tr>
-                        <tr id="producto-row-2">
-                            <td>2</td>
-                            <td id="nombre-2"></td>
-                            <td id="cantidad-2"></td>
-                        </tr>
-                        <tr id="producto-row-3">
-                            <td>3</td>
-                            <td id="nombre-3"></td>
-                            <td id="cantidad-3"></td>
-                        </tr>
-                        <tr id="producto-row-4">
-                            <td>4</td>
-                            <td id="nombre-4"></td>
-                            <td id="cantidad-4"></td>
-                        </tr>
-                        <tr id="producto-row-5">
-                            <td>5</td>
-                            <td id="nombre-5"></td>
-                            <td id="cantidad-5"></td>
-                        </tr>
-                        <tr id="producto-row-6">
-                            <td>6</td>
-                            <td id="nombre-6"></td>
-                            <td id="cantidad-6"></td>
-                        </tr>
-                        <tr id="producto-row-7">
-                            <td>7</td>
-                            <td id="nombre-7"></td>
-                            <td id="cantidad-7"></td>
-                        </tr>
-                        <tr id="producto-row-8">
-                            <td>8</td>
-                            <td id="nombre-8"></td>
-                            <td id="cantidad-8"></td>
-                        </tr>
-                        <tr id="producto-row-9">
-                            <td>9</td>
-                            <td id="nombre-9"></td>
-                            <td id="cantidad-9"></td>
-                        </tr>
-                        <tr id="producto-row-10">
-                            <td>10</td>
-                            <td id="nombre-10"></td>
-                            <td id="cantidad-10"></td>
-                        </tr>
-                        <tr id="producto-row-11">
-                            <td>11</td>
-                            <td id="nombre-11"></td>
-                            <td id="cantidad-11"></td>
-                        </tr>
-                        <tr id="producto-row-12">
-                            <td>12</td>
-                            <td id="nombre-12"></td>
-                            <td id="cantidad-12"></td>
-                        </tr>
-                        <tr id="producto-row-13">
-                            <td>13</td>
-                            <td id="nombre-13"></td>
-                            <td id="cantidad-13"></td>
-                        </tr>
-                        <tr id="producto-row-14">
-                            <td>14</td>
-                            <td id="nombre-14"></td>
-                            <td id="cantidad-14"></td>
-                        </tr>
-                        <tr id="producto-row-15">
-                            <td>15</td>
-                            <td id="nombre-15"></td>
-                            <td id="cantidad-15"></td>
-                        </tr>
-                        <tr id="producto-row-16">
-                            <td>16</td>
-                            <td id="nombre-16"></td>
-                            <td id="cantidad-16"></td>
-                        </tr>
-                        <tr id="producto-row-17">
-                            <td>17</td>
-                            <td id="nombre-17"></td>
-                            <td id="cantidad-17"></td>
-                        </tr>
-                        <tr id="producto-row-18">
-                            <td>18</td>
-                            <td id="nombre-18"></td>
-                            <td id="cantidad-18"></td>
-                        </tr>
-                        <tr id="producto-row-19">
-                            <td>19</td>
-                            <td id="nombre-19"></td>
-                            <td id="cantidad-19"></td>
-                        </tr>
-                        <tr id="producto-row-20">
-                            <td>20</td>
-                            <td id="nombre-20"></td>
-                            <td id="cantidad-20"></td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td><strong>TOTAL</strong></td>
-                            <td></td>
-                            <td id="totalCantidadProductos">0</td>
-                        </tr>
-                    </tfoot>
-                </table>
-                <button type="button" class="btn btn-danger" onclick="abrirModalAuthLimpiar('productos')" style="margin-top: 10px;">Limpiar Productos</button>
-            </div>
 
-            <!-- Historial de Delincuentes Capturados -->
-            <div class="section-title">Historial de Delincuentes Capturados</div><div class="tabla-delincuentes-container" style="overflow-x:auto; width:100%;">
+            
+            <div class="section-title">Delincuente Capturado</div><div class="tabla-delincuentes-container" style="overflow-x:auto; width:100%;">
                 <!-- Aquí estaba la tabla antigua de historial de delincuentes capturados. Eliminada para dejar solo la nueva tabla en memoria. -->
                 <table id="tablaDelincuentesSimple" class="table table-bordered">
                     <thead>

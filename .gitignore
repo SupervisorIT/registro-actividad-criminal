@@ -22,3 +22,15 @@ Nueva carpeta/
 backup/
 config/
 templates/
+
+# Ignora archivos de configuración de despliegue
+netlify.toml
+
+# Ignora archivos de memoria y pruebas
+tabla_delincuentes_memoria.html
+tabla_delincuentes_memoria.js
+
+# Ignora archivos de login (si no son necesarios para la aplicación principal)
+# login.css
+# login.html
+# login.js
