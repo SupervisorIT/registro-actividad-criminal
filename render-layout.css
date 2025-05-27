@@ -3,82 +3,68 @@
  * Este archivo corrige problemas específicos de visualización en el entorno de Render
  */
 
-/* SOLUCIÓN FORZADA: Asegurar que las tablas estén completamente separadas */
-#historialDelincuentesContainer,
-#top20ProductosContainer {
-    display: block !important;
-    width: 100% !important;
-    float: none !important;
-    clear: both !important;
-    margin-bottom: 40px !important;
+/* Solución para tablas pegadas */
+.tabla-delincuentes-container,
+.tabla-productos-container {
+    display: block;
+    width: 100%;
+    margin-bottom: 30px;
+    clear: both;
 }
 
-/* Forzar que las tablas no se muestren una al lado de la otra */
-.row {
-    display: block !important;
-    clear: both !important;
+/* Evitar que las tablas se muestren una al lado de la otra */
+.section-title {
+    display: block;
+    width: 100%;
+    clear: both;
+    margin-top: 30px;
+    margin-bottom: 15px;
 }
 
-/* Asegurar que cada columna ocupe todo el ancho disponible */
-.col-md-6 {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: none !important;
-    float: none !important;
-    display: block !important;
-    margin-bottom: 30px !important;
+/* Asegurar que las tablas tengan el ancho correcto */
+table.table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
 }
 
-/* Asegurar que las tablas tengan el espaciado correcto */
-.table-responsive {
-    margin-bottom: 30px !important;
-    overflow-x: auto !important;
+/* Asegurar que los encabezados de tabla estén correctamente formateados */
+table.table th {
+    background-color: #2c3e50;
+    color: white;
+    padding: 8px;
+    text-align: left;
 }
 
-/* Añadir espacio visual entre las tablas */
-.card {
-    margin-bottom: 30px !important;
+/* Asegurar que las celdas de tabla estén correctamente formateadas */
+table.table td {
+    padding: 8px;
+    border: 1px solid #ddd;
 }
 
-/* Asegurar que los encabezados de las tablas estén bien formateados */
-.card-header {
-    background-color: #2c3e50 !important;
-    color: white !important;
-    padding: 12px 15px !important;
-    font-weight: bold !important;
-    margin-bottom: 0 !important;
-    border-radius: 5px 5px 0 0 !important;
+/* Asegurar que las filas alternas tengan colores diferentes */
+table.table tr:nth-child(even) {
+    background-color: #f2f2f2;
 }
 
-/* Corregir posibles problemas con el contenedor principal */
-.container {
-    width: 100% !important;
-    max-width: 1200px !important;
-    padding: 0 15px !important;
-    margin: 0 auto !important;
-    overflow: hidden !important;
-}
-
-/* Asegurar que los botones estén correctamente posicionados */
-.btn-limpiar {
-    margin-top: 10px !important;
-    margin-bottom: 20px !important;
+/* Asegurar que los botones tengan el espaciado correcto */
+button.btn {
+    margin: 5px;
+    padding: 6px 12px;
 }
 
 /* Estilos específicos para pantallas pequeñas */
 @media (max-width: 767px) {
-    .table-responsive {
-        overflow-x: auto !important;
-    }
-    
-    .card-header {
-        font-size: 16px !important;
+    .tabla-delincuentes-container,
+    .tabla-productos-container {
+        overflow-x: auto;
     }
 }
 
 /* Estilos específicos para pantallas medianas y grandes */
 @media (min-width: 768px) {
-    .container {
-        padding: 0 30px !important;
+    .tabla-delincuentes-container,
+    .tabla-productos-container {
+        overflow-x: visible;
     }
 }
