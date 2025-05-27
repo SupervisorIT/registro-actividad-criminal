@@ -249,12 +249,20 @@ td {
     top: 0;
 }
 #tablaDelincuentes input, 
-#tablaDelincuentes select {
+#tablaDelincuentesMemoria {
     width: 100%;
-    padding: 5px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 0 !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    text-align: left !important;
+    float: none !important;
+}
+
+.container > table {
+    border-radius: 0 !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
 }
 .monto-input {
     text-align: right;
@@ -583,11 +591,24 @@ table input[type="number"] {
 }
 
 .tabla-delincuentes-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
     margin-bottom: 20px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 0;
     overflow: hidden;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100%;
+    box-sizing: border-box;
 }
+
+/* Helper to ensure table and title are aligned */
+.align-left-no-margin {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
 
 #tablaDelincuentes tr:nth-child(even) {
     background-color: #f2f2f2;

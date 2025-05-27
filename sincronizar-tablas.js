@@ -6,7 +6,7 @@
 
 // Ejecutar cuando el DOM esté cargado
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Inicializando manejo de delincuentes con sincronización automática...');
+    // console.log('Inicializando manejo de delincuentes con sincronización automática...');
     
     // Esperar a que todo esté cargado
     setTimeout(function() {
@@ -65,18 +65,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Agregar al historial
                         agregarDelincuenteAlHistorial(delincuenteHistorial);
-                        
+                        // Sincronizar tablas inmediatamente
+                        sincronizarTablasDelincuentes();
                         // Cerrar el modal
                         const modal = document.getElementById('modalAgregarDelincuente');
                         if (modal) {
                             modal.style.display = 'none';
                         }
-                        
                         // Mostrar mensaje de éxito
                         alert('Delincuente agregado correctamente');
-                        
-                        // Sincronizar tablas
-                        setTimeout(sincronizarTablasDelincuentes, 500);
                     });
                 }
             });
@@ -86,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Función para agregar delincuente a la tabla actual
 function agregarDelincuenteATablaActual(delincuente) {
-    console.log('Agregando delincuente a tabla actual:', delincuente);
+    // console.log('Agregando delincuente a tabla actual:', delincuente);
     
     // Obtener la tabla actual
     const tablaActual = document.getElementById('tablaDelincuentes');
@@ -128,12 +125,12 @@ function agregarDelincuenteATablaActual(delincuente) {
     
     // Agregar a la tabla
     tbody.appendChild(tr);
-    console.log('Delincuente agregado a tabla actual');
+    // console.log('Delincuente agregado a tabla actual');
 }
 
 // Función para agregar delincuente al historial
 function agregarDelincuenteAlHistorial(delincuente) {
-    console.log('Agregando delincuente al historial:', delincuente);
+    // console.log('Agregando delincuente al historial:', delincuente);
     
     // Cargar delincuentes existentes
     let delincuentesPersistentes = [];
@@ -160,39 +157,57 @@ function agregarDelincuenteAlHistorial(delincuente) {
     
     // Guardar en localStorage
     localStorage.setItem('delincuentesPersistentes', JSON.stringify(delincuentesPersistentes));
-    console.log('Historial actualizado en localStorage');
+    // console.log('Historial actualizado en localStorage');
     
     // Actualizar la tabla de historial
-    actualizarTablaHistorial(delincuentesPersistentes);
+    actualizarTablaHistorial();
 }
 
-// Función para actualizar la tabla de historial
-function actualizarTablaHistorial(delincuentes) {
-    console.log('Actualizando tabla de historial con', delincuentes.length, 'delincuentes');
-    
-    // Obtener la tabla de historial
+// Función para blanquear la tabla de historial de delincuentes
+function blanquearTablaDelincuentesPersistentes() {
+    // Elimina datos del almacenamiento y memoria
+    localStorage.removeItem('delincuentesPersistentes');
+    if (typeof window.delincuentesPersistentes !== 'undefined') {
+        window.delincuentesPersistentes = [];
+    }
+    // Limpia el contenido visual de la tabla
+    const tabla = document.getElementById('tablaDelincuentesPersistentes');
+    if (tabla) {
+        const tbody = tabla.querySelector('tbody');
+        if (tbody) tbody.innerHTML = '';
+    }
+}
+
+// Función para actualizar la tabla de historial SIEMPRE leyendo del localStorage
+function actualizarTablaHistorial() {
+    // Leer siempre del localStorage para evitar variables cacheadas
+    let delincuentes = [];
+    const datosGuardados = localStorage.getItem('delincuentesPersistentes');
+    if (datosGuardados) {
+        try {
+            delincuentes = JSON.parse(datosGuardados);
+        } catch (e) {
+            delincuentes = [];
+        }
+    }
+
     const tablaHistorial = document.getElementById('tablaDelincuentesPersistentes');
     if (!tablaHistorial) {
         console.error('Tabla de historial no encontrada');
         return;
     }
-    
+
     const tbody = tablaHistorial.querySelector('tbody');
     if (!tbody) {
         console.error('Cuerpo de tabla de historial no encontrado');
         return;
     }
-    
+
     // Limpiar la tabla
     tbody.innerHTML = '';
-    
-    // Verificar si hay delincuentes
-    if (delincuentes.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="7" class="text-center">No hay delincuentes registrados</td>';
-        tbody.appendChild(tr);
-    } else {
-        // Agregar cada delincuente
+
+    // Si hay delincuentes, los mostramos
+    if (delincuentes.length > 0) {
         delincuentes.forEach((delincuente, index) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -207,19 +222,16 @@ function actualizarTablaHistorial(delincuentes) {
             tbody.appendChild(tr);
         });
     }
-    
-    // Actualizar el total
-    const totalElement = document.querySelector('.tabla-delincuentes-persistentes-container .total');
+
+    // Actualizar el total en el pie de tabla, si existe
+    const totalElement = tablaHistorial.querySelector('.total');
     if (totalElement) {
         totalElement.textContent = delincuentes.length;
     }
-    
-    console.log('Tabla de historial actualizada correctamente');
 }
-
 // Función para sincronizar ambas tablas
 function sincronizarTablasDelincuentes() {
-    console.log('');
+    // console.log('');
     
     // Cargar delincuentes del localStorage
     let delincuentesPersistentes = [];
@@ -228,25 +240,20 @@ function sincronizarTablasDelincuentes() {
     if (datosGuardados) {
         try {
             delincuentesPersistentes = JSON.parse(datosGuardados);
-            console.log('Delincuentes cargados para sincronización:', delincuentesPersistentes.length);
-            
-            // Actualizar la tabla de historial
-            actualizarTablaHistorial(delincuentesPersistentes);
-            
-            // Sincronizar con la tabla actual si existe la función
-            if (typeof window.actualizarTablas === 'function') {
-                window.actualizarTablas();
-            }
-            
-            // Disparar evento personalizado para notificar que la sincronización se completó
-            document.dispatchEvent(new CustomEvent('tablaSincronizada'));
-            
         } catch (e) {
-            console.error('Error al sincronizar tablas:', e);
+            delincuentesPersistentes = [];
         }
-    } else {
-        console.log('No hay datos guardados para sincronizar');
     }
+    // Si no hay datos o está vacío, asegura que la tabla quede vacía
+    // SIEMPRE actualizar la tabla leyendo del localStorage
+    actualizarTablaHistorial();
+    // Sincronizar con la tabla actual si existe la función
+    if (typeof window.actualizarTablas === 'function') {
+        window.actualizarTablas();
+    }
+    // Disparar evento personalizado para notificar que la sincronización se completó
+    document.dispatchEvent(new CustomEvent('tablaSincronizada'));
+
     
     return true; // Indica que la sincronización se completó
 }

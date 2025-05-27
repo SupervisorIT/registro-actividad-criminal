@@ -2,38 +2,49 @@
 // Este script almacena los datos en localStorage para mantenerlos incluso al recargar la página o cambiar de usuario
 
 // Estructura global para almacenar los productos
-let productosRobados = [];
+// Siempre usar window.productosRobados como fuente de verdad global
+window.productosRobados = window.productosRobados || [];
 let ultimosValores = {}; // Para rastrear cambios reales
+// Alias para compatibilidad
+let productosRobados = window.productosRobados;
 
 // Función para cargar los productos desde localStorage
 function cargarProductosRobados() {
+    // Siempre sincronizar window.productosRobados
+    let productosGuardados;
     try {
-        const productosGuardados = localStorage.getItem('productosRobados');
+        productosGuardados = localStorage.getItem('productosRobados');
         if (productosGuardados) {
-            productosRobados = JSON.parse(productosGuardados);
-            console.log(`Cargados ${productosRobados.length} productos del almacenamiento local`);
+            window.productosRobados = JSON.parse(productosGuardados);
         } else {
-            console.log('No hay productos guardados en el almacenamiento local');
-            productosRobados = [];
+            window.productosRobados = [];
         }
     } catch (error) {
-        console.error('Error al cargar productos del almacenamiento local:', error);
-        productosRobados = [];
+        window.productosRobados = [];
     }
+    productosRobados = window.productosRobados;
 }
 
 // Función para guardar los productos en localStorage
 function guardarProductosRobados() {
+    // Siempre guardar window.productosRobados
     try {
-        localStorage.setItem('productosRobados', JSON.stringify(productosRobados));
-        console.log(`Guardados ${productosRobados.length} productos en el almacenamiento local`);
+        localStorage.setItem('productosRobados', JSON.stringify(window.productosRobados));
+        productosRobados = window.productosRobados;
+        // Notificar cambios
+        if (typeof document !== 'undefined') {
+            document.dispatchEvent(new Event('productosActualizados'));
+        }
     } catch (error) {
         console.error('Error al guardar productos en el almacenamiento local:', error);
     }
 }
 
 // Función para agregar o actualizar un producto en la lista
-function agregarProductoRobado(nombre, cantidad, valor) {
+window.agregarProductoRobado = function(nombre, cantidad, valor) {
+    // Siempre trabajar sobre window.productosRobados
+    productosRobados = window.productosRobados;
+
     // Validar que tengamos un nombre de producto válido
     if (!nombre || nombre.trim() === '') {
         console.error('Error: Nombre de producto vacío');
@@ -100,6 +111,15 @@ function agregarProductoRobado(nombre, cantidad, valor) {
 
 // Función para limpiar todos los productos y reiniciar
 function limpiarProductos() {
+    // Guardar historial antes de limpiar
+    try {
+        let historial = JSON.parse(localStorage.getItem('historialProductosRobados')) || [];
+        if (window.productosRobados && window.productosRobados.length > 0) {
+            historial = historial.concat(window.productosRobados.map(p => ({...p})));
+            localStorage.setItem('historialProductosRobados', JSON.stringify(historial));
+        }
+    } catch (e) { console.error('Error guardando historial de productos robados:', e); }
+
     console.log('Limpiando todos los productos...');
     productosRobados = [];
     localStorage.removeItem('productosRobados');
@@ -115,6 +135,8 @@ actualizarTablaProductos();
 
 // Función para consolidar productos similares
 function consolidarProductosSimilares() {
+    productosRobados = window.productosRobados;
+
     if (productosRobados.length <= 1) return; // No hay nada que consolidar
     
     console.log('Iniciando consolidación de productos similares...');
@@ -181,6 +203,8 @@ function consolidarProductosSimilares() {
 
 // Función para eliminar o reducir un producto del Top 20
 function eliminarProductoRobado(nombre, cantidad, valor) {
+    productosRobados = window.productosRobados;
+
     if (!nombre || nombre.trim() === '') return;
     
     // Convertir a números
@@ -227,6 +251,17 @@ function eliminarProductoRobado(nombre, cantidad, valor) {
     }
 }
 
+// Función global para eliminar una fila de caso delictivo (compatibilidad HTML)
+window.eliminarFila = function(boton) {
+    if (typeof eliminarFilaCasoDelictivo === 'function') {
+        eliminarFilaCasoDelictivo(boton);
+    } else {
+        // Fallback: solo elimina la fila
+        const fila = boton.closest('tr');
+        if (fila) fila.remove();
+    }
+};
+
 // Función para eliminar una fila de caso delictivo
 function eliminarFilaCasoDelictivo(boton) {
     // Encontrar la fila que contiene el botón
@@ -258,6 +293,8 @@ function eliminarFilaCasoDelictivo(boton) {
 
 // Función para actualizar la tabla de productos
 function actualizarTablaProductos() {
+    productosRobados = window.productosRobados;
+
     console.log('Actualizando tabla de productos...', productosRobados);
     
     // Ordenar productos por cantidad (de mayor a menor)
@@ -307,6 +344,8 @@ function actualizarTablaProductos() {
 
 // Función para procesar un nuevo caso delictivo
 function procesarNuevoCasoDelictivo(fila) {
+    productosRobados = window.productosRobados;
+
     try {
         if (!fila) {
             console.error('Error: No se proporcionó una fila válida');
@@ -375,7 +414,7 @@ function procesarNuevoCasoDelictivo(fila) {
         fila.dataset.tiempoProcesado = Date.now().toString();
         
         // Agregar producto a la lista
-        agregarProductoRobado(productoValor, cantidad, cuantia);
+        window.agregarProductoRobado(productoValor, cantidad, cuantia);
         
         // Actualizar la tabla de productos
         actualizarTablaProductos();
@@ -405,10 +444,52 @@ function limpiarProductos() {
 
 // Función para limpiar productos sin confirmación (para uso interno)
 function limpiarProductosSinConfirmacion() {
-    productosRobados = [];
+    // Guardar historial antes de limpiar
+    try {
+        let historial = JSON.parse(localStorage.getItem('historialProductosRobados')) || [];
+        if (window.productosRobados && window.productosRobados.length > 0) {
+            historial = historial.concat(window.productosRobados.map(p => ({...p})));
+            localStorage.setItem('historialProductosRobados', JSON.stringify(historial));
+        }
+    } catch (e) { console.error('Error guardando historial de productos robados:', e); }
+
+    window.productosRobados = [];
+    productosRobados = window.productosRobados;
     guardarProductosRobados();
     actualizarTablaProductos();
     console.log('Todos los productos han sido eliminados (sin confirmación)');
+    productosRobados = [];
+    guardarProductosRobados();
+    actualizarTablaProductos();
+    // Limpiar historial también
+    localStorage.removeItem('historialProductosRobados');
+    renderizarHistorialProductosRobados();
+    console.log('Todos los productos han sido eliminados (sin confirmación)');
+}
+
+// Función para renderizar el historial de productos robados
+function renderizarHistorialProductosRobados() {
+    const tbody = document.querySelector('#tablaHistorialProductosRobados tbody');
+    if (!tbody) return;
+    let historial = [];
+    try {
+        historial = JSON.parse(localStorage.getItem('historialProductosRobados')) || [];
+    } catch (e) { historial = []; }
+    tbody.innerHTML = '';
+    if (historial.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.textContent = 'Sin historial.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+    historial.forEach((producto, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${idx + 1}</td><td>${producto.nombre}</td><td>${producto.cantidad}</td><td>${producto.valor}</td>`;
+        tbody.appendChild(tr);
+    });
 }
 
 // Inicializar cuando el DOM esté listo
@@ -424,24 +505,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Actualizar la tabla
     actualizarTablaProductos();
     
+    // Mostrar historial siempre
+    renderizarHistorialProductosRobados();
     // Agregar listener para los botones de agregar caso (botón verde +)
+    // Listener solo para eliminar filas (btn-danger)
     document.addEventListener('click', function(e) {
-        // Verificar si es un botón de agregar (clase btn-success)
-        if (e.target && e.target.classList.contains('btn-success')) {
-            console.log('Botón de agregar caso detectado');
-            
-            // Encontrar la fila padre
-            let fila = e.target.closest('tr');
-            if (fila) {
-                // Procesar el caso delictivo
-                procesarNuevoCasoDelictivo(fila);
-            }
-        }
-        
         // Verificar si es un botón de eliminar (clase btn-danger)
         if (e.target && e.target.classList.contains('btn-danger')) {
             console.log('Botón de eliminar caso detectado');
-            
             // Eliminar la fila
             eliminarFilaCasoDelictivo(e.target);
         }
@@ -452,6 +523,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Agregar botones para actualizar y limpiar
     const actionsContainer = document.querySelector('.actions-container');
+    // Actualizar historial tras limpiar productos
+    document.addEventListener('productosActualizados', function() {
+        renderizarHistorialProductosRobados();
+    });
     // Se han eliminado los botones de Actualizar Top 20, Consolidar Productos Similares y Limpiar Top 20
     // La actualización del Top 20 ahora se realiza automáticamente al agregar o modificar casos
 });

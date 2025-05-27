@@ -344,7 +344,7 @@ function mostrarMensajeValidacionGlobal(mensaje, esError = true) {
 
 // --- Función para actualizar la tabla de delincuentes y dejar siempre la fila de inputs ---
 function actualizarTablaDelincuentes() {
-    const tbody = document.querySelector('#tablaDelincuentes tbody');
+    const tbody = document.querySelector('#tablaDelincuentesSimple tbody');
     tbody.innerHTML = '';
     if (!window.delincuentes) window.delincuentes = [];
     window.delincuentes.forEach((delincuente, index) => {
@@ -632,6 +632,69 @@ function actualizarReportePerdidas() {
 
 // --- Funciones de Generación de PDF (Limpiadas y unificadas) ---
 
+// Función para reiniciar el formulario principal sin afectar las tablas perpetuas
+function reiniciarFormulario() {
+    console.log('Ejecutando reiniciarFormulario()...');
+    
+    // Limpiar campos de texto y selects
+    document.getElementById('empresa').value = '';
+    document.getElementById('responsable').value = '';
+    document.getElementById('cedula').value = '';
+    document.getElementById('fecha').value = '';
+    
+    // Reiniciar selects de trimestre
+    const selectMes = document.getElementById('mes');
+    if (selectMes) selectMes.selectedIndex = 0;
+    
+    const selectTrimestre = document.getElementById('trimestre');
+    if (selectTrimestre) selectTrimestre.selectedIndex = 0;
+    
+    // Limpiar tabla de casos delictivos
+    const tablaCasos = document.getElementById('tablaCasosDelictivos');
+    if (tablaCasos) {
+        const tbody = tablaCasos.querySelector('tbody');
+        if (tbody) {
+            // Mantener solo la primera fila y limpiarla
+            while (tbody.children.length > 1) {
+                tbody.removeChild(tbody.lastChild);
+            }
+            
+            if (tbody.children.length === 1) {
+                const primeraFila = tbody.children[0];
+                const selects = primeraFila.querySelectorAll('select');
+                selects.forEach(select => select.selectedIndex = 0);
+                
+                const inputs = primeraFila.querySelectorAll('input, textarea');
+                inputs.forEach(input => input.value = '');
+            }
+        }
+    }
+    
+    // Reiniciar totales
+    const totalCasos = document.getElementById('totalCasos');
+    if (totalCasos) totalCasos.textContent = '0';
+    
+    const totalCuantia = document.getElementById('totalCuantia');
+    if (totalCuantia) totalCuantia.textContent = 'B/. 0.00';
+    
+    const totalDenuncias = document.getElementById('totalDenuncias');
+    if (totalDenuncias) totalDenuncias.textContent = '0';
+    
+    // Limpiar tabla de pérdidas si existe
+    if (typeof actualizarTablaPerdidas === 'function') {
+        actualizarTablaPerdidas();
+    }
+    
+    // Eliminar datos temporales del localStorage (excepto tablas perpetuas)
+    localStorage.removeItem('casosTemporal');
+    localStorage.removeItem('formularioTemporal');
+    
+    // Nota: NO eliminamos 'delincuentesPersistentes' ni 'productosRobados'
+    // ya que son tablas perpetuas que deben mantenerse
+    
+    console.log('Formulario reiniciado correctamente');
+}
+
 // Función principal para iniciar la generación del PDF
 async function generarPDFPrincipal() {
     console.log('Iniciando generación de PDF...');
@@ -654,16 +717,43 @@ async function generarPDFPrincipal() {
         return;
     }
     
-    // 3. Asegurarse de que jsPDF y autoTable estén cargados
+    // 3. Asegurarse de que jsPDF está cargado
     if (typeof jspdf === 'undefined' || typeof jspdf.jsPDF === 'undefined') {
         alert('Error: La biblioteca jsPDF no está disponible.');
         return;
     }
-     if (typeof jspdf.jsPDF.autoTable !== 'function') {
-        alert('Error: El plugin jsPDF-AutoTable no está disponible.');
+    
+    // Obtener el constructor de jsPDF
+    const { jsPDF } = jspdf;
+    
+    // Crear una instancia de jsPDF
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    
+    // Verificar si autoTable está disponible
+    if (typeof doc.autoTable !== 'function') {
+        console.error('AutoTable no está disponible en el objeto jsPDF');
+        
+        // Intentar cargar AutoTable manualmente si no está disponible
+        if (typeof window.jspdf !== 'undefined' && typeof window.jspdf.jsPDF !== 'undefined') {
+            console.log('Intentando cargar AutoTable manualmente...');
+            
+            // Cargar el script de AutoTable dinámicamente
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js';
+            script.onload = function() {
+                console.log('AutoTable cargado manualmente');
+                // Intentar generar el PDF nuevamente
+                setTimeout(generarPDFPrincipal, 500);
+            };
+            script.onerror = function() {
+                alert('Error: No se pudo cargar el plugin jsPDF-AutoTable.');
+            };
+            document.head.appendChild(script);
+        } else {
+            alert('Error: El plugin jsPDF-AutoTable no está disponible.');
+        }
         return;
     }
-    const { jsPDF } = jspdf; // Destructuring para obtener el constructor
 
     try {
         // Crear nombre de archivo
@@ -671,8 +761,7 @@ async function generarPDFPrincipal() {
         const fechaTexto = document.getElementById('fecha').value.replace(/\//g, '-');
         const nombreArchivo = `Reporte_${empresa.replace(/\s+/g, '_')}_${trimestreTexto}_${fechaTexto}.pdf`;
 
-        // Crear instancia del PDF
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        // Ya tenemos la instancia del PDF creada anteriormente
 
         // --- Contenido del PDF ---
         const azulOscuro = [30, 50, 70];
@@ -680,41 +769,38 @@ async function generarPDFPrincipal() {
         doc.setFont('helvetica');
         let finalY = 15; // Posición Y inicial
 
-        // Título
-        doc.setFontSize(16);
+        // Título principal
+        doc.setFontSize(18);
         doc.setTextColor(...azulOscuro);
-        doc.text('FORMULARIO PARA BASE DE DATOS Y ESTADÍSTICAS', 105, finalY, { align: 'center' });
-        finalY += 10;
+        doc.text('REGISTRO DE ACTIVIDAD CRIMINAL', 105, finalY, { align: 'center' });
+        finalY += 12;
 
-        // Sección Información General
-        doc.setFillColor(...grisClaro);
-        doc.rect(15, finalY, 180, 8, 'F');
-        doc.setFontSize(12);
-        doc.setTextColor(...azulOscuro);
-        doc.text('INFORMACIÓN GENERAL', 105, finalY + 6, { align: 'center' });
-        finalY += 10;
-
-        const infoGeneralData = [
-            ['Empresa:', empresa, 'Fecha:', document.getElementById('fecha').value],
-            ['Responsable:', responsable, 'Trimestre:', obtenerTextoTrimestre()],
-            ['Cédula:', cedula, '', '']
-        ];
-        doc.autoTable({
-            startY: finalY, body: infoGeneralData, theme: 'plain',
-            styles: { fontSize: 9, cellPadding: 2 },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 28 }, 1: { cellWidth: 62 },
-                2: { fontStyle: 'bold', cellWidth: 28 }, 3: { cellWidth: 62 }
-            }
-        });
-        finalY = doc.lastAutoTable.finalY + 5;
+        // Información General sin rectángulo de fondo
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        
+        // Empresa y fecha en la misma línea
+        doc.text('Empresa: ' + empresa, 20, finalY);
+        doc.text('Fecha: ' + document.getElementById('fecha').value, 120, finalY);
+        finalY += 7;
+        
+        // Trimestre
+        doc.text('Trimestre: ' + obtenerTextoTrimestre(), 20, finalY);
+        finalY += 7;
+        
+        // Responsable y cédula
+        doc.text('Responsable de Seguridad: ' + responsable, 20, finalY);
+        doc.text('Cédula: ' + cedula, 120, finalY);
+        finalY += 15;
+        
+        // Ya no necesitamos la tabla para la información general
+        // porque la hemos formateado directamente con doc.text
 
         // Sección Casos Delictivos
-        doc.setFillColor(...grisClaro);
-        doc.rect(15, finalY, 180, 8, 'F');
-        doc.setFontSize(12);
-        doc.text('CASOS DELICTIVOS OCURRIDOS EN EL TRIMESTRE', 105, finalY + 6, { align: 'center' });
-        finalY += 10;
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text('CASOS DELICTIVOS OCURRIDOS EN EL TRIMESTRE', 105, finalY, { align: 'center' });
+        finalY += 8;
 
         const datosCasos = obtenerDatosCasosParaPDF(); // Usa la función auxiliar
         doc.autoTable({
@@ -729,14 +815,13 @@ async function generarPDFPrincipal() {
                  }
              }
         });
-        finalY = doc.lastAutoTable.finalY + 5;
+        finalY = doc.lastAutoTable.finalY + 20; // Aumentar el espacio entre tablas a 20mm
 
         // Sección Reporte de Pérdidas
-        doc.setFillColor(...grisClaro);
-        doc.rect(15, finalY, 180, 8, 'F');
-        doc.setFontSize(12);
-        doc.text('REPORTE DE PÉRDIDAS TRIMESTRALES', 105, finalY + 6, { align: 'center' });
-        finalY += 10;
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text('REPORTE DE PÉRDIDAS TRIMESTRALES', 105, finalY, { align: 'center' });
+        finalY += 8;
 
         const datosPerdidas = obtenerDatosPerdidasParaPDF(); // Usa la función auxiliar
         doc.autoTable({
@@ -753,25 +838,7 @@ async function generarPDFPrincipal() {
         });
         finalY = doc.lastAutoTable.finalY + 5;
 
-         // Sección Top Productos (si hay datos)
-        const datosProductos = obtenerDatosProductosParaPDF();
-        if (datosProductos.length > 1) { // Si hay más que solo la cabecera
-            // Comprobar si cabe en la página actual
-            if (finalY + 20 > doc.internal.pageSize.height - 20) { // Margen inferior de 20
-                 doc.addPage();
-                 finalY = 20; // Reiniciar Y en nueva página
-            }
-            doc.setFillColor(...grisClaro);
-            doc.rect(15, finalY, 180, 8, 'F');
-            doc.setFontSize(12);
-            doc.text('TOP 20 PRODUCTOS Y MERCANCÍAS ROBADAS', 105, finalY + 6, { align: 'center' });
-            finalY += 10;
-            doc.autoTable({
-                startY: finalY, head: [datosProductos[0]], body: datosProductos.slice(1), theme: 'grid',
-                // ... estilos ...
-            });
-            finalY = doc.lastAutoTable.finalY + 5;
-        }
+        // Se ha eliminado la sección TOP 20 PRODUCTOS Y MERCANCÍAS ROBADAS por solicitud del usuario
 
         // Pie de página en la primera página
         doc.setPage(1); // Volver a la primera página
@@ -780,23 +847,166 @@ async function generarPDFPrincipal() {
         doc.setTextColor(100, 100, 100);
         doc.text(`Documento generado el ${formatearFechaHora(fechaGeneracion)}`, 105, doc.internal.pageSize.height - 10, { align: 'center' });
 
-        // Sección Delincuentes (en página horizontal separada)
-        generarTablaDelincuentesPDF(doc); // Usa la función auxiliar
+        // Se ha eliminado la sección de Delincuentes Capturados por solicitud del usuario
+        // generarTablaDelincuentesPDF(doc); // Comentado para no incluir esta sección
 
         // --- Fin Contenido PDF ---
 
-        // 4. Guardar en Drive (si la función existe)
-        if (typeof guardarPDFenDrive === 'function') {
-            const pdfBlob = doc.output('blob');
-            await guardarPDFenDrive(pdfBlob, nombreArchivo);
-            console.log('PDF guardado en Google Drive correctamente');
-            alert('Reporte guardado exitosamente en Google Drive.');
-        } else {
-            console.warn('Función guardarPDFenDrive no encontrada. Mostrando PDF.');
-            // Si no hay función para guardar en drive, mostrarlo o descargarlo
-             doc.output('dataurlnewwindow'); // Abrir en nueva pestaña
-             // O descargar: doc.save(nombreArchivo);
+        // 4. Mostrar o guardar el PDF
+        try {
+            // Intentar abrir en una nueva ventana
+            doc.output('dataurlnewwindow'); // Abrir en nueva pestaña
+            
+            // Alternativa: Descargar directamente
+            // doc.save(nombreArchivo);
+            
+            // Mostrar mensaje de éxito antes de recargar
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Documento PDF generado correctamente. Recargando página...', 'success');
+            }
+            
+            // Esperar 2 segundos y luego recargar la página completamente (como F5)
+            setTimeout(function() {
+                console.log('Recargando página para nuevo formulario...');
+                location.reload(true); // true fuerza recarga desde el servidor, no desde caché
+            }, 2000);
+            
+            return; // Salir de la función para evitar ejecutar el código de reinicio manual
+            
+        } catch (error) {
+            console.error('Error al mostrar el PDF:', error);
+            alert('Error al mostrar el PDF. Intente nuevamente.');
         }
+        
+        // 5. Este código solo se ejecutará si hay un error y no se recarga la página
+        // Reiniciar el formulario principal manteniendo las tablas perpetuas como respaldo
+        setTimeout(function() {
+            console.log('Reiniciando formulario principal...');
+            
+            try {
+                // Guardar datos de tablas perpetuas
+                const delincuentesPersistentes = localStorage.getItem('delincuentesPersistentes');
+                const productosRobados = localStorage.getItem('productosRobados');
+                
+                // Limpiar el formulario principal
+                document.getElementById('empresa').value = '';
+                document.getElementById('responsable').value = '';
+                document.getElementById('cedula').value = '';
+                document.getElementById('fecha').value = '';
+                
+                // Reiniciar selects de trimestre
+                const selectMes = document.getElementById('mes');
+                if (selectMes) selectMes.selectedIndex = 0;
+                
+                const selectTrimestre = document.getElementById('trimestre');
+                if (selectTrimestre) selectTrimestre.selectedIndex = 0;
+                
+                // Limpiar tabla de casos delictivos
+                const tablaCasos = document.getElementById('tablaCasosDelictivos');
+                if (tablaCasos) {
+                    const tbody = tablaCasos.querySelector('tbody');
+                    if (tbody) {
+                        // Mantener solo la primera fila y limpiarla
+                        while (tbody.children.length > 1) {
+                            tbody.removeChild(tbody.lastChild);
+                        }
+                        
+                        if (tbody.children.length === 1) {
+                            const primeraFila = tbody.children[0];
+                            const selects = primeraFila.querySelectorAll('select');
+                            selects.forEach(select => select.selectedIndex = 0);
+                            
+                            const inputs = primeraFila.querySelectorAll('input, textarea');
+                            inputs.forEach(input => input.value = '');
+                        }
+                    }
+                }
+                
+                // Reiniciar totales
+                const totalCasos = document.getElementById('totalCasos');
+                if (totalCasos) totalCasos.textContent = '0';
+                
+                const totalCuantia = document.getElementById('totalCuantia');
+                if (totalCuantia) totalCuantia.textContent = 'B/. 0.00';
+                
+                const totalDenuncias = document.getElementById('totalDenuncias');
+                if (totalDenuncias) totalDenuncias.textContent = '0';
+                
+                // Limpiar tabla de pérdidas si existe
+                if (typeof actualizarTablaPerdidas === 'function') {
+                    actualizarTablaPerdidas();
+                }
+                
+                // Eliminar datos temporales del localStorage (excepto tablas perpetuas)
+                localStorage.removeItem('casosTemporal');
+                localStorage.removeItem('formularioTemporal');
+                
+                // Restaurar tablas perpetuas
+                if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+                    renderizarTablaHistorialDelincuentes();
+                }
+                
+                if (typeof actualizarTablaProductos === 'function') {
+                    actualizarTablaProductos();
+                }
+                
+                // Limpiar la tabla de delincuentes capturados
+                const tablaDelincuentes = document.getElementById('tbodyDelincuentesSimple');
+                if (tablaDelincuentes) {
+                    tablaDelincuentes.innerHTML = '';
+                    // Agregar mensaje de no hay delincuentes registrados con botón para agregar
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = '<td colspan="15" style="text-align: center; color: #888;">No hay delincuentes registrados <button type="button" class="btn btn-success btn-sm" title="Agregar Delincuente" onclick="abrirModalNuevoDelincuente()" style="font-size:16px;min-width:32px;margin-left:10px;">+</button></td>';
+                    tablaDelincuentes.appendChild(fila);
+                }
+                
+                // Limpiar los datos de delincuentes en memoria
+                if (typeof window.delincuentes !== 'undefined') {
+                    window.delincuentes = [];
+                }
+                
+                // Limpiar localStorage de delincuentes temporales
+                localStorage.removeItem('delincuentes');
+                
+                // Limpiar tabla de pérdidas trimestrales
+                const tablaPerdidas = document.getElementById('tablaPerdidas');
+                if (tablaPerdidas) {
+                    const tbody = tablaPerdidas.querySelector('tbody');
+                    if (tbody) {
+                        // Mantener la estructura pero reiniciar los valores
+                        const filas = tbody.querySelectorAll('tr');
+                        filas.forEach(fila => {
+                            const celdas = fila.querySelectorAll('td');
+                            if (celdas.length >= 3) {
+                                // Mantener el nombre del mes en la primera celda
+                                // Reiniciar casos y pérdidas
+                                if (celdas[1]) celdas[1].textContent = '0';
+                                if (celdas[2]) celdas[2].textContent = 'B/. 0.00';
+                                if (celdas[3]) celdas[3].textContent = '-';
+                            }
+                        });
+                    }
+                }
+                
+                // Asegurarse de que las tablas perpetuas se mantengan
+                if (delincuentesPersistentes) {
+                    localStorage.setItem('delincuentesPersistentes', delincuentesPersistentes);
+                }
+                
+                if (productosRobados) {
+                    localStorage.setItem('productosRobados', productosRobados);
+                }
+                
+                console.log('Formulario reiniciado correctamente y tablas perpetuas mantenidas');
+            } catch (error) {
+                console.error('Error al reiniciar el formulario:', error);
+            }
+            
+            // Mostrar mensaje de confirmación
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Documento guardado y formulario reiniciado correctamente.', 'success');
+            }
+        }, 1000); // Esperar 1 segundo para que el usuario pueda ver el PDF
 
         // 5. Registrar en historial (si la función existe)
         if (typeof registrarReporte === 'function') {
@@ -912,12 +1122,10 @@ function generarTablaDelincuentesPDF(doc) { // doc es la instancia de jsPDF
         let finalY = 15; // Y inicial en la nueva página
 
         // Título
-        doc.setFillColor(240, 240, 240);
-        doc.rect(15, finalY, 267, 8, 'F'); // Ancho ajustado a landscape A4 aprox.
-        doc.setFontSize(12);
-        doc.setTextColor(30, 50, 70);
-        doc.text('DELINCUENTES CAPTURADOS', 148.5, finalY + 6, { align: 'center' });
-        finalY += 10;
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text('DELINCUENTES CAPTURADOS', 148.5, finalY, { align: 'center' });
+        finalY += 8;
 
         if (datosDelincuentes.length <= 1) {
             doc.setFontSize(10);
@@ -1089,12 +1297,13 @@ window.cerrarSesion = window.cerrarSesion || function() {
 };
 
 // Función global para abrir el modal de delincuente
-function abrirModalDelincuente() {
+function abrirModalDelincuenteSimple() {
     var modal = document.getElementById('delincuenteModal');
     if (modal) {
         modal.style.display = 'block';
     }
 }
+// Nota: El resto del sistema debe usar abrirModalDelincuente (la versión avanzada) para evitar conflictos.
 
 // Funciones para el modal de vista previa (si aún se usan)
 window.mostrarVistaPrevia = window.mostrarVistaPrevia || function() {

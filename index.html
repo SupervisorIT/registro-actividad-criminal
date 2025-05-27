@@ -18,6 +18,16 @@
     
     <script>
         window.jspdf = window.jspdf || {};
+        // Asegurarnos de que jsPDF esté disponible globalmente
+        window.initJsPDF = function() {
+            console.log('Inicializando jsPDF y plugins...');
+            // Verificar que todo esté cargado correctamente
+            if (window.jspdf && window.jspdf.jsPDF) {
+                console.log('jsPDF está disponible correctamente');
+            } else {
+                console.error('Error: jsPDF no está disponible correctamente');
+            }
+        };
     </script>
     
     </head>
@@ -115,11 +125,11 @@
                             <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
                         </td>
                         <td style="width: 200px;">
-                            <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required> <!-- input simple, sin desplegable -->
+                            <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required onchange="onObservacionCambio(this)"> <!-- input simple, sin desplegable -->
                         </td>
                         <td style="width: 80px; text-align: center;">
                             <div style="display: flex; justify-content: center; gap: 5px;">
-                                <button type="button" class="btn btn-success btn-sm" title="Agregar" onclick="agregarFilaEditable(this)">+</button>
+                                <button type="button" class="btn btn-success btn-sm" title="Agregar" onclick="agregarFilaProductoSoloVisual()">+</button>
 <button type="button" class="btn btn-danger btn-sm" title="Eliminar" onclick="eliminarFila(this)">X</button>
                             </div>
                         </td>
@@ -139,8 +149,39 @@
             </table>
             
             <div id="reporte-perdidas-trimestrales-anchor"></div>
+
+
             
-            <div class="mt-30"> <h3 class="section-title">Reporte de Pérdidas Trimestrales</h3>
+            <div class="section-title">Delincuente Capturado</div><div class="tabla-delincuentes-container" style="overflow-x:auto; width:100%;">
+                <!-- Aquí estaba la tabla antigua de historial de delincuentes capturados. Eliminada para dejar solo la nueva tabla en memoria. -->
+                <table id="tablaDelincuentesSimple" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>NOMBRE Y APELLIDO</th>
+                            <th>CEDULA</th>
+                            <th>EDAD</th>
+                            <th>DIRECCIÓN</th>
+                            <th>VEHICULO</th>
+                            <th>PLACA</th>
+                            <th>COLOR</th>
+                            <th>FECHA<br>DE CAPTURA</th>
+                            <th>DELITO<br>COMETIDO</th>
+                            <th>PRODUCTOS</th>
+                            <th>CUANTIA</th>
+                            <th>N° DE DENUNCIA<br>O RESOLUCIÓN<br>DE JUZGADO</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyDelincuentesSimple">
+    <!-- Filas generadas dinámicamente -->
+</tbody>
+                </table>
+            </div>
+            
+
+            <div class="section-title">Reporte de Pérdidas Trimestrales</div>
+<div>
                 <div class="tabla-perdidas-container">
                     <table id="tablaPerdidas" class="table table-bordered">
                         <thead>
@@ -164,252 +205,200 @@
                         </tfoot>
                     </table>
                 </div>
-            </div>
+            </div>            
+            <div class="mt-30" style="display: flex; flex-wrap: wrap;">
+  <div class="tabla-delincuentes-persistentes-container">
+    <div style="width: 600px;">
+      <h3 class="section-title">Historial de Delincuentes Capturados</h3>
 
-            <div class="mt-30">
-    <h3>Delincuentes Capturados</h3>
-    <table id="tablaDelincuentes">
+      <table class="table table-bordered" id="tablaDelincuentesPersistentes">
         <thead>
-            <tr>
-                <th>#</th>
-                <th>Nombre y Apellido</th>
-                <th>Cédula</th>
-                <th>Edad</th>
-                <th>Dirección</th>
-                <th>Vehículo</th>
-                <th>Placa</th>
-                <th>Color</th>
-                <th>Lugar</th>
-                <th>Fecha de Captura</th>
-                <th>Delito Cometido</th>
-                <th>Productos</th>
-                <th>Cuantía (B/.)</th>
-                <th>N° Denuncia/Resolución</th>
-                <th>Acción</th>
-            </tr>
+          <tr>
+            <th>#</th>
+            <th>Nombre y Apellido</th>
+            <th>Cédula</th>
+            <th>Edad</th>
+            <th>Delito Cometido</th>
+            <th>Cuantía</th>
+            <th>N° Denuncia/Resolución</th>
+          </tr>
         </thead>
         <tbody>
-
-            <tr id="filaAgregarDelincuente">
-                <td colspan="15" style="text-align: center;">
-                    <button type="button" class="btn btn-success btn-sm" title="Agregar Delincuente" onclick="abrirModalNuevoDelincuente()">+
-                    </button>
-                </td>
-            </tr>
+            <!-- Filas generadas por JS -->
         </tbody>
     </table>
-
 </div>
-            
-            <div class="mt-30" style="display: flex; flex-wrap: wrap;">
-                <div class="tabla-delincuentes-persistentes-container">
-                    <div style="width: 600px;">
-                        <h3 class="section-title">Historial de Delincuentes Capturados</h3>
-                    </div>
-                    <table id="tablaDelincuentesPersistentes" class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Nombre y Apellido</th>
-                                <th>Cédula</th>
-                                <th>Edad</th>
-                                <th>Delito Cometido</th>
-                                <th>Cuantía (B/.)</th>
-                                <th>N° Denuncia/Resolución</th>
+
                             </tr>
-                        </thead>
-                        <tbody>
-                            <!-- 20 filas fijas para el historial de delincuentes -->
-                            <tr id="delincuente-row-1">
-                                <td>1</td>
-                                <td id="delincuente-nombre-1"></td>
-                                <td id="delincuente-cedula-1"></td>
-                                <td id="delincuente-edad-1"></td>
-                                <td id="delincuente-delito-1"></td>
-                                <td id="delincuente-cuantia-1"></td>
-                                <td id="delincuente-denuncia-1"></td>
-                            </tr>
-                            <tr id="delincuente-row-2">
-                                <td>2</td>
-                                <td id="delincuente-nombre-2"></td>
-                                <td id="delincuente-cedula-2"></td>
-                                <td id="delincuente-edad-2"></td>
-                                <td id="delincuente-delito-2"></td>
-                                <td id="delincuente-cuantia-2"></td>
-                                <td id="delincuente-denuncia-2"></td>
-                            </tr>
-                            <tr id="delincuente-row-3">
-                                <td>3</td>
-                                <td id="delincuente-nombre-3"></td>
-                                <td id="delincuente-cedula-3"></td>
-                                <td id="delincuente-edad-3"></td>
-                                <td id="delincuente-delito-3"></td>
-                                <td id="delincuente-cuantia-3"></td>
-                                <td id="delincuente-denuncia-3"></td>
-                            </tr>
-                            <tr id="delincuente-row-4">
-                                <td>4</td>
-                                <td id="delincuente-nombre-4"></td>
-                                <td id="delincuente-cedula-4"></td>
-                                <td id="delincuente-edad-4"></td>
-                                <td id="delincuente-delito-4"></td>
-                                <td id="delincuente-cuantia-4"></td>
-                                <td id="delincuente-denuncia-4"></td>
-                            </tr>
-                            <tr id="delincuente-row-5">
-                                <td>5</td>
-                                <td id="delincuente-nombre-5"></td>
-                                <td id="delincuente-cedula-5"></td>
-                                <td id="delincuente-edad-5"></td>
-                                <td id="delincuente-delito-5"></td>
-                                <td id="delincuente-cuantia-5"></td>
-                                <td id="delincuente-denuncia-5"></td>
-                            </tr>
-                            <tr id="delincuente-row-6">
-                                <td>6</td>
-                                <td id="delincuente-nombre-6"></td>
-                                <td id="delincuente-cedula-6"></td>
-                                <td id="delincuente-edad-6"></td>
-                                <td id="delincuente-delito-6"></td>
-                                <td id="delincuente-cuantia-6"></td>
-                                <td id="delincuente-denuncia-6"></td>
-                            </tr>
-                            <tr id="delincuente-row-7">
-                                <td>7</td>
-                                <td id="delincuente-nombre-7"></td>
-                                <td id="delincuente-cedula-7"></td>
-                                <td id="delincuente-edad-7"></td>
-                                <td id="delincuente-delito-7"></td>
-                                <td id="delincuente-cuantia-7"></td>
-                                <td id="delincuente-denuncia-7"></td>
-                            </tr>
-                            <tr id="delincuente-row-8">
-                                <td>8</td>
-                                <td id="delincuente-nombre-8"></td>
-                                <td id="delincuente-cedula-8"></td>
-                                <td id="delincuente-edad-8"></td>
-                                <td id="delincuente-delito-8"></td>
-                                <td id="delincuente-cuantia-8"></td>
-                                <td id="delincuente-denuncia-8"></td>
-                            </tr>
-                            <tr id="delincuente-row-9">
-                                <td>9</td>
-                                <td id="delincuente-nombre-9"></td>
-                                <td id="delincuente-cedula-9"></td>
-                                <td id="delincuente-edad-9"></td>
-                                <td id="delincuente-delito-9"></td>
-                                <td id="delincuente-cuantia-9"></td>
-                                <td id="delincuente-denuncia-9"></td>
-                            </tr>
-                            <tr id="delincuente-row-10">
-                                <td>10</td>
-                                <td id="delincuente-nombre-10"></td>
-                                <td id="delincuente-cedula-10"></td>
-                                <td id="delincuente-edad-10"></td>
-                                <td id="delincuente-delito-10"></td>
-                                <td id="delincuente-cuantia-10"></td>
-                                <td id="delincuente-denuncia-10"></td>
-                            </tr>
-                            <tr id="delincuente-row-11">
-                                <td>11</td>
-                                <td id="delincuente-nombre-11"></td>
-                                <td id="delincuente-cedula-11"></td>
-                                <td id="delincuente-edad-11"></td>
-                                <td id="delincuente-delito-11"></td>
-                                <td id="delincuente-cuantia-11"></td>
-                                <td id="delincuente-denuncia-11"></td>
-                            </tr>
-                            <tr id="delincuente-row-12">
-                                <td>12</td>
-                                <td id="delincuente-nombre-12"></td>
-                                <td id="delincuente-cedula-12"></td>
-                                <td id="delincuente-edad-12"></td>
-                                <td id="delincuente-delito-12"></td>
-                                <td id="delincuente-cuantia-12"></td>
-                                <td id="delincuente-denuncia-12"></td>
-                            </tr>
-                            <tr id="delincuente-row-13">
-                                <td>13</td>
-                                <td id="delincuente-nombre-13"></td>
-                                <td id="delincuente-cedula-13"></td>
-                                <td id="delincuente-edad-13"></td>
-                                <td id="delincuente-delito-13"></td>
-                                <td id="delincuente-cuantia-13"></td>
-                                <td id="delincuente-denuncia-13"></td>
-                            </tr>
-                            <tr id="delincuente-row-14">
-                                <td>14</td>
-                                <td id="delincuente-nombre-14"></td>
-                                <td id="delincuente-cedula-14"></td>
-                                <td id="delincuente-edad-14"></td>
-                                <td id="delincuente-delito-14"></td>
-                                <td id="delincuente-cuantia-14"></td>
-                                <td id="delincuente-denuncia-14"></td>
-                            </tr>
-                            <tr id="delincuente-row-15">
-                                <td>15</td>
-                                <td id="delincuente-nombre-15"></td>
-                                <td id="delincuente-cedula-15"></td>
-                                <td id="delincuente-edad-15"></td>
-                                <td id="delincuente-delito-15"></td>
-                                <td id="delincuente-cuantia-15"></td>
-                                <td id="delincuente-denuncia-15"></td>
-                            </tr>
-                            <tr id="delincuente-row-16">
-                                <td>16</td>
-                                <td id="delincuente-nombre-16"></td>
-                                <td id="delincuente-cedula-16"></td>
-                                <td id="delincuente-edad-16"></td>
-                                <td id="delincuente-delito-16"></td>
-                                <td id="delincuente-cuantia-16"></td>
-                                <td id="delincuente-denuncia-16"></td>
-                            </tr>
-                            <tr id="delincuente-row-17">
-                                <td>17</td>
-                                <td id="delincuente-nombre-17"></td>
-                                <td id="delincuente-cedula-17"></td>
-                                <td id="delincuente-edad-17"></td>
-                                <td id="delincuente-delito-17"></td>
-                                <td id="delincuente-cuantia-17"></td>
-                                <td id="delincuente-denuncia-17"></td>
-                            </tr>
-                            <tr id="delincuente-row-18">
-                                <td>18</td>
-                                <td id="delincuente-nombre-18"></td>
-                                <td id="delincuente-cedula-18"></td>
-                                <td id="delincuente-edad-18"></td>
-                                <td id="delincuente-delito-18"></td>
-                                <td id="delincuente-cuantia-18"></td>
-                                <td id="delincuente-denuncia-18"></td>
-                            </tr>
-                            <tr id="delincuente-row-19">
-                                <td>19</td>
-                                <td id="delincuente-nombre-19"></td>
-                                <td id="delincuente-cedula-19"></td>
-                                <td id="delincuente-edad-19"></td>
-                                <td id="delincuente-delito-19"></td>
-                                <td id="delincuente-cuantia-19"></td>
-                                <td id="delincuente-denuncia-19"></td>
-                            </tr>
-                            <tr id="delincuente-row-20">
-                                <td>20</td>
-                                <td id="delincuente-nombre-20"></td>
-                                <td id="delincuente-cedula-20"></td>
-                                <td id="delincuente-edad-20"></td>
-                                <td id="delincuente-delito-20"></td>
-                                <td id="delincuente-cuantia-20"></td>
-                                <td id="delincuente-denuncia-20"></td>
-                            </tr>
+
+
+
                         </tbody>
-                        <tfoot>
-                            <tr class="total-row">
-                                <td colspan="6">TOTAL</td>
-                                <td id="totalDelincuentes">0</td>
-                            </tr>
-                        </tfoot>
                     </table>
                     <div class="mt-10" style="display: flex; justify-content: space-between; align-items: center;">
                         <button id="limpiarDelincuentesBtn" class="btn btn-danger" onclick="limpiarDelincuentesPersistentes()">Limpiar Delincuentes</button>
+
+<!-- Modal de autenticación para limpiar historial (genérico) -->
+<div id="modalAuthLimpiar" class="modal" style="display:none !important;position:fixed;z-index:3000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+  <div style="background:#fff;max-width:350px;width:90vw;padding:24px 18px;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.22);position:relative;">
+    <h5 id="modalAuthLimpiarTitulo" style="margin-top:0;margin-bottom:14px;color:#b30000;font-weight:700;">Autenticación de administrador</h5>
+    <div style="margin-bottom:10px;">
+      <input id="authUser" type="text" class="form-control" placeholder="Usuario" style="width:100%;margin-bottom:8px;" autocomplete="username">
+      <input id="authPass" type="password" class="form-control" placeholder="Contraseña" style="width:100%;margin-bottom:8px;" autocomplete="current-password">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="cerrarModalAuthLimpiar()">Cancelar</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="autenticarYLimpiar()">Aceptar</button>
+    </div>
+    <div id="authMsg" style="color:#b30000;font-size:13px;margin-top:8px;display:none;"></div>
+    <input type="hidden" id="tipoLimpieza" value="">
+  </div>
+</div>
+<script type="text/javascript">
+// Limpieza directa de delincuentes persistentes
+window.limpiarDelincuentesPersistentes = function() {
+  if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+    localStorage.removeItem('delincuentesPersistentes');
+    // Limpieza visual
+    var tabla = document.getElementById('tablaDelincuentesPersistentes');
+    if (tabla) {
+      var tbody = tabla.querySelector('tbody');
+      if (tbody) tbody.innerHTML = '';
+    }
+    if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+      renderizarTablaHistorialDelincuentes();
+    }
+    if (typeof mostrarNotificacion === 'function') {
+      mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+    } else {
+      alert('Historial de delincuentes eliminado correctamente.');
+    }
+  }
+};
+// Limpieza directa de productos robados
+window.limpiarProductosRobados = function() {
+  if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
+    // Limpiar almacenamiento y variables globales
+    localStorage.removeItem('productosRobados');
+    window.productosRobados = [];
+    // Si existe, guardar el arreglo vacío en storage
+    if (typeof guardarProductosRobados === 'function') {
+      guardarProductosRobados();
+    }
+    var tabla = document.getElementById('tablaProductos');
+    if (tabla) {
+      var tbody = tabla.querySelector('tbody');
+      if (tbody) tbody.innerHTML = '';
+      var total = tabla.querySelector('#totalCantidadProductos');
+      if (total) total.textContent = '0';
+    }
+    if (typeof actualizarTablaProductos === 'function') {
+      actualizarTablaProductos();
+    }
+    if (typeof mostrarNotificacion === 'function') {
+      mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+    } else {
+      alert('Top 20 de productos robados eliminado correctamente.');
+    }
+  }
+};
+
+window.abrirModalAuthLimpiar = function(tipo) {
+  var modal = document.getElementById('modalAuthLimpiar');
+  modal.style.display = 'flex';
+  modal.style.setProperty('display', 'flex', 'important');
+  document.getElementById('authUser').value = '';
+  document.getElementById('authPass').value = '';
+  document.getElementById('authMsg').style.display = 'none';
+  document.getElementById('tipoLimpieza').value = tipo;
+  // Cambia el título del modal según el tipo
+  var titulo = 'Autenticación de administrador';
+  if (tipo === 'delincuentes') titulo = 'Autenticación para limpiar delincuentes';
+  if (tipo === 'productos') titulo = 'Autenticación para limpiar productos robados';
+  document.getElementById('modalAuthLimpiarTitulo').textContent = titulo;
+  setTimeout(function() {
+    document.getElementById('authUser').focus();
+  }, 100);
+}
+window.cerrarModalAuthLimpiar = function() {
+  document.getElementById('modalAuthLimpiar').style.display = 'none';
+}
+window.autenticarYLimpiar = function() {
+  var usuario = document.getElementById('authUser').value.trim();
+  var password = document.getElementById('authPass').value;
+  var tipo = document.getElementById('tipoLimpieza').value;
+  var adminUser = 'admin';
+  var adminPass = 'admin123';
+  var msg = document.getElementById('authMsg');
+  if (usuario === adminUser && password === adminPass) {
+    if (tipo === 'delincuentes') {
+      if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem('delincuentes');
+        localStorage.removeItem('delincuentesPersistentes');
+        if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+          renderizarTablaHistorialDelincuentes();
+        }
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+        } else {
+          alert('Historial de delincuentes eliminado correctamente.');
+        }
+        cerrarModalAuthLimpiar();
+      }
+    } else if (tipo === 'productos') {
+      if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem('productosRobados');
+        // Limpiar visualmente la tabla de productos robados
+        if (typeof actualizarTablaProductos === 'function') {
+          actualizarTablaProductos();
+        } else {
+          // Limpieza forzada si la función no existe
+          var tabla = document.getElementById('tablaProductos');
+          if (tabla) {
+            var tbody = tabla.querySelector('tbody');
+            if (tbody) tbody.innerHTML = '';
+            // Actualizar el total en el pie de tabla, si existe
+            var total = tabla.querySelector('#totalCantidadProductos');
+            if (total) total.textContent = '0';
+          }
+        }
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+        } else {
+          alert('Top 20 de productos robados eliminado correctamente.');
+        }
+        cerrarModalAuthLimpiar();
+      }
+    }
+  } else {
+    msg.textContent = 'Usuario o contraseña incorrectos.';
+    msg.style.display = 'block';
+    setTimeout(function() {
+        if (!password) return;
+        var adminUser = 'admin';
+        var adminPass = 'admin123';
+        if (usuario === adminUser && password === adminPass) {
+            if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+                localStorage.removeItem('delincuentesPersistentes');
+                if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+                    renderizarTablaHistorialDelincuentes();
+                }
+                if (typeof mostrarNotificacion === 'function') {
+                    mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+                } else {
+                    alert('Historial de delincuentes eliminado correctamente.');
+                }
+            }
+        } else {
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Usuario o contraseña incorrectos.', 'error');
+            } else {
+                alert('Usuario o contraseña incorrectos.');
+            }
+        }
+    }, 1000);
+};
+</script>
                         <div id="paginacionDelincuentes" class="paginacion-container"></div>
                     </div>
                 </div>
@@ -536,13 +525,13 @@
                             </tr>
                         </tfoot>
                     </table>
-                    <button id="limpiarProductosBtn" class="btn btn-danger mt-10" onclick="limpiarProductos()">Limpiar Productos</button>
+                    <button id="limpiarProductosBtn" class="btn btn-danger mt-10" onclick="limpiarProductosRobados()">Limpiar Productos</button>
                 </div>
             </div>
 
                         
             <div class="actions-container">
-                <button type="button" class="btn btn-primary" onclick="mostrarVistaPrevia()">Guardar documento</button>
+                <button type="button" class="btn btn-primary" onclick="generarPDFPrincipal()">Guardar documento</button>
             </div>
 
             <div class="modal fade" id="vistaPreviaModal" tabindex="-1" role="dialog" aria-labelledby="vistaPreviaModalLabel" aria-hidden="true">
@@ -619,211 +608,149 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- <script src="https://apis.google.com/js/api.js"></script> -->
-    <!-- <script src="drive-service.js"></script> -->
-    <script src="js/simple-chart.js"></script>
-    <script src="formatear-moneda.js"></script>
-    <script src="formatear-fecha.js"></script>
-    <!-- Scripts principales de la aplicación -->
-    <script src="script.js"></script>
-    <script src="script_productos.js"></script>
-    <script src="script_casos.js"></script>
-    <script src="admin.js"></script>
-    <script src="sincronizar-tablas.js"></script>
-    
-    <!-- Scripts para la funcionalidad de delincuentes -->
-    <script src="script_delincuentes_nuevo.js"></script>
-    <!-- <script src="delincuentes-persistentes-fix.js"></script> -->
-    <!-- <script src="fix-perdidas-pdf.js"></script> -->
-    <!-- <script src="limpiar-top20-delincuentes-nuevo.js"></script> -->
-    <!-- <script src="limpiar-estadisticas.js"></script> -->
-    
-    <!-- Scripts para la funcionalidad de productos -->
-    <script src="productos-persistentes.js"></script>
-    
-    <!-- Script para el nuevo formato de tipificación con botón pequeño -->
-    <script src="tipificacion-selector.js"></script>
-    
-    <!-- Script para manejar el historial de delincuentes -->
-    <script src="historial-delincuentes.js"></script>
-    <!-- Scripts comentados por limpieza antes de despliegue. Si algo deja de funcionar, descomentar el script correspondiente. -->
-<!-- Modal Moderno para Registrar Delincuente -->
-<div id="nuevoDelincuenteModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="nuevoDelincuenteModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered card-modal" role="document">
-    <div class="modal-content card-modal-content">
-      <div class="modal-barra-superior">
-        <div class="modal-barra-titulo">
-          <i class="fas fa-user-plus"></i> <span>Registrar Delincuente</span>
-        </div>
-        <button type="button" class="close-barra" aria-label="Cerrar" onclick="cerrarModalNuevoDelincuente()">
+    <!-- Dependencias externas -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script>
+    // Inicializar jsPDF y AutoTable cuando se carguen
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.jspdf && window.jspdf.jsPDF) {
+            console.log('jsPDF cargado correctamente');
+            // Probar si autoTable está disponible
+            try {
+                const testDoc = new window.jspdf.jsPDF();
+                if (typeof testDoc.autoTable === 'function') {
+                    console.log('Plugin AutoTable cargado correctamente');
+                } else {
+                    console.error('Error: AutoTable no está disponible en el objeto jsPDF');
+                }
+            } catch (error) {
+                console.error('Error al inicializar jsPDF:', error);
+            }
+        } else {
+            console.error('Error: jsPDF no está disponible');
+        }
+    });
+</script>
+
+<!-- Utilidades y helpers -->
+<script src="js/simple-chart.js"></script>
+<script src="formatear-moneda.js"></script>
+<script src="formatear-fecha.js"></script>
+
+<!-- SCRIPTS PRINCIPALES: primero productos-persistentes.js -->
+<script src="productos-persistentes.js"></script>
+<script src="script.js"></script>
+<script src="script_productos.js"></script>
+<script src="script_casos.js"></script>
+<script src="admin.js"></script>
+<script src="sincronizar-tablas.js"></script>
+
+<!-- Funcionalidad de delincuentes -->
+<script src="script_delincuentes_nuevo.js"></script>
+<script src="tipificacion-selector.js"></script>
+<script src="historial-delincuentes.js"></script>
+<div id="nuevoDelincuenteModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="nuevoDelincuenteModalLabel">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nuevoDelincuenteModalLabel">
+          <i class="fas fa-user-plus"></i> Registrar Delincuente
+        </h5>
+        <button type="button" class="close" aria-label="Cerrar" onclick="cerrarModalNuevoDelincuente()">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
         <form id="formNuevoDelincuente" autocomplete="off">
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nuevoNombreCompleto">Nombre y Apellido <span style="color:red">*</span></label>
-      <input type="text" class="form-control" id="nuevoNombreCompleto" required>
-    </div>
-    <div class="form-group">
-      <label for="nuevoCedula">Cédula <span style="color:red">*</span></label>
-      <input type="text" class="form-control" id="nuevoCedula" required>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nuevoEdad">Edad <span style="color:red">*</span></label>
-      <input type="number" class="form-control" id="nuevoEdad" min="12" max="120" required>
-    </div>
-    <div class="form-group">
-      <label for="nuevoDireccion">Dirección</label>
-      <input type="text" class="form-control" id="nuevoDireccion">
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nuevoVehiculo">Vehículo</label>
-      <input type="text" class="form-control" id="nuevoVehiculo">
-    </div>
-    <div class="form-group">
-      <label for="nuevoPlaca">Placa</label>
-      <input type="text" class="form-control" id="nuevoPlaca">
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nuevoColor">Color</label>
-      <input type="text" class="form-control" id="nuevoColor">
-    </div>
-    <div class="form-group">
-      <label for="nuevoLugar">Lugar <span style="color:red">*</span></label>
-      <input type="text" class="form-control" id="nuevoLugar" required>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nuevoFecha">Fecha de Captura <span style="color:red">*</span></label>
-      <input type="date" class="form-control" id="nuevoFecha" required>
-    </div>
-    <div class="form-group">
-      <label for="nuevoDelito">Delito Cometido <span style="color:red">*</span></label>
-      <input type="text" class="form-control" id="nuevoDelito" required>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label for="nuevoProductos">Productos</label>
-      <input type="text" class="form-control" id="nuevoProductos">
-    </div>
-    <div class="form-group">
-      <label for="nuevoCuantia">Cuantía (B/.)</label>
-      <input type="number" class="form-control" id="nuevoCuantia" min="0" step="0.01">
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group" style="flex: 1 1 100%;">
-      <label for="nuevoDenuncia">N° Denuncia/Resolución</label>
-      <input type="text" class="form-control" id="nuevoDenuncia">
-    </div>
-  </div>
+            <div class="form-row-cascade">
+                <div class="form-col-cascade">
+                    <div class="form-group">
+                        <label for="nuevoNombreCompleto">Nombre y Apellido <span style="color:red">*</span></label>
+                        <input type="text" class="form-control" id="nuevoNombreCompleto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoCedula">Cédula <span style="color:red">*</span></label>
+                        <input type="text" class="form-control" id="nuevoCedula" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoEdad">Edad <span style="color:red">*</span></label>
+                        <input type="number" class="form-control" id="nuevoEdad" min="12" max="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoDireccion">Dirección</label>
+                        <input type="text" class="form-control" id="nuevoDireccion">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoVehiculo">Vehículo</label>
+                        <input type="text" class="form-control" id="nuevoVehiculo">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoPlaca">Placa</label>
+                        <input type="text" class="form-control" id="nuevoPlaca">
+                    </div>
+                </div>
+                <div class="form-col-cascade">
+                    <div class="form-group">
+                        <label for="nuevoColor">Color</label>
+                        <input type="text" class="form-control" id="nuevoColor">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoFecha">Fecha de Captura <span style="color:red">*</span></label>
+                        <input type="date" class="form-control" id="nuevoFecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoDelito">Delito Cometido <span style="color:red">*</span></label>
+                        <input type="text" class="form-control" id="nuevoDelito" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoProductos">Productos</label>
+                        <input type="text" class="form-control" id="nuevoProductos">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoCuantia">Cuantía (B/.)</label>
+                        <input type="number" class="form-control" id="nuevoCuantia" min="0" step="0.01" inputmode="decimal" placeholder="Ej: 123.45">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoDenuncia">N° Denuncia/Resolución</label>
+                        <input type="text" class="form-control" id="nuevoDenuncia">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group text-right mt-3" style="text-align:right;">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalNuevoDelincuente()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarNuevoDelincuente()">Guardar</button>
+            </div>
         </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="cerrarModalNuevoDelincuente()">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="guardarNuevoDelincuente()">Guardar</button>
+        <style>
+            .form-row-cascade {
+                display: flex;
+                gap: 24px;
+                width: 100%;
+            }
+            .form-col-cascade {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            @media (max-width: 700px) {
+                .form-row-cascade {
+                    flex-direction: column;
+                    gap: 0;
+                }
+            }
+        </style>
       </div>
     </div>
   </div>
 </div>
 
-<script>
-function abrirModalNuevoDelincuente() {
-  var modal = document.getElementById('nuevoDelincuenteModal');
-  modal.classList.add('show');
-  modal.style.display = 'flex';
-}
-function cerrarModalNuevoDelincuente() {
-  var modal = document.getElementById('nuevoDelincuenteModal');
-  modal.classList.remove('show');
-  modal.style.display = 'none';
-}
-function guardarNuevoDelincuente() {
-  var form = document.getElementById('formNuevoDelincuente');
-  if (!form.checkValidity()) {
-    form.reportValidity();
-    return;
-  }
 
-  // Recoger los datos del formulario
-  var delincuente = {
-    nombreCompleto: document.getElementById('nuevoNombreCompleto').value,
-    cedula: document.getElementById('nuevoCedula').value,
-    edad: document.getElementById('nuevoEdad').value,
-    direccion: document.getElementById('nuevoDireccion').value,
-    vehiculo: document.getElementById('nuevoVehiculo').value,
-    placa: document.getElementById('nuevoPlaca').value,
-    colorVehiculo: document.getElementById('nuevoColor').value,
-    lugar: document.getElementById('nuevoLugar').value,
-    fecha: document.getElementById('nuevoFecha').value,
-    delito: document.getElementById('nuevoDelito').value,
-    mercancias: document.getElementById('nuevoProductos').value,
-    monto: document.getElementById('nuevoCuantia').value,
-    denuncia: document.getElementById('nuevoDenuncia').value
-  };
 
-  // Obtener o inicializar el array de delincuentes
-  var delincuentes = [];
-  if (localStorage.getItem('delincuentes')) {
-    try {
-      delincuentes = JSON.parse(localStorage.getItem('delincuentes'));
-      if (!Array.isArray(delincuentes)) delincuentes = [];
-    } catch (e) {
-      delincuentes = [];
-    }
-  }
-
-  // Agregar el nuevo delincuente
-  delincuentes.push(delincuente);
-  localStorage.setItem('delincuentes', JSON.stringify(delincuentes));
-
-  // Actualizar la tabla visual si existe
-  if (typeof actualizarTablaDelincuentes === 'function') {
-    actualizarTablaDelincuentes();
-  } else {
-    // Si no hay función, agregar manualmente a la tabla si existe
-    var tabla = document.querySelector('#tablaDelincuentes tbody');
-    if (tabla) {
-      var fila = document.createElement('tr');
-      fila.innerHTML = `
-        <td>${delincuentes.length}</td>
-        <td>${delincuente.nombreCompleto}</td>
-        <td>${delincuente.cedula}</td>
-        <td>${delincuente.edad}</td>
-        <td>${delincuente.direccion}</td>
-        <td>${delincuente.vehiculo}</td>
-        <td>${delincuente.placa}</td>
-        <td>${delincuente.colorVehiculo}</td>
-        <td>${delincuente.lugar}</td>
-        <td>${delincuente.fecha}</td>
-        <td>${delincuente.delito}</td>
-        <td>${delincuente.mercancias}</td>
-        <td>${delincuente.monto}</td>
-        <td>${delincuente.denuncia}</td>
-      `;
-      tabla.appendChild(fila);
-    }
-  }
-
-  cerrarModalNuevoDelincuente();
-  // Mensaje de éxito
-  alert('Delincuente guardado correctamente.');
-  form.reset();
-}
 </script>
 
 <!-- Botón para abrir el modal del README/manual de uso -->
@@ -878,5 +805,159 @@ if(openReadmeModalBtn && readmeModal && closeReadmeModalBtn) {
 }
 </script>
 
+<script>
+// Usamos la función global renderizarTablaDelincuentesSimple definida en script_delincuentes_nuevo.js
+// Esta función se encargará de mostrar los delincuentes y gestionar los botones
+// Fin refuerzo: solo localStorage
+
+// Eliminar delincuente por índice
+function eliminarDelincuentePorIndice(idx) {
+    var delincuentes = [];
+    if (localStorage.getItem('delincuentes')) {
+        try {
+            delincuentes = JSON.parse(localStorage.getItem('delincuentes'));
+            if (!Array.isArray(delincuentes)) delincuentes = [];
+        } catch (e) { delincuentes = []; }
+    }
+    if (idx >= 0 && idx < delincuentes.length) {
+        if (confirm('¿Está seguro que desea eliminar este delincuente?')) {
+            delincuentes.splice(idx, 1);
+            localStorage.setItem('delincuentes', JSON.stringify(delincuentes));
+            window.delincuentes = delincuentes;
+            if (typeof actualizarTablaDelincuentes === 'function') actualizarTablaDelincuentes();
+            renderizarTablaDelincuentesSimple();
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Delincuente eliminado correctamente.', 'success');
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Limpiar tabla de capturados SÓLO al recargar
+    window.delincuentes = [];
+    renderizarTablaDelincuentesSimple();
+    if (typeof actualizarTablaDelincuentes === 'function') {
+        var orig = actualizarTablaDelincuentes;
+        window.actualizarTablaDelincuentes = function() {
+            // Limpiar tabla de capturados SOLO al guardar documento principal
+            window.delincuentes = [];
+            orig();
+            renderizarTablaDelincuentesSimple();
+        };
+    }
+});
+</script>
+<script>
+// Limpia todos los delincuentes capturados y actualiza la tabla visualmente
+// Refuerza la limpieza total y la actualización visual de la tabla de delincuentes
+function limpiarDelincuentesCapturadosDirecto() {
+  if (!confirm('¿Está seguro que desea eliminar TODOS los delincuentes capturados? Esta acción no se puede deshacer.')) return;
+  // Borra del almacenamiento principal
+  localStorage.removeItem('delincuentes');
+  window.delincuentes = [];
+  // Borra también el historial de delincuentes
+  localStorage.removeItem('delincuentesPersistentes');
+  // Limpia manualmente el tbody de la tabla simple
+  var tbody = document.getElementById('tbodyDelincuentesSimple');
+  if (tbody) tbody.innerHTML = '';
+  // Actualiza la tabla simple
+  if (typeof renderizarTablaDelincuentesSimple === 'function') {
+    renderizarTablaDelincuentesSimple();
+  }
+  // Actualiza la tabla de historial si existe la función
+  if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+    renderizarTablaHistorialDelincuentes();
+  }
+  // Notificación visual
+  if (typeof mostrarNotificacion === 'function') {
+    mostrarNotificacion('Historial de delincuentes capturados y el historial han sido eliminados correctamente.', 'success');
+  } else {
+    alert('Historial de delincuentes capturados y el historial han sido eliminados correctamente.');
+  }
+}
+// Fin limpieza total de capturados e historial
+</script>
+<script>
+    function autenticarYLimpiar(tipo) {
+      // Puedes adaptar esto para usar tu modal, aquí ejemplo con prompt:
+      var usuario = prompt('Ingrese el usuario de administrador:');
+      if (!usuario) return;
+      var password = prompt('Ingrese la contraseña de administrador:');
+      if (!password) return;
+      var adminUser = 'admin';
+      var adminPass = 'admin123';
+    
+      if (usuario === adminUser && password === adminPass) {
+        if (tipo === 'delincuentes') {
+          if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+            localStorage.removeItem('delincuentes');
+            localStorage.removeItem('delincuentesPersistentes');
+            if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+              renderizarTablaHistorialDelincuentes();
+            }
+            if (typeof mostrarNotificacion === 'function') {
+              mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+            } else {
+              alert('Historial de delincuentes eliminado correctamente.');
+            }
+          }
+        } else if (tipo === 'productos') {
+          if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
+            localStorage.removeItem('productosRobados');
+            if (typeof actualizarTablaProductos === 'function') {
+              actualizarTablaProductos();
+            }
+            if (typeof mostrarNotificacion === 'function') {
+              mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+            } else {
+              alert('Top 20 de productos robados eliminado correctamente.');
+            }
+          }
+        }
+      } else {
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Usuario o contraseña incorrectos.', 'error');
+        } else {
+          alert('Usuario o contraseña incorrectos.');
+        }
+      }
+    }
+    </script>
+<script type="text/javascript">
+window.limpiarDelincuentesPersistentes = function() {
+  var tabla = document.getElementById('tablaDelincuentesPersistentes');
+  if (tabla) {
+    var tbody = tabla.querySelector('tbody');
+    if (tbody) tbody.innerHTML = '';
+  }
+  localStorage.removeItem('delincuentes');
+  localStorage.removeItem('delincuentesPersistentes');
+};
+window.limpiarProductosRobados = function() {
+  var tabla = document.getElementById('tablaProductos');
+  if (tabla) {
+    // Limpiar solo los datos de las filas, no la estructura
+    for (let i = 1; i <= 20; i++) {
+      var nombre = document.getElementById('nombre-' + i);
+      var cantidad = document.getElementById('cantidad-' + i);
+      if (nombre) nombre.textContent = '';
+      if (cantidad) cantidad.textContent = '';
+    }
+    var total = tabla.querySelector('#totalCantidadProductos');
+    if (total) total.textContent = '0';
+  }
+  window.productosRobados = [];
+  localStorage.removeItem('productosRobados');
+  if (typeof guardarProductosRobados === 'function') {
+    guardarProductosRobados();
+  }
+  if (typeof mostrarNotificacion === 'function') {
+    mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+  } else {
+    alert('Top 20 de productos robados eliminado correctamente.');
+  }
+};
+</script>
 </body>
 </html>

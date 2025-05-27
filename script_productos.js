@@ -81,6 +81,49 @@ function actualizarSubcategorias(select) {
     }
 }
 
+// Solo crear fila vacía al dar al +, no agregar ni sumar en el Top 20
+function agregarFilaProductoSoloVisual() {
+    // Encuentra la tabla de casos delictivos
+    const tabla = document.getElementById('tablaCasosDelictivos');
+    if (!tabla) return;
+    const tbody = tabla.querySelector('tbody');
+    if (!tbody) return;
+    // Encuentra la primera fila editable (sin clase ni id especial, solo la estructura base)
+    const filas = tbody.querySelectorAll('tr');
+    let filaReferencia = null;
+    for (let i = 0; i < filas.length; i++) {
+        // Busca la fila que tiene inputs (editable)
+        if (filas[i].querySelector('input')) {
+            filaReferencia = filas[i];
+            break;
+        }
+    }
+    if (!filaReferencia) return;
+    // Clona la fila editable
+    const nuevaFila = filaReferencia.cloneNode(true);
+    // Limpia los valores y defaultValue de los inputs
+    const inputs = nuevaFila.querySelectorAll('input');
+    inputs.forEach(input => {
+        if (input.type === 'text' || input.type === 'number') {
+            input.value = '';
+            input.defaultValue = '';
+        }
+        // Si es observaciones, eliminar cualquier valor y evitar disparar onchange
+        if (input.name === 'observaciones[]') {
+            input.value = '';
+            input.defaultValue = '';
+        }
+    });
+    // Inserta la nueva fila antes de la fila de totales si existe
+    const filaTotal = tbody.querySelector('.total-row');
+    if (filaTotal) {
+        tbody.insertBefore(nuevaFila, filaTotal);
+    } else {
+        tbody.appendChild(nuevaFila);
+    }
+}
+
+
 function actualizarProductosRobados(input) {
     // Obtener el valor del input
     const valor = input.value.trim();
@@ -95,7 +138,7 @@ function actualizarProductosRobados(input) {
         // Agregar el nuevo producto
         window.productosRobados.push({
             nombre: valor,
-            cantidad: '1',
+            cantidad: 1,
             valor: 'B/. 0.00'
         });
         
@@ -104,7 +147,7 @@ function actualizarProductosRobados(input) {
     } else {
         // Incrementar la cantidad del producto existente
         const cantidadActual = parseInt(productoExistente.cantidad) || 0;
-        productoExistente.cantidad = (cantidadActual + 1).toString();
+        productoExistente.cantidad = cantidadActual + 1;
         
         // Mostrar notificación
         mostrarNotificacion(`Se agregó 1 unidad más de ${valor}. Total: ${productoExistente.cantidad}`, 'success');
@@ -177,7 +220,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Función para agregar automáticamente al Top 20 al llenar Observaciones
+function onObservacionCambio(input) {
+    console.log('[LOG] onObservacionCambio llamado', input, 'valor:', input.value);
+    // Buscar la fila correspondiente
+    const fila = input.closest('tr');
+    if (!fila) return;
+    
+    // Obtener valores
+    const productoInput = fila.querySelector('input[name="producto[]"]');
+    const cantidadInput = fila.querySelector('input[name="cantidad[]"]');
+    const cuantiaInput = fila.querySelector('input[name="cuantia[]"]');
+    const observacion = input.value.trim();
+    
+    if (!observacion) return; // No hacer nada si está vacío
+    if (!productoInput) return;
+    
+    const producto = productoInput.value.trim();
+    const cantidad = cantidadInput ? (parseInt(cantidadInput.value) || 0) : 1;
+    const cuantia = cuantiaInput ? (parseFloat(cuantiaInput.value.replace(/[^\d.-]/g, '')) || 0) : 0;
+    
+    // Siempre agregar el producto al Top 20 cuando se ingresa una observación
+    if (producto && cantidad > 0) {
+        console.log('[LOG] Agregando producto al Top 20:', producto, 'Cantidad:', cantidad, 'Cuantía:', cuantia);
+        if (typeof window.agregarProductoRobado === 'function') {
+            window.agregarProductoRobado(producto, cantidad, cuantia);
+        } else {
+            mostrarNotificacion('No se pudo agregar el producto al Top 20. Función no encontrada.', 'error');
+        }
+    }
+}
+
+
 // Función para actualizar la lista de productos
+// Modificada: ya no agrega productos al Top 20 ni localStorage al dar al +
 function actualizarListaProductos() {
     const listaProductos = document.getElementById('listaProductos');
     listaProductos.innerHTML = '';

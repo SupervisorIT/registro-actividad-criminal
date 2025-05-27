@@ -1,30 +1,50 @@
 // Sistema de gestión de delincuentes capturados
-// Función para inicializar la tabla de delincuentes
-function inicializarDelincuentes() {
-    // Verificar si hay delincuentes guardados en localStorage
-    const delincuentesGuardados = localStorage.getItem('delincuentes');
-    
-    // Inicializar el array global de delincuentes
-    window.delincuentes = [];
-    
-    if (delincuentesGuardados) {
-        try {
-            // Intentar parsear los datos guardados
-            const datos = JSON.parse(delincuentesGuardados);
-            
-            // Verificar que sea un array
-            if (Array.isArray(datos)) {
-                window.delincuentes = datos;
-                console.log('Delincuentes cargados:', window.delincuentes.length);
-            } else {
-                console.error('Los datos guardados no son un array válido');
-            }
-        } catch (error) {
-            console.error('Error al cargar delincuentes:', error);
-        }
+
+// Definir la función renderizarTablaDelincuentesSimple al inicio para que esté disponible inmediatamente
+function renderizarTablaDelincuentesSimple() {
+    var tbody = document.getElementById('tbodyDelincuentesSimple');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    // Solo leer de window.delincuentes (no de localStorage)
+    var delincuentes = window.delincuentes || [];
+    if (!delincuentes.length) {
+        var fila = document.createElement('tr');
+        fila.innerHTML = '<td colspan="15" style="text-align: center; color: #888;">No hay delincuentes registrados <button type="button" class="btn btn-success btn-sm" title="Agregar Delincuente" onclick="abrirModalNuevoDelincuente()" style="font-size:16px;min-width:32px;margin-left:10px;">+</button></td>';
+        tbody.appendChild(fila);
+        return;
     }
     
-    // Actualizar la tabla con los datos cargados
+    delincuentes.forEach(function(d, i) {
+        var fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${d.nombreCompleto || ''}</td>
+            <td>${d.cedula || ''}</td>
+            <td>${d.edad || ''}</td>
+            <td>${d.direccion || ''}</td>
+            <td>${d.vehiculo || ''}</td>
+            <td>${d.placa || ''}</td>
+            <td>${d.color || ''}</td>
+            <td>${d.fechaCaptura || ''}</td>
+            <td>${d.delito || ''}</td>
+            <td>${d.productos || ''}</td>
+            <td>${d.cuantia || ''}</td>
+            <td>${d.denuncia || ''}</td>
+            <td style="white-space:nowrap;">
+                <button type="button" class="btn btn-success btn-sm" title="Agregar Delincuente" onclick="abrirModalNuevoDelincuente()" style="font-size:16px;min-width:32px;">+</button>
+                <button type="button" class="btn btn-danger btn-sm" title="Eliminar este delincuente" onclick="eliminarDelincuentePorIndice(${i})" style="font-size:16px;min-width:32px;">X</button>
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+// Hacer global la función de renderizado inmediatamente
+window.renderizarTablaDelincuentesSimple = renderizarTablaDelincuentesSimple;
+
+// Función para inicializar la tabla de delincuentes
+function inicializarDelincuentes() {
+    // Solo actualizar la tabla existente, NO limpiar window.delincuentes aquí
     actualizarTablaDelincuentes();
 }
 
@@ -35,28 +55,193 @@ function tieneInformacion(delincuente) {
 }
 
 // Función para agregar un nuevo delincuente (abrir modal)
-function agregarDelincuente() {
-    // Mostrar el modal
-    const modal = document.getElementById('delincuenteModal');
+function abrirModalNuevoDelincuente() {
+    // Accesibilidad: quitar aria-hidden al abrir el modal
+    var modal = document.getElementById('nuevoDelincuenteModal');
     if (modal) {
+        modal.removeAttribute('aria-hidden');
+        modal.classList.add('show');
         modal.style.display = 'block';
-        
         // Limpiar el formulario
-        document.getElementById('formDelincuente').reset();
-        
+        var form = document.getElementById('formDelincuente');
+        if (form) form.reset();
         // Quitar clases de validación
-        const camposInvalidos = document.querySelectorAll('.is-invalid');
+        var camposInvalidos = modal.querySelectorAll('.is-invalid');
         camposInvalidos.forEach(campo => campo.classList.remove('is-invalid'));
-        
         // Establecer la fecha actual
-        const fechaInput = document.getElementById('fechaDelincuente');
-        const hoy = new Date();
-        const fechaFormateada = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-        fechaInput.value = fechaFormateada;
+        var fechaInput = document.getElementById('fechaDelincuente');
+        if (fechaInput) {
+            var hoy = new Date();
+            var fechaFormateada = hoy.toISOString().split('T')[0];
+            fechaInput.value = fechaFormateada;
+        }
+        // Enfocar el primer campo
+        var primerCampo = modal.querySelector('input, select, textarea');
+        if (primerCampo) primerCampo.focus();
     } else {
         console.error('Modal no encontrado');
     }
 }
+window.abrirModalNuevoDelincuente = abrirModalNuevoDelincuente;
+
+function cerrarModalNuevoDelincuente() {
+    var modal = document.getElementById('nuevoDelincuenteModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+window.cerrarModalNuevoDelincuente = cerrarModalNuevoDelincuente;
+
+// La función renderizarTablaDelincuentesSimple ya está definida al inicio del archivo
+
+// Función para guardar un nuevo delincuente desde el modal
+function guardarNuevoDelincuente(actualizando = false) {
+    var form = document.getElementById('formNuevoDelincuente');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    // Recoger los datos del formulario
+    var delincuente = {
+        nombreCompleto: document.getElementById('nuevoNombreCompleto').value.trim(),
+        cedula: document.getElementById('nuevoCedula').value.trim(),
+        edad: document.getElementById('nuevoEdad').value.trim(),
+        direccion: document.getElementById('nuevoDireccion').value.trim(),
+        vehiculo: document.getElementById('nuevoVehiculo').value.trim(),
+        placa: document.getElementById('nuevoPlaca').value.trim(),
+        color: document.getElementById('nuevoColor').value.trim(),
+        fechaCaptura: document.getElementById('nuevoFecha').value.trim(),
+        delito: document.getElementById('nuevoDelito').value.trim(),
+        productos: document.getElementById('nuevoProductos').value.trim(),
+        cuantia: document.getElementById('nuevoCuantia').value.trim(),
+        denuncia: document.getElementById('nuevoDenuncia').value.trim()
+    };
+
+    // Validación de duplicados por cédula (solo si la cédula no está vacía)
+    if (delincuente.cedula) {
+        var delincuentesExistentes = [];
+        if (localStorage.getItem('delincuentes')) {
+            try {
+                delincuentesExistentes = JSON.parse(localStorage.getItem('delincuentes'));
+                if (!Array.isArray(delincuentesExistentes)) delincuentesExistentes = [];
+            } catch (e) {
+                delincuentesExistentes = [];
+            }
+        }
+        
+        var duplicado = delincuentesExistentes.some(function(d) {
+            return d.cedula === delincuente.cedula && d.cedula !== '';
+        });
+        
+        if (duplicado) {
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Ya existe un delincuente con la misma cédula.', 'error');
+            } else {
+                alert('Ya existe un delincuente con la misma cédula.');
+            }
+            return;
+        }
+    }
+
+    // Validación y formato de cuantía
+    var cuantia = (delincuente.cuantia || '').replace(/[^\d.]/g, '');
+    if (cuantia !== '') {
+        cuantia = parseFloat(cuantia);
+        if (isNaN(cuantia) || cuantia < 0) {
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('La cuantía debe ser un número válido mayor o igual a 0.', 'error');
+            } else {
+                alert('La cuantía debe ser un número válido mayor o igual a 0.');
+            }
+            return;
+        }
+        delincuente.monto = 'B/. ' + cuantia.toFixed(2);
+    } else {
+        delincuente.monto = '';
+    }
+
+    // Agregar a la tabla temporal (window.delincuentes) - NO duplicar
+    if (!window.delincuentes) window.delincuentes = [];
+    window.delincuentes.push(delincuente);
+    
+    // Actualizar la tabla visual
+    if (typeof renderizarTablaDelincuentesSimple === 'function') {
+        renderizarTablaDelincuentesSimple();
+    }
+    
+    // Guardar en localStorage para persistencia
+    localStorage.setItem('delincuentes', JSON.stringify(window.delincuentes));
+    
+    // Agregar al historial de delincuentes persistentes
+    try {
+        // Intentar usar la función del historial si existe
+        if (typeof window.agregarAlHistorial === 'function') {
+            window.agregarAlHistorial(delincuente);
+        } else {
+            // Si no existe la función, guardar directamente en el historial
+            let historial = [];
+            try {
+                const historialGuardado = localStorage.getItem('delincuentesPersistentes');
+                if (historialGuardado) {
+                    historial = JSON.parse(historialGuardado);
+                    if (!Array.isArray(historial)) historial = [];
+                }
+            } catch (e) {
+                console.error('Error al cargar historial:', e);
+                historial = [];
+            }
+            
+            // Crear objeto para el historial con los campos reducidos
+            const delincuenteHistorial = {
+                nombre: delincuente.nombreCompleto || '',
+                cedula: delincuente.cedula || '',
+                edad: delincuente.edad || '',
+                delito: delincuente.delito || '',
+                cuantia: delincuente.monto || '',
+                denuncia: delincuente.denuncia || ''
+            };
+            
+            // Verificar si ya existe en el historial
+            const existeEnHistorial = historial.findIndex(d => d.cedula === delincuente.cedula && d.cedula !== '');
+            
+            if (existeEnHistorial !== -1) {
+                // Actualizar el existente
+                historial[existeEnHistorial] = delincuenteHistorial;
+            } else {
+                // Agregar el nuevo
+                historial.push(delincuenteHistorial);
+            }
+            
+            // Guardar el historial actualizado
+            localStorage.setItem('delincuentesPersistentes', JSON.stringify(historial));
+            console.log('Historial actualizado desde guardarNuevoDelincuente, ahora tiene', historial.length, 'delincuentes');
+            
+            // Actualizar la tabla de historial si existe la función
+            if (typeof window.actualizarTablaHistorialDesdeTabla === 'function') {
+                window.actualizarTablaHistorialDesdeTabla();
+            }
+        }
+    } catch (error) {
+        console.error('Error al guardar en historial:', error);
+    }
+    
+    // Cerrar el modal y limpiar el formulario
+    cerrarModalNuevoDelincuente();
+    form.reset();
+    
+    // Mensaje de éxito
+    if (typeof mostrarNotificacion === 'function') {
+        mostrarNotificacion('Delincuente agregado a la tabla temporal.', 'success');
+    } else {
+        alert('Delincuente agregado a la tabla temporal.');
+    }
+}
+
+// Hacer global la función
+window.guardarNuevoDelincuente = guardarNuevoDelincuente;
 
 // Función para formatear cédulas panameñas (desactivada)
 function formatearCedula(input) {
@@ -147,73 +332,53 @@ function guardarDelincuente() {
         mostrarNotificacion(`Delincuente ${nombreCompleto} agregado correctamente.`, 'success');
     }
     
-    // Guardar en localStorage
-    guardarDelincuentes();
+    // NO GUARDAR EN LOCALSTORAGE
     
     // Actualizar la tabla
     actualizarTablaDelincuentes();
-    
-    // Agregar al historial de delincuentes persistentes
-    agregarDelincuenteAlHistorial(delincuente);
-    
+
     // Cerrar el modal
     cerrarModalDelincuente();
-    
+    // Accesibilidad: aria-hidden true cuando el modal está cerrado
+    var modal = document.getElementById('delincuenteModal');
+    if (modal) {
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
     // Resetear el ID del delincuente que se estaba editando
     window.delincuenteEditandoId = null;
+
+    // NOTA: El historial persistente solo se debe actualizar al guardar el documento principal,
+    // no en cada guardado temporal de la tabla. Si quieres guardar en el historial, hazlo en la acción final del formulario principal.
 }
 
 // Función para agregar un delincuente al historial
 function agregarDelincuenteAlHistorial(delincuente) {
-    console.log('Agregando delincuente al historial:', delincuente);
-    
     // Verificar si existe la variable global delincuentesPersistentes
     if (typeof window.delincuentesPersistentes === 'undefined') {
         window.delincuentesPersistentes = [];
-        
         // Intentar cargar del localStorage
         const delincuentesGuardados = localStorage.getItem('delincuentesPersistentes');
         if (delincuentesGuardados) {
             try {
                 window.delincuentesPersistentes = JSON.parse(delincuentesGuardados);
-                console.log('Delincuentes persistentes cargados:', window.delincuentesPersistentes.length);
             } catch (e) {
-                console.error('Error al cargar delincuentes persistentes:', e);
+                window.delincuentesPersistentes = [];
             }
         }
     }
-    
-    // Crear objeto simplificado para el historial con solo los campos necesarios
-    const delincuenteHistorial = {
-        nombre: delincuente.nombreCompleto,
-        cedula: delincuente.cedula,
-        edad: delincuente.edad,
-        delito: delincuente.delito,
-        cuantia: delincuente.monto,
-        denuncia: delincuente.denuncia,
-        fecha: delincuente.fecha || new Date().toISOString().split('T')[0]
-    };
-    
-    console.log('Objeto para historial creado:', delincuenteHistorial);
-    
-    // Verificar si ya existe un delincuente con la misma cédula en el historial
-    const existeEnHistorial = window.delincuentesPersistentes.findIndex(d => d.cedula === delincuente.cedula);
-    
-    if (existeEnHistorial !== -1) {
-        // Actualizar el delincuente existente en el historial
-        window.delincuentesPersistentes[existeEnHistorial] = delincuenteHistorial;
-        console.log('Delincuente actualizado en el historial');
+    // Agregar o actualizar delincuente en el historial
+    const idx = window.delincuentesPersistentes.findIndex(d => d.cedula === delincuente.cedula);
+    if (idx !== -1) {
+        window.delincuentesPersistentes[idx] = delincuente;
     } else {
-        // Agregar al historial
-        window.delincuentesPersistentes.push(delincuenteHistorial);
-        console.log('Nuevo delincuente agregado al historial');
+        window.delincuentesPersistentes.push(delincuente);
     }
-    
-    // Guardar el historial actualizado
     localStorage.setItem('delincuentesPersistentes', JSON.stringify(window.delincuentesPersistentes));
-    console.log('Historial guardado en localStorage');
-    
-    // Forzar la actualización de la tabla de historial
+    // Actualizar la tabla de historial inmediatamente
+    if (typeof actualizarTablaHistorial === 'function') {
+        actualizarTablaHistorial();
+    }
     setTimeout(function() {
         // Intentar con la función del archivo delincuentes-persistentes-fix.js
         if (typeof window.actualizarTablaDelincuentes === 'function') {
@@ -363,16 +528,22 @@ function editarDelincuente(index) {
 
 // Función para cerrar el modal de delincuente
 function cerrarModalDelincuente() {
-    const modal = document.getElementById('delincuenteModal');
+    // Accesibilidad: poner aria-hidden al cerrar el modal
+    var modal = document.getElementById('nuevoDelincuenteModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    // Cerrar el modal principal de delincuente
+    var modalDelincuente = document.getElementById('delincuenteModal');
+    if (modalDelincuente) {
+        modalDelincuente.style.display = 'none';
     }
 }
 
 // Función para guardar la lista de delincuentes
 function guardarDelincuentes() {
     try {
-        localStorage.setItem('delincuentes', JSON.stringify(window.delincuentes));
+        // Eliminado: No guardar delincuentes capturados en localStorage para que la tabla se reinicie cada vez que se recargue la página.
         return true;
     } catch (error) {
         console.error('Error al guardar delincuentes:', error);
@@ -384,7 +555,7 @@ function guardarDelincuentes() {
 // Función para guardar sin mostrar alerta
 function guardarDelincuentesSinAlerta() {
     try {
-        localStorage.setItem('delincuentes', JSON.stringify(window.delincuentes));
+        // Eliminado: No guardar delincuentes capturados en localStorage para que la tabla se reinicie cada vez que se recargue la página.
         return true;
     } catch (error) {
         console.error('Error al guardar delincuentes:', error);
@@ -400,19 +571,38 @@ function eliminarDelincuente(index) {
         // Confirmar eliminación
         if (confirm('¿Está seguro que desea eliminar este delincuente?')) {
             // Guardar una copia del delincuente en el historial antes de eliminarlo
-            agregarDelincuenteAlHistorial(delincuente);
+            var delincuenteHistorial = {
+  nombre: delincuente.nombreCompleto,
+  cedula: delincuente.cedula,
+  edad: delincuente.edad,
+  delito: delincuente.delito,
+  cuantia: delincuente.monto,
+  denuncia: delincuente.denuncia
+};
+agregarDelincuenteAlHistorial(delincuenteHistorial);
             
-            // Eliminar el delincuente del array
-            window.delincuentes.splice(index, 1);
-            
+            // Vaciar los datos del delincuente, pero conservar la fila
+            window.delincuentes[index] = {
+                nombreCompleto: '',
+                cedula: '',
+                edad: '',
+                direccion: '',
+                vehiculo: '',
+                placa: '',
+                colorVehiculo: '',
+                lugar: '',
+                fecha: '',
+                delito: '',
+                mercancias: '',
+                monto: '',
+                denuncia: ''
+            };
             // Guardar en localStorage
             guardarDelincuentes();
-            
             // Actualizar la tabla
             actualizarTablaDelincuentes();
-            
             // Mostrar notificación
-            mostrarNotificacion('Delincuente eliminado de la tabla principal pero conservado en el historial.', 'success');
+            mostrarNotificacion('Datos del delincuente borrados, fila conservada.', 'success');
         }
     }
 }
@@ -430,14 +620,14 @@ function actualizarDelincuente(index, campo, valor) {
 
 // Función para actualizar la tabla de delincuentes
 function actualizarTablaDelincuentes() {
-    const tablaBody = document.querySelector('#tablaDelincuentes tbody');
+    const tablaBody = document.querySelector('#tablaDelincuentesSimple tbody');
     
     if (!tablaBody) {
         console.error('No se encontró el cuerpo de la tabla de delincuentes');
         return;
     }
     
-    // Limpiar la tabla pero conservar la fila con el botón +
+    // Limpiar solo el contenido visual de la tabla, NO window.delincuentes
     const filaNoDelincuentes = document.getElementById('filaNoDelincuentes');
     tablaBody.innerHTML = '';
     
@@ -450,13 +640,7 @@ function actualizarTablaDelincuentes() {
         const filaNueva = document.createElement('tr');
         filaNueva.id = 'filaNoDelincuentes';
         filaNueva.innerHTML = `
-            <td>1</td>
             <td colspan="14" style="text-align: center;">No hay delincuentes registrados</td>
-            <td style="text-align: center;">
-                <button type="button" class="btn btn-success" style="font-size: 18px; padding: 0px 8px; font-weight: bold;" title="Agregar Delincuente" onclick="abrirModalDelincuente()">
-                    +
-                </button>
-            </td>
         `;
         tablaBody.appendChild(filaNueva);
         return;
@@ -484,11 +668,9 @@ function actualizarTablaDelincuentes() {
                 onchange="actualizarDelincuente(${index}, 'vehiculo', this.value)"></td>
             <td><input type="text" class="form-control" value="${delincuente.placa || ''}" 
                 onchange="actualizarDelincuente(${index}, 'placa', this.value)"></td>
-            <td><input type="text" class="form-control" value="${delincuente.colorVehiculo || ''}" 
+            <td><input type="text" class="form-control" value="${delincuente.colorVehiculo || ''}"
                 onchange="actualizarDelincuente(${index}, 'colorVehiculo', this.value)"></td>
-            <td><input type="text" class="form-control" value="${delincuente.lugar || ''}" 
-                onchange="actualizarDelincuente(${index}, 'lugar', this.value)"></td>
-            <td><input type="date" class="form-control" value="${delincuente.fecha || ''}" 
+            <td><input type="date" class="form-control" value="${delincuente.fecha || ''}"
                 onchange="actualizarDelincuente(${index}, 'fecha', this.value)"></td>
             <td>
                 <select class="form-control" onchange="actualizarDelincuente(${index}, 'delito', this.value)">
@@ -513,13 +695,7 @@ function actualizarTablaDelincuentes() {
                 onchange="actualizarDelincuente(${index}, 'monto', this.value)"></td>
             <td><input type="text" class="form-control" value="${delincuente.denuncia || ''}" 
                 onchange="actualizarDelincuente(${index}, 'denuncia', this.value)"></td>
-            <td style="text-align:center;">
-                <div style="display: flex; justify-content: center; gap: 5px;">
-                    <button type="button" class="btn btn-success" style="font-size: 20px; padding: 0px 10px; font-weight: bold; display: inline-block;" title="Agregar Delincuente" onclick="abrirModalDelincuente()">+</button>
-                    <button type="button" class="btn btn-warning" style="font-size: 20px; padding: 0px 10px; font-weight: bold; display: inline-block;" title="Editar Delincuente" onclick="editarDelincuente(${index})">✏️</button>
-                    <button type="button" class="btn btn-danger" style="font-size: 20px; padding: 0px 10px; font-weight: bold; display: inline-block;" title="Eliminar" onclick="eliminarDelincuente(${index})">×</button>
-                </div>
-            </td>
+
         `;
         tablaBody.appendChild(fila);
     });
@@ -548,6 +724,10 @@ function formatearMontoFinal(input) {
 }
 
 // Inicializar al cargar la página
+// Siempre inicializar el array en memoria si no existe
+if (!window.delincuentes) {
+    window.delincuentes = [];
+}
 document.addEventListener('DOMContentLoaded', function() {
     inicializarDelincuentes();
     

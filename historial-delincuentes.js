@@ -161,8 +161,10 @@
         }
     }
     
-    // Exponer la función de actualizar tabla de historial globalmente
+    // Exponer las funciones de historial globalmente
     window.actualizarTablaHistorialDesdeTabla = actualizarTablaHistorial;
+    window.renderizarTablaHistorialDelincuentes = actualizarTablaHistorial;
+    window.agregarAlHistorial = agregarAlHistorial;
     
     // Actualizar la tabla de historial al cargar la página
     setTimeout(actualizarTablaHistorial, 1000);
