@@ -33,7 +33,7 @@
     </head>
 <body>
     <div class="admin-access">
-        <button id="adminButton" class="btn btn-primary" onclick="window.location.href='admin.html'">
+        <button id="adminButton" class="btn btn-primary" onclick="abrirModalCambioPassword()">
             <i class="fas fa-shield-alt"></i> Panel de Administración
         </button>
     </div>
@@ -959,5 +959,170 @@ window.limpiarProductosRobados = function() {
   }
 };
 </script>
+<!-- Modal para cambio de contraseña de administrador -->
+<div id="modalCambioPassword" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 400px; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <div class="modal-header" style="padding-bottom: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee;">
+            <h4 style="margin: 0; color: #333;">Cambiar Contraseña de Administrador</h4>
+            <span class="close" onclick="cerrarModalCambioPassword()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="msgCambioPassword" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 4px;"></div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="currentPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Contraseña Actual:</label>
+                <input type="password" id="currentPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="newPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Nueva Contraseña:</label>
+                <input type="password" id="newPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="confirmPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Confirmar Nueva Contraseña:</label>
+                <input type="password" id="confirmPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div class="form-group" style="text-align: right;">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalCambioPassword()" style="padding: 8px 15px; margin-right: 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="cambiarPasswordAdmin()" style="padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funciones para el modal de cambio de contraseña
+function abrirModalCambioPassword() {
+    document.getElementById('modalCambioPassword').style.display = 'flex';
+    document.getElementById('modalCambioPassword').style.setProperty('display', 'flex', 'important');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('msgCambioPassword').style.display = 'none';
+    setTimeout(function() {
+        document.getElementById('currentPassword').focus();
+    }, 100);
+}
+
+function cerrarModalCambioPassword() {
+    document.getElementById('modalCambioPassword').style.display = 'none';
+}
+
+function cambiarPasswordAdmin() {
+    var currentPassword = document.getElementById('currentPassword').value;
+    var newPassword = document.getElementById('newPassword').value;
+    var confirmPassword = document.getElementById('confirmPassword').value;
+    var msgElement = document.getElementById('msgCambioPassword');
+    
+    // Verificar que los campos no estén vacíos
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        mostrarMensajeCambioPassword('Todos los campos son obligatorios', 'error');
+        return;
+    }
+    
+    // Verificar que la contraseña actual sea correcta (SupervisorIT2025 por defecto)
+    var adminPass = localStorage.getItem('adminPassword') || 'SupervisorIT2025';
+    if (currentPassword !== adminPass) {
+        mostrarMensajeCambioPassword('La contraseña actual es incorrecta', 'error');
+        return;
+    }
+    
+    // Verificar que las nuevas contraseñas coincidan
+    if (newPassword !== confirmPassword) {
+        mostrarMensajeCambioPassword('Las nuevas contraseñas no coinciden', 'error');
+        return;
+    }
+    
+    // Verificar que la nueva contraseña tenga al menos 6 caracteres
+    if (newPassword.length < 6) {
+        mostrarMensajeCambioPassword('La nueva contraseña debe tener al menos 6 caracteres', 'error');
+        return;
+    }
+    
+    // Guardar la nueva contraseña en localStorage
+    localStorage.setItem('adminPassword', newPassword);
+    
+    // Mostrar mensaje de éxito
+    mostrarMensajeCambioPassword('Contraseña actualizada correctamente', 'success');
+    
+    // Cerrar el modal después de 2 segundos
+    setTimeout(function() {
+        cerrarModalCambioPassword();
+    }, 2000);
+}
+
+function mostrarMensajeCambioPassword(mensaje, tipo) {
+    var msgElement = document.getElementById('msgCambioPassword');
+    msgElement.textContent = mensaje;
+    msgElement.style.display = 'block';
+    
+    if (tipo === 'error') {
+        msgElement.style.backgroundColor = '#f8d7da';
+        msgElement.style.color = '#721c24';
+        msgElement.style.borderColor = '#f5c6cb';
+    } else if (tipo === 'success') {
+        msgElement.style.backgroundColor = '#d4edda';
+        msgElement.style.color = '#155724';
+        msgElement.style.borderColor = '#c3e6cb';
+    }
+}
+
+// Actualizar las funciones existentes para usar la nueva contraseña de admin
+window.autenticarYLimpiar = function() {
+  var usuario = document.getElementById('authUser').value.trim();
+  var password = document.getElementById('authPass').value;
+  var tipo = document.getElementById('tipoLimpieza').value;
+  var adminUser = 'admin';
+  var adminPass = localStorage.getItem('adminPassword') || 'SupervisorIT2025';
+  var msg = document.getElementById('authMsg');
+  if (usuario === adminUser && password === adminPass) {
+    if (tipo === 'delincuentes') {
+      if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem('delincuentes');
+        localStorage.removeItem('delincuentesPersistentes');
+        if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+          renderizarTablaHistorialDelincuentes();
+        }
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+        } else {
+          alert('Historial de delincuentes eliminado correctamente.');
+        }
+        cerrarModalAuthLimpiar();
+      }
+    } else if (tipo === 'productos') {
+      if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem('productosRobados');
+        // Limpiar visualmente la tabla de productos robados
+        if (typeof actualizarTablaProductos === 'function') {
+          actualizarTablaProductos();
+        } else {
+          // Limpieza forzada si la función no existe
+          var tabla = document.getElementById('tablaProductos');
+          if (tabla) {
+            var tbody = tabla.querySelector('tbody');
+            if (tbody) tbody.innerHTML = '';
+            // Actualizar el total en el pie de tabla, si existe
+            var total = tabla.querySelector('#totalCantidadProductos');
+            if (total) total.textContent = '0';
+          }
+        }
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+        } else {
+          alert('Top 20 de productos robados eliminado correctamente.');
+        }
+        cerrarModalAuthLimpiar();
+      }
+    }
+  } else {
+    msg.textContent = 'Usuario o contraseña incorrectos.';
+    msg.style.display = 'block';
+  }
+};
+</script>
+
 </body>
 </html>

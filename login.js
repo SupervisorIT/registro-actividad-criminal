@@ -1,6 +1,7 @@
 // Credenciales predefinidas
 const usuarios = [
-    { username: "admin", password: "admin123", nombre: "Administrador", rol: "admin" },
+    // La contraseña de admin se verificará desde localStorage, pero mantenemos una por defecto
+    { username: "admin", password: "SupervisorIT2025", nombre: "Administrador", rol: "admin" },
     { username: "usuario", password: "usuario123", nombre: "Usuario Estándar", rol: "usuario" }
 ];
 
@@ -59,8 +60,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
+            // Obtener la contraseña de admin desde localStorage si existe
+            let adminPassword = localStorage.getItem('adminPassword');
+            
             // Validar credenciales
-            const usuario = listaUsuarios.find(u => u.username === username && u.password === password);
+            let usuario = null;
+            
+            // Caso especial para el usuario admin (verificar con localStorage)
+            if (username === 'admin') {
+                // Si hay una contraseña guardada en localStorage, usarla; si no, usar la predeterminada
+                const adminPassToCheck = adminPassword || 'SupervisorIT2025';
+                
+                // Verificar si la contraseña ingresada coincide con la almacenada
+                if (password === adminPassToCheck) {
+                    usuario = listaUsuarios.find(u => u.username === 'admin');
+                }
+            } else {
+                // Para otros usuarios, validar normalmente
+                usuario = listaUsuarios.find(u => u.username === username && u.password === password);
+            }
             
             if (usuario) {
                 // Guardar información de sesión
