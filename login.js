@@ -1,12 +1,11 @@
-// Credenciales predefinidas
-const usuarios = [
-    // La contraseña de admin se verificará desde localStorage, pero mantenemos una por defecto
+// Credenciales predefinidas - SIEMPRE DISPONIBLES
+const usuariosPredefinidos = [
     { username: "admin", password: "SupervisorIT2025", nombre: "Administrador", rol: "admin" },
     { username: "usuario", password: "usuario123", nombre: "Usuario Estándar", rol: "usuario" }
 ];
 
 // Lista de usuarios que se puede modificar (inicialmente contiene los usuarios predefinidos)
-let listaUsuarios = [...usuarios];
+let listaUsuarios = [...usuariosPredefinidos];
 
 // Verificar si ya hay una sesión activa
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Crear un mapa de usuarios predefinidos por nombre de usuario
         const usuariosPredefinidosMap = {};
-        usuarios.forEach(u => {
+        usuariosPredefinidos.forEach(u => {
             usuariosPredefinidosMap[u.username] = true;
         });
         
@@ -60,23 +59,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
-            // Obtener la contraseña de admin desde localStorage si existe
-            let adminPassword = localStorage.getItem('adminPassword');
-            
-            // Validar credenciales
+            // Lógica simplificada para garantizar el acceso
             let usuario = null;
             
-            // Caso especial para el usuario admin (verificar con localStorage)
-            if (username === 'admin') {
-                // Si hay una contraseña guardada en localStorage, usarla; si no, usar la predeterminada
-                const adminPassToCheck = adminPassword || 'SupervisorIT2025';
+            // CASO ESPECIAL: Verificar primero si es el usuario admin con la contraseña predeterminada
+            if (username === 'admin' && password === 'SupervisorIT2025') {
+                console.log('Acceso con credenciales predeterminadas');
+                usuario = usuariosPredefinidos[0]; // Usuario admin predefinido
                 
-                // Verificar si la contraseña ingresada coincide con la almacenada
-                if (password === adminPassToCheck) {
-                    usuario = listaUsuarios.find(u => u.username === 'admin');
+                // Actualizar localStorage para mantener consistencia
+                localStorage.setItem('adminPassword', 'SupervisorIT2025');
+            } 
+            // Verificar si es admin con contraseña personalizada en localStorage
+            else if (username === 'admin') {
+                const adminPassword = localStorage.getItem('adminPassword');
+                if (adminPassword && password === adminPassword) {
+                    console.log('Acceso con contraseña personalizada');
+                    usuario = usuariosPredefinidos[0]; // Usuario admin predefinido
                 }
-            } else {
-                // Para otros usuarios, validar normalmente
+            }
+            // Para usuarios normales
+            else {
                 usuario = listaUsuarios.find(u => u.username === username && u.password === password);
             }
             

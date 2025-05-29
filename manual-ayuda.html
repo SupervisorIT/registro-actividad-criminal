@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Uso - Registro de Actividad Criminal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles_ajustado.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .manual-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #1565C0;
+            border-bottom: 2px solid #1565C0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+        }
+        .feature-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list li i {
+            margin-right: 10px;
+            color: #1565C0;
+        }
+        .step-list {
+            list-style-type: decimal;
+            padding-left: 25px;
+        }
+        .step-list li {
+            padding: 8px 0;
+        }
+        .note {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-left: 5px solid #3498db;
+            margin: 15px 0;
+        }
+        .warning {
+            background-color: #fdebd0;
+            padding: 15px;
+            border-left: 5px solid #f39c12;
+            margin: 15px 0;
+        }
+        .back-button {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: #1565C0;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .back-button:hover {
+            background-color: #0D47A1;
+        }
+        .screenshot {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="manual-container">
+        <h1><i class="fas fa-book"></i> Manual de Uso - Registro de Actividad Criminal</h1>
+        
+        <a href="index.html" class="back-button"><i class="fas fa-arrow-left"></i> Volver a la aplicación</a>
+        
+        <div class="section">
+            <h2><i class="fas fa-info-circle"></i> Introducción</h2>
+            <p>Bienvenido al sistema de Registro de Actividad Criminal, una herramienta diseñada para ayudar a empresas de seguridad y organizaciones a registrar, gestionar y analizar información relacionada con actividades criminales y delincuentes capturados.</p>
+            
+            <h3>Características principales:</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-check-circle"></i> Registro de casos delictivos por trimestre y empresa</li>
+                <li><i class="fas fa-check-circle"></i> Gestión de delincuentes capturados</li>
+                <li><i class="fas fa-check-circle"></i> Historial persistente de delincuentes</li>
+                <li><i class="fas fa-check-circle"></i> Top 20 de productos y mercancías robadas</li>
+                <li><i class="fas fa-check-circle"></i> Generación de reportes en PDF</li>
+                <li><i class="fas fa-check-circle"></i> Estadísticas de pérdidas trimestrales</li>
+                <li><i class="fas fa-check-circle"></i> Interfaz intuitiva y fácil de usar</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-sign-in-alt"></i> Acceso al Sistema</h2>
+            
+            <h3>Iniciar sesión:</h3>
+            <ol class="step-list">
+                <li>Acceda a la página de inicio de sesión: <code>login.html</code></li>
+                <li>Ingrese sus credenciales:
+                    <ul>
+                        <li><strong>Usuario Administrador:</strong> admin</li>
+                        <li><strong>Contraseña predeterminada:</strong> SupervisorIT2025</li>
+                    </ul>
+                </li>
+                <li>Haga clic en "Iniciar Sesión"</li>
+            </ol>
+            
+            <div class="note">
+                <p><strong>Nota:</strong> Si es la primera vez que accede al sistema, use la contraseña predeterminada. Se recomienda cambiarla inmediatamente por motivos de seguridad.</p>
+            </div>
+            
+            <h3>Cambiar contraseña de administrador:</h3>
+            <ol class="step-list">
+                <li>Una vez iniciada la sesión, haga clic en el botón "Panel de Administración" en la parte superior izquierda</li>
+                <li>Se abrirá un modal para cambiar la contraseña</li>
+                <li>Ingrese su contraseña actual (SupervisorIT2025 si nunca la ha cambiado)</li>
+                <li>Ingrese y confirme su nueva contraseña (mínimo 6 caracteres)</li>
+                <li>Haga clic en "Guardar Cambios"</li>
+                <li>Se mostrará un mensaje de confirmación "Contraseña actualizada correctamente"</li>
+                <li>El modal se cerrará automáticamente después de 2 segundos</li>
+            </ol>
+            
+            <div class="warning">
+                <p><strong>Importante:</strong> Recuerde su nueva contraseña. Si la olvida, deberá limpiar los datos del navegador para restablecer la contraseña predeterminada.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-clipboard-list"></i> Registro de Casos Delictivos</h2>
+            
+            <h3>Completar información general:</h3>
+            <ol class="step-list">
+                <li>Complete los campos en la parte superior del formulario:
+                    <ul>
+                        <li>Empresa</li>
+                        <li>Responsable de Seguridad</li>
+                        <li>Fecha (automática)</li>
+                        <li>Trimestre</li>
+                        <li>Cédula</li>
+                    </ul>
+                </li>
+            </ol>
+            
+            <h3>Registrar casos delictivos:</h3>
+            <ol class="step-list">
+                <li>En la sección "Casos Delictivos Ocurridos en el Trimestre", seleccione la tipificación del delito</li>
+                <li>Ingrese la fecha del incidente</li>
+                <li>Especifique la cantidad de casos</li>
+                <li>Ingrese la cuantía (valor monetario de las pérdidas)</li>
+                <li>Si aplica, ingrese el número de denuncia</li>
+                <li>Seleccione el producto o mercancía afectada</li>
+                <li>Agregue observaciones si es necesario</li>
+                <li>Haga clic en el botón "+" para agregar el caso a la tabla</li>
+            </ol>
+            
+            <div class="note">
+                <p><strong>Nota:</strong> Puede agregar múltiples casos delictivos. El sistema calculará automáticamente los totales.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-user-shield"></i> Gestión de Delincuentes Capturados</h2>
+            
+            <h3>Agregar un nuevo delincuente:</h3>
+            <ol class="step-list">
+                <li>En la sección "Delincuentes Capturados", haga clic en el botón "+" para abrir el modal</li>
+                <li>Complete el formulario con la información del delincuente:
+                    <ul>
+                        <li>Nombre y apellido</li>
+                        <li>Cédula</li>
+                        <li>Edad</li>
+                        <li>Delito cometido</li>
+                        <li>Cuantía</li>
+                        <li>Número de denuncia/resolución</li>
+                        <li>Fecha</li>
+                        <li>Provincia</li>
+                        <li>Lugar</li>
+                        <li>Otros campos relevantes</li>
+                    </ul>
+                </li>
+                <li>Haga clic en "Guardar" para registrar al delincuente</li>
+            </ol>
+            
+            <h3>Ver historial de delincuentes:</h3>
+            <p>El sistema mantiene dos tipos de registros:</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-list"></i> <strong>Delincuentes Capturados:</strong> Muestra los delincuentes del registro actual</li>
+                <li><i class="fas fa-history"></i> <strong>Historial de Delincuentes:</strong> Mantiene un registro persistente de todos los delincuentes</li>
+            </ul>
+            
+            <div class="note">
+                <p><strong>Nota:</strong> El historial de delincuentes se mantiene incluso después de reiniciar el formulario o generar un PDF.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-chart-bar"></i> Top 20 Productos y Mercancías Robadas</h2>
+            
+            <p>Esta sección muestra un listado de los 20 productos más robados, ordenados por cantidad.</p>
+            
+            <h3>Gestión de productos robados:</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-plus-circle"></i> Los productos se agregan automáticamente al registrar casos delictivos</li>
+                <li><i class="fas fa-sort-amount-down"></i> Se ordenan automáticamente por cantidad total</li>
+                <li><i class="fas fa-database"></i> Se mantienen persistentes entre sesiones</li>
+            </ul>
+            
+            <h3>Limpiar registro de productos:</h3>
+            <ol class="step-list">
+                <li>Haga clic en el botón "Limpiar Productos"</li>
+                <li>Ingrese las credenciales de administrador cuando se le solicite</li>
+                <li>Confirme la acción</li>
+            </ol>
+            
+            <div class="warning">
+                <p><strong>Advertencia:</strong> Limpiar el registro de productos eliminará permanentemente todos los datos de productos robados.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-file-pdf"></i> Generación de Reportes PDF</h2>
+            
+            <h3>Generar un reporte PDF:</h3>
+            <ol class="step-list">
+                <li>Complete todos los campos requeridos del formulario</li>
+                <li>Registre al menos un caso delictivo</li>
+                <li>Haga clic en el botón "Guardar documento" en la parte inferior del formulario</li>
+                <li>El sistema generará un PDF con la siguiente estructura:
+                    <ul>
+                        <li>Título: "REGISTRO DE ACTIVIDAD CRIMINAL"</li>
+                        <li>Información de la empresa y responsable</li>
+                        <li>Fecha y trimestre</li>
+                        <li>Tabla de casos delictivos ocurridos en el trimestre</li>
+                        <li>Reporte de pérdidas trimestrales</li>
+                    </ul>
+                </li>
+                <li>El PDF se abrirá en una nueva pestaña del navegador</li>
+                <li>Se mostrará un mensaje de éxito: "Documento PDF generado correctamente. Recargando página..."</li>
+                <li>Después de 2 segundos, la página se recargará automáticamente (como si presionara F5)</li>
+                <li>El sistema estará listo para un nuevo registro con todos los campos limpios</li>
+            </ol>
+            
+            <div class="note">
+                <p><strong>Nota:</strong> Al generar un PDF y recargar la página, el sistema limpia completamente el formulario principal y las tablas temporales (delincuentes capturados y reporte de pérdidas), pero mantiene intactos los datos del historial de delincuentes y el top 20 de productos robados.</p>
+            </div>
+            
+            <div class="warning">
+                <p><strong>Importante:</strong> Asegúrese de que el PDF se haya generado correctamente antes de que la página se recargue. Si necesita más tiempo para ver o guardar el PDF, puede hacerlo en la nueva pestaña que se abre.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-trash-alt"></i> Reinicio y Limpieza de Datos</h2>
+            
+            <h3>Reinicio automático del formulario:</h3>
+            <p>El sistema ahora incluye un reinicio automático completo después de generar un PDF:</p>
+            <ol class="step-list">
+                <li>Al guardar el documento PDF, se muestra un mensaje de éxito</li>
+                <li>Después de 2 segundos, la página se recarga completamente (como si presionara F5)</li>
+                <li>Todos los campos del formulario se limpian</li>
+                <li>La tabla de delincuentes capturados se vacía y muestra el mensaje "No hay delincuentes registrados"</li>
+                <li>La tabla de pérdidas trimestrales se reinicia con todos los valores en cero</li>
+                <li>Las tablas perpetuas (historial de delincuentes y top 20 de productos) se mantienen intactas</li>
+            </ol>
+            
+            <h3>Limpiar historial de delincuentes:</h3>
+            <ol class="step-list">
+                <li>Haga clic en el botón "Limpiar Delincuentes"</li>
+                <li>Se abrirá un modal de autenticación</li>
+                <li>Ingrese las credenciales de administrador:
+                    <ul>
+                        <li>Usuario: admin</li>
+                        <li>Contraseña: SupervisorIT2025 (o su contraseña personalizada si la ha cambiado)</li>
+                    </ul>
+                </li>
+                <li>Confirme la acción en el cuadro de diálogo</li>
+                <li>Se eliminarán todos los registros de delincuentes y se mostrará un mensaje de confirmación</li>
+            </ol>
+            
+            <h3>Limpiar top 20 de productos:</h3>
+            <ol class="step-list">
+                <li>Haga clic en el botón "Limpiar Productos"</li>
+                <li>Se abrirá el mismo modal de autenticación</li>
+                <li>Ingrese las credenciales de administrador</li>
+                <li>Confirme la acción</li>
+                <li>Se eliminarán todos los registros de productos robados y se mostrará un mensaje de confirmación</li>
+            </ol>
+            
+            <div class="warning">
+                <p><strong>Advertencia:</strong> La limpieza de datos es permanente y no se puede deshacer. Asegúrese de que realmente desea eliminar estos registros antes de confirmar.</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-question-circle"></i> Preguntas Frecuentes</h2>
+            
+            <h3>¿Dónde se almacenan los datos?</h3>
+            <p>Los datos se almacenan localmente en el navegador utilizando localStorage. Esto significa que los datos persisten entre sesiones en el mismo dispositivo, pero no se sincronizan entre diferentes dispositivos.</p>
+            
+            <h3>¿Qué sucede si olvido mi contraseña de administrador?</h3>
+            <p>Si olvida su contraseña personalizada, deberá limpiar los datos de localStorage del navegador. Esto restablecerá la contraseña predeterminada (SupervisorIT2025), pero también eliminará todos los datos almacenados.</p>
+            
+            <h3>¿Puedo exportar los datos a otros formatos además de PDF?</h3>
+            <p>Actualmente, el sistema solo admite la exportación a formato PDF. Si necesita otros formatos, puede capturar pantallas o copiar manualmente los datos.</p>
+            
+            <h3>¿El sistema funciona sin conexión a internet?</h3>
+            <p>Una vez cargada la página, el sistema puede funcionar sin conexión a internet, ya que todos los datos se almacenan localmente. Sin embargo, algunas funciones como la carga de fuentes o bibliotecas externas pueden requerir conexión.</p>
+            
+            <h3>¿Por qué aparece una advertencia de seguridad al acceder al sitio?</h3>
+            <p>La advertencia aparece porque el navegador detecta que estás accediendo al sitio a través de HTTP en lugar de HTTPS. Para una experiencia más segura:</p>
+            <ol class="step-list">
+                <li>Intenta acceder al sitio usando HTTPS explícitamente: <a href="https://registro-actividad-criminal.onrender.com">https://registro-actividad-criminal.onrender.com</a></li>
+                <li>Si la advertencia persiste, puedes hacer clic en "El sitio web es legítimo" para continuar</li>
+                <li>Esta advertencia es solo una medida de seguridad del navegador y no afecta la funcionalidad del sistema</li>
+            </ol>
+            <p>Estamos trabajando para resolver este problema en futuras actualizaciones.</p>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-cogs"></i> Soporte Técnico</h2>
+            
+            <p>Si encuentra algún problema o tiene preguntas adicionales sobre el uso del sistema, puede contactar al soporte técnico:</p>
+            
+            <ul class="feature-list">
+                <li><i class="fas fa-envelope"></i> <strong>Correo electrónico:</strong> lboutin@outlook.es</li>
+                <li><i class="fas fa-bug"></i> <strong>Reporte de errores:</strong> <a href="https://github.com/SupervisorIT/registro-actividad-criminal/issues">GitHub Issues</a></li>
+                <li><i class="fas fa-globe"></i> <strong>Sitio web:</strong> <a href="https://registro-actividad-criminal.onrender.com">https://registro-actividad-criminal.onrender.com</a></li>
+                <li><i class="fas fa-code-branch"></i> <strong>Repositorio:</strong> <a href="https://github.com/SupervisorIT/registro-actividad-criminal">GitHub - SupervisorIT/registro-actividad-criminal</a></li>
+            </ul>
+            
+            <div class="note">
+                <p><strong>Versión del sistema:</strong> 1.3.0 (Mayo 2025)</p>
+                <p><strong>Última actualización del manual:</strong> 29 de mayo de 2025</p>
+            </div>
+        </div>
+        
+        <a href="index.html" class="back-button"><i class="fas fa-arrow-left"></i> Volver a la aplicación</a>
+    </div>
+</body>
+</html>
