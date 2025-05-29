@@ -1,40 +1,32 @@
-# 📊 Sistema de Registro de Actividad Criminal
+# Sistema de Registro de Actividad Criminal
 
-<div align="center">
+![Versión](https://img.shields.io/badge/Versión-1.3.0-blue)
+![Fecha](https://img.shields.io/badge/Última%20Actualización-Mayo%202025-brightgreen)
+![Estado](https://img.shields.io/badge/Estado-Producción-success)
 
-![Versión](https://img.shields.io/badge/Versi%C3%B3n-1.3.0-blue)
-![Fecha](https://img.shields.io/badge/Última%20Actualizaci%C3%B3n-Mayo%202025-brightgreen)
-![Estado](https://img.shields.io/badge/Estado-Producci%C3%B3n-success)
-
-</div>
-
-## 🔎 Descripción
+## Descripción
 
 Esta aplicación web permite registrar, visualizar y gestionar información sobre actividades criminales y delincuentes capturados. Es una herramienta diseñada para uso interno de empresas de seguridad, departamentos legales o instituciones que requieran llevar un control digital de incidentes y reportes.
 
-<div align="center">
+**[Ver Demo en Vivo](https://registro-actividad-criminal.onrender.com)**
 
-**✨ [Ver Demo en Vivo](https://registro-actividad-criminal.onrender.com) ✨**
-
-</div>
-
-## 💻 Tecnologías utilizadas
+## Tecnologías utilizadas
 
 - **Frontend:** HTML5, CSS3, JavaScript (ES6+)
 - **Bibliotecas:** Bootstrap 5, Font Awesome, jsPDF
 - **Almacenamiento:** LocalStorage (persistencia de datos en navegador)
 - **Despliegue:** Render (hosting)
 
-## ✨ Funcionalidades principales
+## Funcionalidades principales
 
-- 📊 **Registro de casos delictivos** por trimestre y empresa
-- 👮 **Gestión de delincuentes capturados:** alta, visualización y almacenamiento local
-- 📈 **Generación de reportes** y tablas estadísticas
-- 📱 **Interfaz responsiva** adaptable para escritorio y dispositivos móviles
-- 🔐 **Sistema de autenticación** para proteger datos sensibles
-- 💾 **Exportación de datos** en formato PDF
+- **Registro de casos delictivos** por trimestre y empresa
+- **Gestión de delincuentes capturados:** alta, visualización y almacenamiento local
+- **Generación de reportes** y tablas estadísticas
+- **Interfaz responsiva** adaptable para escritorio y dispositivos móviles
+- **Sistema de autenticación** para proteger datos sensibles
+- **Exportación de datos** en formato PDF
 
-## 📍 Instalación y uso local
+## Instalación y uso local
 
 ```bash
 # Clonar el repositorio
@@ -52,7 +44,7 @@ npx serve
 
 O simplemente abre el archivo `index.html` en tu navegador.
 
-## 📝 Guía de uso
+## Guía de uso
 
 1. **Iniciar sesión:**
    - Usuario: `admin`
@@ -74,14 +66,14 @@ O simplemente abre el archivo `index.html` en tu navegador.
    - Accede al panel de administración para cambiar la contraseña
    - Gestiona la configuración del sistema
 
-## 💡 Notas importantes
+## Notas importantes
 
 - **Persistencia:** Los datos se guardan en el navegador del usuario (localStorage). Si borras el caché, se perderán los registros.
 - **Despliegue:** El sitio está publicado en Render con HTTPS habilitado para mayor seguridad.
 - **Compatibilidad:** Optimizado para navegadores modernos (Chrome, Firefox, Edge, Safari).
 - **Manual de usuario:** Disponible en la aplicación a través del botón de ayuda.
 
-## 💬 Soporte y contacto
+## Soporte y contacto
 
 Para reportar errores, sugerencias o solicitar soporte:
 
@@ -89,14 +81,10 @@ Para reportar errores, sugerencias o solicitar soporte:
 - **Repositorio:** [GitHub - SupervisorIT/registro-actividad-criminal](https://github.com/SupervisorIT/registro-actividad-criminal)
 - **Sitio web:** [registro-actividad-criminal.onrender.com](https://registro-actividad-criminal.onrender.com)
 
-## 📝 Licencia
+## Licencia
 
 Este proyecto está bajo licencia privada. Todos los derechos reservados.
 
 ---
 
-<div align="center">
-
 **Desarrollado por SupervisorIT © 2025**
-
-</div>
