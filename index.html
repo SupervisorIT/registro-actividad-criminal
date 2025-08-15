@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Actividad Criminal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles_ajustado.css">
+    <!-- Eliminados CSS inexistentes para evitar 404: fix-*.css -->
+    <link rel="stylesheet" href="paginacion.css">
+    <link rel="stylesheet" href="modal-delincuentes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librería SheetJS para exportación/importación Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/session-check.js"></script>
+    
+    <script>
+        window.jspdf = window.jspdf || {};
+        // Asegurarnos de que jsPDF esté disponible globalmente
+        window.initJsPDF = function() {
+            console.log('Inicializando jsPDF y plugins...');
+            // Verificar que todo esté cargado correctamente
+            if (window.jspdf && window.jspdf.jsPDF) {
+                console.log('jsPDF está disponible correctamente');
+            } else {
+                console.error('Error: jsPDF no está disponible correctamente');
+            }
+        };
+    </script>
+    
+    </head>
+<body>
+    <div class="admin-access">
+        <button id="adminButton" class="btn btn-primary admin-only" onclick="abrirModalAdminPanel()" style="margin-right: 10px; display:none;">
+            <i class="fas fa-shield-alt"></i> Panel de Administración
+        </button>
+        <button id="helpButton" class="btn btn-info" onclick="window.location.href='manual-ayuda.html'">
+            <i class="fas fa-question-circle"></i> Ayuda
+        </button>
+    </div>
+
+<!-- Modal Perfil de Usuario -->
+<div id="modalPerfilUsuario" class="modal" style="display:none; position:fixed; z-index:1002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
+  <div class="modal-content" style="background:#fff; margin:12% auto; width:420px; border-radius:8px; overflow:hidden;">
+    <div style="padding:12px 16px; background:#3949ab; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0;">Perfil de Usuario</h4>
+      <span class="close" onclick="cerrarModalPerfilUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
+    </div>
+    <div style="padding:16px;">
+      <div style="display:grid; grid-template-columns:120px 1fr; row-gap:8px; column-gap:8px;">
+        <div style="color:#666;">Usuario:</div><div id="pu_username" style="font-weight:600;"></div>
+        <div style="color:#666;">Nombre:</div><div id="pu_nombre" style="font-weight:600;"></div>
+        <div style="color:#666;">Cédula:</div><div id="pu_cedula" style="font-weight:600;"></div>
+        <div style="color:#666;">Rol:</div><div id="pu_rol" style="font-weight:600;"></div>
+      </div>
+    </div>
+    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="cerrarModalPerfilUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+    <div class="container">
+        <div class="header">
+            <h2>Registro de Actividad Criminal</h2>
+            <div class="user-info-container"> <div class="user-info">
+                    <span>Usuario: <strong id="usuarioInfo"></strong></span>
+                    <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button> </div>
+            </div>
+        </div>
+        <form id="actividadCriminalForm">
+            <table class="form-table">
+                <tr>
+                    <td>Empresa:</td>
+                    <td>
+                        <input type="text" id="empresa" name="empresa" required pattern="[A-Za-z0-9\s]+" 
+                               title="Solo se permiten caracteres alfanuméricos">
+                    </td>
+                    <td><strong>Fecha:</strong></td>
+                    <td>
+                        <input type="text" id="fecha" name="fecha" value="26 de marzo de 2025" readonly class="form-control fecha-input input-fecha-delito" placeholder="DD/MM/AAAA" style="width: 100%; box-sizing: border-box;" required data-formateo-inicializado="true"> </td>
+                </tr>
+                <tr>
+                    <td>Responsable de Seguridad:</td>
+                    <td>
+                        <input type="text" id="responsable" name="responsable" required>
+                    </td>
+                    <td>Trimestre:</td>
+                    <td>
+                        <select id="trimestre" name="trimestre" required>
+                            <option value="Q1">1er Trimestre</option>
+                            <option value="Q2">2do Trimestre</option>
+                            <option value="Q3">3er Trimestre</option>
+                            <option value="Q4">4to Trimestre</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Cédula:</td>
+                    <td colspan="3">
+                        <input type="text" id="cedula" name="cedula" required 
+                               pattern="^([PE]|N|E)-?\d{1,2}-?\d{1,4}-?\d{1,5}$|^\d{1,2}-\d{1,4}-\d{1,5}$" 
+                               title="Formato válido: P-00-0000-00000 o E-00-0000-00000 o N-00-0000-00000 o 00-0000-00000"
+                               placeholder="Ej: P-00-0000-00000">
+                    </td>
+                </tr>
+            </table>
+
+            <div class="section-title">CASOS DELICTIVOS OCURRIDOS EN EL TRIMESTRE</div>
+            
+            <table id="tablaCasosDelictivos" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">Tipificación</th>
+                        <th style="width: 120px;">Fecha</th>
+                        <th style="width: 100px;">Cantidad</th>
+                        <th style="width: 120px;">Cuantía (B/.)</th>
+                        <th style="width: 100px;">Denuncias</th>
+                        <th style="width: 150px;">Producto/Mercancía</th>
+                        <th style="width: 200px;">Observaciones</th>
+                        <th style="width: 80px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="width: 120px;">
+                            <div class="tipificacion-container">
+                                <span class="tipificacion-texto">Hurto</span>
+                                <button type="button" class="btn btn-xs btn-primary tipificacion-selector-btn" style="padding: 2px 5px; font-size: 10px; margin-left: 5px;" onclick="abrirModalTipificacion(this)">...</button>
+                                <input type="hidden" name="tipificacion[]" value="Hurto" class="tipificacion-input" required>
+                            </div>
+                        </td>
+                        <td style="width: 120px;">
+                            <input type="text" name="fecha[]" class="form-control fecha-input input-fecha-delito" placeholder="DD/MM/AAAA" inputmode="numeric" style="width: 100%; box-sizing: border-box;" required>
+                        </td>
+                        <td style="width: 100px;">
+                            <input type="number" min="0" name="cantidad[]" class="form-control cantidad-input" style="width: 100%;" required placeholder="0">
+                        </td>
+                        <td style="width: 120px;">
+                            <input type="number" min="0" step="0.01" name="cuantia[]" class="form-control cuantia-input" style="width: 100%;" required placeholder="0.00">
+                        </td>
+                        <td style="width: 100px;">
+                            <input type="number" min="0" name="denuncias[]" class="form-control denuncias-input" style="width: 100%;" required placeholder="0">
+                        </td>
+                        <td style="width: 150px;">
+                            <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
+                        </td>
+                        <td style="width: 200px;">
+                            <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required onchange="onObservacionCambio(this)"> <!-- input simple, sin desplegable -->
+                        </td>
+                        <td style="width: 80px; text-align: center;">
+                            <div style="display: flex; justify-content: center; gap: 5px;">
+                                <button type="button" class="btn btn-success btn-sm" title="Agregar" onclick="agregarFilaProductoSoloVisual()">+</button>
+<button type="button" class="btn btn-danger btn-sm" title="Eliminar" onclick="eliminarFila(this)">X</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr id="placeholder-casos" style="display:none;"> <td colspan="8" class="text-center-content placeholder-text">Agregue un caso delictivo usando el botón +</td> </tr>
+                    <tr class="total-row">
+                        <td><strong>TOTAL</strong></td>
+                        <td></td>
+                        <td id="totalCantidad" class="text-center-content">0</td>
+                        <td id="totalCuantia" class="text-center-content">B/. 0.00</td>
+                        <td id="totalDenuncias" class="text-center-content">0</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div id="reporte-perdidas-trimestrales-anchor"></div>
+
+
+            
+            <div class="section-title">Delincuente Capturado</div><div class="tabla-delincuentes-container" style="overflow-x:auto; width:100%;">
+                <!-- Aquí estaba la tabla antigua de historial de delincuentes capturados. Eliminada para dejar solo la nueva tabla en memoria. -->
+                <table id="tablaDelincuentesSimple" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>NOMBRE Y APELLIDO</th>
+                            <th>CEDULA</th>
+                            <th>EDAD</th>
+                            <th>DIRECCIÓN</th>
+                            <th>VEHICULO</th>
+                            <th>PLACA</th>
+                            <th>COLOR</th>
+                            <th>FECHA<br>DE CAPTURA</th>
+                            <th>DELITO<br>COMETIDO</th>
+                            <th>PRODUCTOS</th>
+                            <th>CUANTIA</th>
+                            <th>N° DE DENUNCIA<br>O RESOLUCIÓN<br>DE JUZGADO</th>
+                            <th>ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyDelincuentesSimple">
+    <!-- Filas generadas dinámicamente -->
+</tbody>
+                </table>
+            </div>
+            
+
+            <div class="section-title">Reporte de Pérdidas Trimestrales</div>
+<div>
+                <div class="tabla-perdidas-container">
+                    <table id="tablaPerdidas" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Casos</th>
+                                <th>Pérdidas (B/.)</th>
+                                <th>Rango de Fechas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Aquí se generarán dinámicamente las filas de meses -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td><strong>TOTAL</strong></td>
+                                <td id="totalCasosPerdidas">0</td>
+                                <td id="totalPerdidasMonto">B/. 0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>            
+            <div class="mt-30" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+  <div class="tabla-delincuentes-persistentes-container" style="background:#fff;border:1px solid #cfd6e1;border-radius:6px;padding:12px;">
+    <div style="width: 600px;">
+      <h3 class="section-title">Historial de Delincuentes Capturados</h3>
+
+      <table class="table table-bordered" id="tablaDelincuentesPersistentes">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre y Apellido</th>
+            <th>Cédula</th>
+            <th>Edad</th>
+            <th>Delito Cometido</th>
+            <th>Cuantía</th>
+            <th>N° Denuncia/Resolución</th>
+          </tr>
+        </thead>
+        <tbody>
+            <!-- Filas generadas por JS -->
+        </tbody>
+    </table>
+</div>
+                    <div class="mt-10" style="display: flex; justify-content: space-between; align-items: center;">
+                        <button id="limpiarDelincuentesBtn" class="btn btn-danger" onclick="limpiarDelincuentesPersistentes()">Limpiar Delincuentes</button>
+
+<!-- Modal de autenticación para limpiar historial (genérico) -->
+<div id="modalAuthLimpiar" class="modal" style="display:none !important;position:fixed;z-index:3000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+  <div style="background:#fff;max-width:350px;width:90vw;padding:24px 18px;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.22);position:relative;">
+    <h5 id="modalAuthLimpiarTitulo" style="margin-top:0;margin-bottom:14px;color:#b30000;font-weight:700;">Autenticación de administrador</h5>
+    <div style="margin-bottom:10px;">
+      <input id="authUser" type="text" class="form-control" placeholder="Usuario" style="width:100%;margin-bottom:8px;" autocomplete="username">
+      <input id="authPass" type="password" class="form-control" placeholder="Contraseña" style="width:100%;margin-bottom:8px;" autocomplete="current-password">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="cerrarModalAuthLimpiar()">Cancelar</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="autenticarYLimpiar()">Aceptar</button>
+    </div>
+    <div id="authMsg" style="color:#b30000;font-size:13px;margin-top:8px;display:none;"></div>
+    <input type="hidden" id="tipoLimpieza" value="">
+  </div>
+</div>
+<script src="limpieza-modales.js"></script>
+                        <div id="paginacionDelincuentes" class="paginacion-container"></div>
+                    </div>
+                </div>
+                
+                <div class="tabla-productos-container" style="background:#fff;border:1px solid #cfd6e1;border-radius:6px;padding:12px;margin-top:20px;">
+                    <div style="width: 300px;">
+                        <h3 class="section-title">Top 20 Productos y Mercancías Robadas</h3>
+                    </div>
+                    <table id="tablaProductos" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Producto/Mercancía</th>
+                                <th>Cantidad Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 20 filas fijas para el Top 20 -->
+                            <tr id="producto-row-1">
+                                <td>1</td>
+                                <td id="nombre-1"></td>
+                                <td id="cantidad-1"></td>
+                            </tr>
+                            <tr id="producto-row-2">
+                                <td>2</td>
+                                <td id="nombre-2"></td>
+                                <td id="cantidad-2"></td>
+                            </tr>
+                            <tr id="producto-row-3">
+                                <td>3</td>
+                                <td id="nombre-3"></td>
+                                <td id="cantidad-3"></td>
+                            </tr>
+                            <tr id="producto-row-4">
+                                <td>4</td>
+                                <td id="nombre-4"></td>
+                                <td id="cantidad-4"></td>
+                            </tr>
+                            <tr id="producto-row-5">
+                                <td>5</td>
+                                <td id="nombre-5"></td>
+                                <td id="cantidad-5"></td>
+                            </tr>
+                            <tr id="producto-row-6">
+                                <td>6</td>
+                                <td id="nombre-6"></td>
+                                <td id="cantidad-6"></td>
+                            </tr>
+                            <tr id="producto-row-7">
+                                <td>7</td>
+                                <td id="nombre-7"></td>
+                                <td id="cantidad-7"></td>
+                            </tr>
+                            <tr id="producto-row-8">
+                                <td>8</td>
+                                <td id="nombre-8"></td>
+                                <td id="cantidad-8"></td>
+                            </tr>
+                            <tr id="producto-row-9">
+                                <td>9</td>
+                                <td id="nombre-9"></td>
+                                <td id="cantidad-9"></td>
+                            </tr>
+                            <tr id="producto-row-10">
+                                <td>10</td>
+                                <td id="nombre-10"></td>
+                                <td id="cantidad-10"></td>
+                            </tr>
+                            <tr id="producto-row-11">
+                                <td>11</td>
+                                <td id="nombre-11"></td>
+                                <td id="cantidad-11"></td>
+                            </tr>
+                            <tr id="producto-row-12">
+                                <td>12</td>
+                                <td id="nombre-12"></td>
+                                <td id="cantidad-12"></td>
+                            </tr>
+                            <tr id="producto-row-13">
+                                <td>13</td>
+                                <td id="nombre-13"></td>
+                                <td id="cantidad-13"></td>
+                            </tr>
+                            <tr id="producto-row-14">
+                                <td>14</td>
+                                <td id="nombre-14"></td>
+                                <td id="cantidad-14"></td>
+                            </tr>
+                            <tr id="producto-row-15">
+                                <td>15</td>
+                                <td id="nombre-15"></td>
+                                <td id="cantidad-15"></td>
+                            </tr>
+                            <tr id="producto-row-16">
+                                <td>16</td>
+                                <td id="nombre-16"></td>
+                                <td id="cantidad-16"></td>
+                            </tr>
+                            <tr id="producto-row-17">
+                                <td>17</td>
+                                <td id="nombre-17"></td>
+                                <td id="cantidad-17"></td>
+                            </tr>
+                            <tr id="producto-row-18">
+                                <td>18</td>
+                                <td id="nombre-18"></td>
+                                <td id="cantidad-18"></td>
+                            </tr>
+                            <tr id="producto-row-19">
+                                <td>19</td>
+                                <td id="nombre-19"></td>
+                                <td id="cantidad-19"></td>
+                            </tr>
+                            <tr id="producto-row-20">
+                                <td>20</td>
+                                <td id="nombre-20"></td>
+                                <td id="cantidad-20"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2">TOTAL</td>
+                                <td id="totalCantidadProductos">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <button id="limpiarProductosBtn" class="btn btn-danger mt-10" onclick="limpiarProductosRobados()">Limpiar Productos</button>
+                </div>
+            </div>
+
+                        
+            <div class="actions-container" style="display:flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary" onclick="guardarExcelPdfYReiniciar()">Guardar documento</button>
+                <button type="button" class="btn btn-secondary" onclick="actualizarExcelExistente()">Actualizar Excel existente</button>
+            </div>
+
+            <div class="modal fade" id="vistaPreviaModal" tabindex="-1" role="dialog" aria-labelledby="vistaPreviaModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="vistaPreviaModalLabel">Vista Previa del Documento</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="pdfViewer" class="pdf-viewer-style"></div> </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-success" onclick="imprimirDocumento()">Imprimir</button>
+                            <button type="button" class="btn btn-primary" onclick="guardarDocumentoLocal()">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- Sección de estadísticas de seguridad eliminada -->
+    </div>
+
+    <!-- Modal para seleccionar tipificación - Diseño moderno -->
+    <div class="modal fade" id="modalTipificacion" tabindex="-1" role="dialog" aria-labelledby="modalTipificacionLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                <div class="modal-header bg-primary text-white" style="border-bottom: none; padding: 15px 20px;">
+                    <h5 class="modal-title" id="modalTipificacionLabel" style="font-weight: 600;">Seleccionar Tipificación</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 1;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 0;">
+                    <div class="tipificacion-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px;">
+                        <div class="tipificacion-card" data-value="Hurto" style="background: linear-gradient(135deg, #4e73df, #224abe); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-hand-holding-usd" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Hurto</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Robo" style="background: linear-gradient(135deg, #e74a3b, #be2617); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-mask" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Robo</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Fraude" style="background: linear-gradient(135deg, #f6c23e, #dda20a); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-file-signature" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Fraude</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Vandalismo" style="background: linear-gradient(135deg, #1cc88a, #13855c); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-spray-can" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Vandalismo</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Extorsión" style="background: linear-gradient(135deg, #36b9cc, #258391); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-money-bill-wave" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Extorsión</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Estafa" style="background: linear-gradient(135deg, #6f42c1, #4e2d89); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-user-secret" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Estafa</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Secuestro" style="background: linear-gradient(135deg, #5a5c69, #373840); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-user-lock" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Secuestro</span>
+                        </div>
+                        <div class="tipificacion-card" data-value="Otro" style="background: linear-gradient(135deg, #858796, #60616f); color: white; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center;">
+                            <i class="fas fa-question-circle" style="font-size: 24px; margin-right: 10px;"></i>
+                            <span style="font-weight: 500;">Otro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dependencias externas -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script>
+    // Inicializar jsPDF y AutoTable cuando se carguen
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.jspdf && window.jspdf.jsPDF) {
+            console.log('jsPDF cargado correctamente');
+            // Probar si autoTable está disponible
+            try {
+                const testDoc = new window.jspdf.jsPDF();
+                if (typeof testDoc.autoTable === 'function') {
+                    console.log('Plugin AutoTable cargado correctamente');
+                } else {
+                    console.error('Error: AutoTable no está disponible en el objeto jsPDF');
+                }
+            } catch (error) {
+                console.error('Error al inicializar jsPDF:', error);
+            }
+        } else {
+            console.error('Error: jsPDF no está disponible');
+        }
+    });
+
+    // Stub: solo administradores pueden abrir este flujo
+    function abrirModalCrearUsuario() {
+        try {
+            const data = sessionStorage.getItem('usuarioActivo');
+            if (!data) {
+                alert('Sesión expirada. Inicie sesión nuevamente.');
+                window.location.href = 'login.html';
+                return;
+            }
+            const user = JSON.parse(data);
+            if (user.rol !== 'admin') {
+                alert('Acceso restringido a administradores.');
+                return;
+            }
+            // Abrir modal real de creación
+            document.getElementById('modalCrearUsuario').style.display = 'flex';
+            document.getElementById('modalAdminPanel').style.display = 'none';
+            // Limpiar campos
+            ['cu_usuario','cu_nombreCompleto','cu_cedula','cu_password'].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.value = '';
+            });
+            const rolSel = document.getElementById('cu_rol');
+            if (rolSel) rolSel.value = 'usuario';
+            const msg = document.getElementById('msgCrearUsuario');
+            if (msg) { msg.style.display='none'; msg.textContent=''; }
+        } catch (e) {
+            console.error('Error al validar rol para crear usuario:', e);
+            alert('No se pudo validar permisos.');
+        }
+    }
+
+    function cerrarModalCrearUsuario() {
+        document.getElementById('modalCrearUsuario').style.display = 'none';
+    }
+
+    function abrirModalAdminPanel() {
+        try {
+            const data = sessionStorage.getItem('usuarioActivo');
+            if (!data) { window.location.href='login.html'; return; }
+            const user = JSON.parse(data);
+            if (user.rol !== 'admin') { alert('Acceso restringido a administradores.'); return; }
+            document.getElementById('modalAdminPanel').style.display = 'flex';
+            renderUsuariosPanel();
+        } catch (e) { console.error(e); }
+    }
+
+    function cerrarModalAdminPanel() {
+        document.getElementById('modalAdminPanel').style.display = 'none';
+    }
+
+    // Crear usuario persistiendo en localStorage (rol forzado a 'usuario')
+    function crearUsuarioDesdeAdmin() {
+        const u = (document.getElementById('cu_usuario').value || '').trim();
+        const n = (document.getElementById('cu_nombreCompleto').value || '').trim();
+        const c = (document.getElementById('cu_cedula').value || '').trim();
+        const p = (document.getElementById('cu_password').value || '').trim();
+        const r = (document.getElementById('cu_rol') && document.getElementById('cu_rol').value) ? document.getElementById('cu_rol').value : 'usuario';
+        const msg = document.getElementById('msgCrearUsuario');
+
+        const showMsg = (text, type) => {
+          msg.textContent = text;
+          msg.style.display = 'block';
+          if (type === 'error') { msg.style.background='#f8d7da'; msg.style.color='#721c24'; msg.style.border='1px solid #f5c6cb'; }
+          else { msg.style.background='#d4edda'; msg.style.color='#155724'; msg.style.border='1px solid #c3e6cb'; }
+        };
+
+        if (!u || !n || !p) { showMsg('Complete usuario, nombre y contraseña.', 'error'); return; }
+
+        // Construir lista para verificar duplicados (predefinidos + registrados)
+        const predef = [
+          { username: 'admin' },
+          { username: 'usuario' }
+        ];
+        let registrados = [];
+        try { registrados = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]'); } catch(e) { registrados = []; }
+        const lista = [...predef, ...registrados];
+        if (lista.some(x => x.username.toLowerCase() === u.toLowerCase())) { showMsg('El usuario ya existe.', 'error'); return; }
+
+        // Crear objeto usuario con rol seleccionado
+        const nuevo = { username: u, password: p, nombreCompleto: n, cedula: c, rol: r, nombre: n };
+        registrados.push(nuevo);
+        localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
+
+        showMsg('Usuario creado correctamente.', 'success');
+        setTimeout(() => { cerrarModalCrearUsuario(); renderUsuariosPanel(); }, 800);
+    }
+
+    // Utilidad: obtener lista de usuarios (predefinidos + registrados, sin duplicar)
+    function obtenerListaUsuarios() {
+        const predef = [
+          { username: 'admin', nombreCompleto: 'Administrador del Sistema', cedula: 'E-00-0000-00000', rol: 'admin', nombre: 'Administrador' },
+          { username: 'usuario', nombreCompleto: 'Usuario Estándar', cedula: 'E-00-0000-00001', rol: 'usuario', nombre: 'Usuario Estándar' }
+        ];
+        let registrados = [];
+        try { registrados = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]'); } catch(e) { registrados = []; }
+        // Evitar duplicados por username manteniendo el predef como preferente
+        const map = new Map();
+        predef.forEach(u => map.set(u.username.toLowerCase(), u));
+        registrados.forEach(u => { if (!map.has(u.username.toLowerCase())) map.set(u.username.toLowerCase(), u); });
+        return Array.from(map.values());
+    }
+
+    // Renderiza el listado de usuarios en el Panel de Administración
+    function renderUsuariosPanel() {
+        const cont = document.getElementById('adminPanelUsuariosLista');
+        const countEl = document.getElementById('adminPanelUsuariosCount');
+        if (!cont || !countEl) return;
+        const usuarios = obtenerListaUsuarios();
+        countEl.textContent = usuarios.length;
+        if (!usuarios.length) {
+            cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>';
+            return;
+        }
+        const lista = document.createElement('div');
+        lista.style.display = 'flex';
+        lista.style.flexDirection = 'column';
+        lista.style.gap = '6px';
+        usuarios.forEach(u => {
+            const item = document.createElement('div');
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            item.style.alignItems = 'center';
+            item.style.padding = '8px';
+            item.style.background = '#fff';
+            item.style.border = '1px solid #e0e0e0';
+            item.style.borderRadius = '6px';
+            const left = document.createElement('div');
+            left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+            const right = document.createElement('div');
+            const link = document.createElement('a');
+            link.href = 'javascript:void(0)';
+            link.textContent = 'Perfil';
+            link.style.color = '#1565C0';
+            link.style.textDecoration = 'underline';
+            link.onclick = () => abrirModalPerfilUsuario(u.username);
+            right.appendChild(link);
+            item.appendChild(left);
+            item.appendChild(right);
+            lista.appendChild(item);
+        });
+        cont.innerHTML = '';
+        cont.appendChild(lista);
+    }
+
+    // Abre modal de perfil poblado
+    function abrirModalPerfilUsuario(username) {
+        const usuarios = obtenerListaUsuarios();
+        const u = usuarios.find(x => x.username.toLowerCase() === String(username).toLowerCase());
+        if (!u) return;
+        document.getElementById('pu_username').textContent = u.username || '';
+        document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+        document.getElementById('pu_cedula').textContent = u.cedula || '';
+        document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
+        document.getElementById('modalPerfilUsuario').style.display = 'flex';
+    }
+
+    function cerrarModalPerfilUsuario() {
+        document.getElementById('modalPerfilUsuario').style.display = 'none';
+    }
+</script>
+
+<script>
+// --- Panel de Administración: lógica de usuarios ---
+function abrirModalAdminPanel() {
+  try {
+    const usuarioActivo = sessionStorage.getItem('usuarioActivo');
+    if (!usuarioActivo) { alert('Sesión expirada. Vuelva a iniciar sesión.'); return; }
+    const u = JSON.parse(usuarioActivo);
+    if (u.rol !== 'admin') { alert('Acceso restringido a administradores.'); return; }
+  } catch (e) { alert('Acceso restringido.'); return; }
+  const modal = document.getElementById('modalAdminPanel');
+  modal.style.display = 'block';
+  renderizarUsuariosAdminPanel();
+}
+
+function cerrarModalAdminPanel() {
+  const modal = document.getElementById('modalAdminPanel');
+  modal.style.display = 'none';
+}
+
+function abrirModalCrearUsuario() {
+  const modal = document.getElementById('modalCrearUsuario');
+  modal.style.display = 'block';
+}
+
+function cerrarModalCrearUsuario() {
+  const modal = document.getElementById('modalCrearUsuario');
+  modal.style.display = 'none';
+}
+
+function obtenerUsuariosCombinados() {
+  const predef = [
+    { username: 'admin', password: 'SupervisorIT2025', nombreCompleto: 'Administrador', rol: 'admin' },
+    { username: 'usuario', password: 'usuario123', nombreCompleto: 'Usuario Estándar', rol: 'usuario' }
+  ];
+  let registrados = [];
+  try {
+    const raw = localStorage.getItem('usuariosRegistrados');
+    if (raw) registrados = JSON.parse(raw);
+  } catch (_) {}
+  // Evitar duplicados por username; prioridad a registrados para datos extendidos (cedula)
+  const map = {};
+  predef.forEach(u => map[u.username] = u);
+  registrados.forEach(u => map[u.username] = u);
+  return Object.values(map);
+}
+
+function renderizarUsuariosAdminPanel() {
+  const cont = document.getElementById('adminPanelUsuariosLista');
+  const count = document.getElementById('adminPanelUsuariosCount');
+  cont.innerHTML = '';
+  const usuarios = obtenerUsuariosCombinados();
+  count.textContent = usuarios.length;
+  if (!usuarios.length) {
+    cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>';
+    return;
+  }
+  usuarios.forEach(u => {
+    const fila = document.createElement('div');
+    fila.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee;';
+    const info = document.createElement('div');
+    info.innerHTML = `<strong>${u.username}</strong> <span style="color:#666;">(${u.rol === 'admin' ? 'Administrador' : 'Usuario'})</span><br><span style="color:#555; font-size:12px;">${u.nombreCompleto || u.nombre || ''}</span>`;
+    const acciones = document.createElement('div');
+    acciones.style.cssText = 'display:flex; gap:6px;';
+    const btnPerfil = document.createElement('button');
+    btnPerfil.className = 'btn btn-sm btn-info';
+    btnPerfil.textContent = 'Perfil';
+    btnPerfil.onclick = () => mostrarPerfilUsuario(u.username);
+    acciones.appendChild(btnPerfil);
+    if (u.rol !== 'admin') {
+      const btnPwd = document.createElement('button');
+      btnPwd.className = 'btn btn-sm btn-warning';
+      btnPwd.textContent = 'Cambiar contraseña';
+      btnPwd.onclick = () => abrirModalCambiarContrasenaUsuario(u.username);
+      acciones.appendChild(btnPwd);
+    }
+    fila.appendChild(info);
+    fila.appendChild(acciones);
+    cont.appendChild(fila);
+  });
+}
+
+function mostrarPerfilUsuario(username) {
+  const usuarios = obtenerUsuariosCombinados();
+  const u = usuarios.find(x => x.username === username);
+  if (!u) { alert('Usuario no encontrado'); return; }
+  document.getElementById('pu_username').textContent = u.username || '';
+  document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+  document.getElementById('pu_cedula').textContent = u.cedula || '';
+  document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
+  document.getElementById('modalPerfilUsuario').style.display = 'block';
+}
+
+function cerrarModalPerfilUsuario() {
+  document.getElementById('modalPerfilUsuario').style.display = 'none';
+}
+
+function crearUsuarioDesdeAdmin() {
+  const username = document.getElementById('cu_usuario').value.trim();
+  const nombreCompleto = document.getElementById('cu_nombreCompleto').value.trim();
+  const cedula = document.getElementById('cu_cedula').value.trim();
+  const password = document.getElementById('cu_password').value.trim();
+  const rol = document.getElementById('cu_rol').value;
+  const msg = document.getElementById('msgCrearUsuario');
+  msg.style.display = 'none';
+  if (!username || !nombreCompleto || !password) {
+    msg.textContent = 'Complete los campos obligatorios';
+    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+    return;
+  }
+  // Validar duplicado
+  const existentes = obtenerUsuariosCombinados();
+  if (existentes.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+    msg.textContent = 'El nombre de usuario ya existe';
+    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+    return;
+  }
+  let registrados = [];
+  const raw = localStorage.getItem('usuariosRegistrados');
+  if (raw) { try { registrados = JSON.parse(raw); } catch(_){} }
+  registrados.push({ username, nombreCompleto, cedula, password, rol });
+  localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
+  // limpiar
+  document.getElementById('cu_usuario').value = '';
+  document.getElementById('cu_nombreCompleto').value = '';
+  document.getElementById('cu_cedula').value = '';
+  document.getElementById('cu_password').value = '';
+  document.getElementById('cu_rol').value = 'usuario';
+  // feedback
+  msg.textContent = 'Usuario creado correctamente';
+  msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
+  renderizarUsuariosAdminPanel();
+}
+
+function abrirModalCambiarContrasenaUsuario(username) {
+  document.getElementById('ccu_target').value = username;
+  document.getElementById('ccu_username').textContent = username;
+  document.getElementById('ccu_new').value = '';
+  document.getElementById('ccu_confirm').value = '';
+  const msg = document.getElementById('ccu_msg');
+  msg.style.display = 'none';
+  document.getElementById('modalCambiarContrasenaUsuario').style.display = 'block';
+}
+
+function cerrarModalCambiarContrasenaUsuario() {
+  document.getElementById('modalCambiarContrasenaUsuario').style.display = 'none';
+}
+
+function guardarCambioContrasenaUsuario() {
+  const username = document.getElementById('ccu_target').value;
+  const newPwd = document.getElementById('ccu_new').value.trim();
+  const confirmPwd = document.getElementById('ccu_confirm').value.trim();
+  const msg = document.getElementById('ccu_msg');
+  msg.style.display = 'none';
+  if (!newPwd || !confirmPwd) {
+    msg.textContent = 'Complete ambos campos';
+    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+    return;
+  }
+  if (newPwd !== confirmPwd) {
+    msg.textContent = 'Las contraseñas no coinciden';
+    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+    return;
+  }
+  if (username === 'admin') {
+    msg.textContent = 'No disponible para administrador';
+    msg.style.cssText = 'display:block;background:#fff3cd;color:#856404;border:1px solid #ffeeba;padding:8px;border-radius:4px;';
+    return;
+  }
+  if (username === 'usuario') {
+    // Guardar como predefinido modificado
+    let mods = [];
+    const rawMods = localStorage.getItem('usuariosPredefinidosModificados');
+    if (rawMods) { try { mods = JSON.parse(rawMods); } catch(_){} }
+    const idx = mods.findIndex(m => m.username === 'usuario');
+    if (idx >= 0) mods[idx].password = newPwd; else mods.push({ username: 'usuario', password: newPwd });
+    localStorage.setItem('usuariosPredefinidosModificados', JSON.stringify(mods));
+  } else {
+    let registrados = [];
+    const raw = localStorage.getItem('usuariosRegistrados');
+    if (raw) { try { registrados = JSON.parse(raw); } catch(_){} }
+    const idx = registrados.findIndex(u => u.username === username);
+    if (idx === -1) {
+      msg.textContent = 'Usuario no encontrado';
+      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+      return;
+    }
+    registrados[idx].password = newPwd;
+    localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
+  }
+  msg.textContent = 'Contraseña actualizada correctamente';
+  msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
+  setTimeout(() => { cerrarModalCambiarContrasenaUsuario(); renderizarUsuariosAdminPanel(); }, 1200);
+}
+</script>
+
+<!-- Utilidades y helpers -->
+<script src="js/simple-chart.js"></script>
+<script src="formatear-moneda.js"></script>
+<script src="formatear-fecha.js"></script>
+
+<!-- SCRIPTS PRINCIPALES: primero productos-persistentes.js -->
+<script src="productos-persistentes.js"></script>
+<script src="script.js"></script>
+<script src="script_productos.js"></script>
+<script src="script_casos.js"></script>
+<script src="admin.js"></script>
+<script src="sincronizar-tablas.js"></script>
+
+<!-- Funcionalidad de delincuentes -->
+<script src="script_delincuentes_nuevo.js"></script>
+<script src="tipificacion-selector.js"></script>
+<script src="historial-delincuentes.js"></script>
+<div id="nuevoDelincuenteModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="nuevoDelincuenteModalLabel">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nuevoDelincuenteModalLabel">
+          <i class="fas fa-user-plus"></i> Registrar Delincuente
+        </h5>
+        <button type="button" class="close" aria-label="Cerrar" onclick="cerrarModalNuevoDelincuente()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="formNuevoDelincuente" autocomplete="off">
+            <div class="form-row-cascade">
+                <div class="form-col-cascade">
+                    <div class="form-group">
+                        <label for="nuevoNombreCompleto">Nombre y Apellido <span style="color:red">*</span></label>
+                        <input type="text" class="form-control" id="nuevoNombreCompleto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoCedula">Cédula <span style="color:red">*</span></label>
+                        <input type="text" class="form-control" id="nuevoCedula" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoEdad">Edad <span style="color:red">*</span></label>
+                        <input type="number" class="form-control" id="nuevoEdad" min="12" max="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoDireccion">Dirección</label>
+                        <input type="text" class="form-control" id="nuevoDireccion">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoVehiculo">Vehículo</label>
+                        <input type="text" class="form-control" id="nuevoVehiculo">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoPlaca">Placa</label>
+                        <input type="text" class="form-control" id="nuevoPlaca">
+                    </div>
+                </div>
+                <div class="form-col-cascade">
+                    <div class="form-group">
+                        <label for="nuevoColor">Color</label>
+                        <input type="text" class="form-control" id="nuevoColor">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoFecha">Fecha de Captura <span style="color:red">*</span></label>
+                        <input type="date" class="form-control" id="nuevoFecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoDelito">Delito Cometido <span style="color:red">*</span></label>
+                        <input type="text" class="form-control" id="nuevoDelito" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoProductos">Productos</label>
+                        <input type="text" class="form-control" id="nuevoProductos">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoCuantia">Cuantía (B/.)</label>
+                        <input type="number" class="form-control" id="nuevoCuantia" min="0" step="0.01" inputmode="decimal" placeholder="Ej: 123.45">
+                    </div>
+                    <div class="form-group">
+                        <label for="nuevoDenuncia">N° Denuncia/Resolución</label>
+                        <input type="text" class="form-control" id="nuevoDenuncia">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group text-right mt-3" style="text-align:right;">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalNuevoDelincuente()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarNuevoDelincuente()">Guardar</button>
+            </div>
+        </form>
+        <style>
+            .form-row-cascade {
+                display: flex;
+                gap: 24px;
+                width: 100%;
+            }
+            .form-col-cascade {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            @media (max-width: 700px) {
+                .form-row-cascade {
+                    flex-direction: column;
+                    gap: 0;
+                }
+            }
+        </style>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+</script>
+
+<!-- Botón para abrir el modal del README/manual de uso -->
+<button id="openReadmeModalBtn" style="position:fixed;bottom:20px;right:20px;z-index:2000;background:#3498db;color:#fff;border:none;border-radius:50px;padding:12px 22px;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.18);cursor:pointer;">Manual de uso / Ayuda</button>
+
+<!-- Modal del README/manual de uso -->
+<div id="readmeModal" class="modal" style="display:none;position:fixed;z-index:3000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+  <div style="background:#fff;max-width:700px;width:95vw;max-height:90vh;overflow-y:auto;padding:32px 24px;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.22);position:relative;">
+    <button id="closeReadmeModalBtn" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:28px;color:#444;cursor:pointer;">&times;</button>
+    <h2 style="margin-top:0;color:#2c3e50;">Manual de Uso y Estado del Sistema</h2>
+    <div style="margin-bottom:18px;padding:12px 18px;background:#fff3cd;color:#856404;border-radius:6px;border:1px solid #ffeeba;">
+      <b>⚠️ Estado del proyecto: EN DESARROLLO / SUJETO A CAMBIOS</b><br>
+      Este sistema está siendo actualizado y mejorado constantemente. Puede contener errores o cambios inesperados. Si eres cliente o usuario, ten en cuenta que la funcionalidad puede variar y algunos módulos pueden estar en revisión.
+    </div>
+    <h3>¿Qué hace esta aplicación?</h3>
+    <ul>
+      <li>Registrar casos delictivos por trimestre y empresa.</li>
+      <li>Gestionar delincuentes capturados: alta, visualización y almacenamiento local.</li>
+      <li>Generar reportes y tablas estadísticas.</li>
+      <li>Interfaz amigable y moderna, adaptable para escritorio y dispositivos móviles.</li>
+    </ul>
+    <h3>¿Cómo se usa?</h3>
+    <ol>
+      <li><b>Abrir la aplicación:</b> Accede a la URL pública desplegada en Render o abre <code>index.html</code> localmente.</li>
+      <li><b>Registrar un caso:</b> Completa los datos de empresa, responsable, fecha y trimestre. Añade los casos delictivos ocurridos, su tipificación, fecha, cuantía y observaciones.</li>
+      <li><b>Agregar delincuente capturado:</b> Haz clic en el botón <b>+</b> en la sección correspondiente, completa el formulario y guarda el registro. Los datos se almacenan en el navegador (localStorage) y se muestran en la tabla.</li>
+      <li><b>Exportar o visualizar reportes:</b> Usa las opciones de la interfaz para generar reportes o consultar estadísticas.</li>
+    </ol>
+    <h3>Notas importantes</h3>
+    <ul>
+      <li><b>Persistencia:</b> Los datos se guardan en el navegador del usuario. Si borras el caché/localStorage, se perderán los registros.</li>
+      <li><b>Despliegue:</b> El sitio está publicado en Render. Cada actualización en GitHub se refleja automáticamente en la web.</li>
+      <li><b>Estado:</b> El sistema puede presentar errores menores o cambios frecuentes mientras esté en desarrollo activo.</li>
+    </ul>
+    <h3>Contacto</h3>
+    <p>Para reportar errores, sugerencias o solicitar soporte, abre un <a href="https://github.com/SupervisorIT/registro-actividad-criminal/issues" target="_blank">issue en GitHub</a> o contacta al administrador del proyecto.</p>
+    <hr>
+    <div style="text-align:center;color:#888;font-size:15px;">¡Gracias por tu comprensión y colaboración mientras mejoramos la aplicación!</div>
+  </div>
+</div>
+<script>
+// Mostrar y ocultar el modal del README/manual
+const openReadmeModalBtn = document.getElementById('openReadmeModalBtn');
+const readmeModal = document.getElementById('readmeModal');
+const closeReadmeModalBtn = document.getElementById('closeReadmeModalBtn');
+if(openReadmeModalBtn && readmeModal && closeReadmeModalBtn) {
+  openReadmeModalBtn.onclick = () => { readmeModal.style.display = 'flex'; };
+  closeReadmeModalBtn.onclick = () => { readmeModal.style.display = 'none'; };
+  readmeModal.onclick = (e) => {
+    if (e.target === readmeModal) readmeModal.style.display = 'none';
+  };
+}
+</script>
+
+<script>
+// Usamos la función global renderizarTablaDelincuentesSimple definida en script_delincuentes_nuevo.js
+// Esta función se encargará de mostrar los delincuentes y gestionar los botones
+// Fin refuerzo: solo localStorage
+
+// Eliminar delincuente por índice
+function eliminarDelincuentePorIndice(idx) {
+    var delincuentes = [];
+    if (localStorage.getItem('delincuentes')) {
+        try {
+            delincuentes = JSON.parse(localStorage.getItem('delincuentes'));
+            if (!Array.isArray(delincuentes)) delincuentes = [];
+        } catch (e) { delincuentes = []; }
+    }
+    if (idx >= 0 && idx < delincuentes.length) {
+        if (confirm('¿Está seguro que desea eliminar este delincuente?')) {
+            delincuentes.splice(idx, 1);
+            localStorage.setItem('delincuentes', JSON.stringify(delincuentes));
+            window.delincuentes = delincuentes;
+            if (typeof actualizarTablaDelincuentes === 'function') actualizarTablaDelincuentes();
+            renderizarTablaDelincuentesSimple();
+            if (typeof mostrarNotificacion === 'function') {
+                mostrarNotificacion('Delincuente eliminado correctamente.', 'success');
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Limpiar tabla de capturados SÓLO al recargar
+    window.delincuentes = [];
+    renderizarTablaDelincuentesSimple();
+    if (typeof actualizarTablaDelincuentes === 'function') {
+        var orig = actualizarTablaDelincuentes;
+        window.actualizarTablaDelincuentes = function() {
+            // Limpiar tabla de capturados SOLO al guardar documento principal
+            window.delincuentes = [];
+            orig();
+            renderizarTablaDelincuentesSimple();
+        };
+    }
+});
+</script>
+<script>
+// Limpia todos los delincuentes capturados y actualiza la tabla visualmente
+// Refuerza la limpieza total y la actualización visual de la tabla de delincuentes
+function limpiarDelincuentesCapturadosDirecto() {
+  if (!confirm('¿Está seguro que desea eliminar TODOS los delincuentes capturados? Esta acción no se puede deshacer.')) return;
+  // Borra del almacenamiento principal
+  localStorage.removeItem('delincuentes');
+  window.delincuentes = [];
+  // Borra también el historial de delincuentes
+  localStorage.removeItem('delincuentesPersistentes');
+  // Limpia manualmente el tbody de la tabla simple
+  var tbody = document.getElementById('tbodyDelincuentesSimple');
+  if (tbody) tbody.innerHTML = '';
+  // Actualiza la tabla simple
+  if (typeof renderizarTablaDelincuentesSimple === 'function') {
+    renderizarTablaDelincuentesSimple();
+  }
+  // Actualiza la tabla de historial si existe la función
+  if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+    renderizarTablaHistorialDelincuentes();
+  }
+  // Notificación visual
+  if (typeof mostrarNotificacion === 'function') {
+    mostrarNotificacion('Historial de delincuentes capturados y el historial han sido eliminados correctamente.', 'success');
+  } else {
+    alert('Historial de delincuentes capturados y el historial han sido eliminados correctamente.');
+  }
+}
+// Fin limpieza total de capturados e historial
+</script>
+<script>
+    function autenticarYLimpiar(tipo) {
+      // Puedes adaptar esto para usar tu modal, aquí ejemplo con prompt:
+      var usuario = prompt('Ingrese el usuario de administrador:');
+      if (!usuario) return;
+      var password = prompt('Ingrese la contraseña de administrador:');
+      if (!password) return;
+      var adminUser = 'admin';
+      var adminPass = 'admin123';
+    
+      if (usuario === adminUser && password === adminPass) {
+        if (tipo === 'delincuentes') {
+          if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+            localStorage.removeItem('delincuentes');
+            localStorage.removeItem('delincuentesPersistentes');
+            if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+              renderizarTablaHistorialDelincuentes();
+            }
+            if (typeof mostrarNotificacion === 'function') {
+              mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+            } else {
+              alert('Historial de delincuentes eliminado correctamente.');
+            }
+          }
+        } else if (tipo === 'productos') {
+          if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
+            localStorage.removeItem('productosRobados');
+            if (typeof actualizarTablaProductos === 'function') {
+              actualizarTablaProductos();
+            }
+            if (typeof mostrarNotificacion === 'function') {
+              mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+            } else {
+              alert('Top 20 de productos robados eliminado correctamente.');
+            }
+          }
+        }
+      } else {
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Usuario o contraseña incorrectos.', 'error');
+        } else {
+          alert('Usuario o contraseña incorrectos.');
+        }
+      }
+    }
+    </script>
+<script type="text/javascript">
+window.limpiarDelincuentesPersistentes = function() {
+  var tabla = document.getElementById('tablaDelincuentesPersistentes');
+  if (tabla) {
+    var tbody = tabla.querySelector('tbody');
+    if (tbody) tbody.innerHTML = '';
+  }
+  localStorage.removeItem('delincuentes');
+  localStorage.removeItem('delincuentesPersistentes');
+};
+window.limpiarProductosRobados = function() {
+  var tabla = document.getElementById('tablaProductos');
+  if (tabla) {
+    // Limpiar solo los datos de las filas, no la estructura
+    for (let i = 1; i <= 20; i++) {
+      var nombre = document.getElementById('nombre-' + i);
+      var cantidad = document.getElementById('cantidad-' + i);
+      if (nombre) nombre.textContent = '';
+      if (cantidad) cantidad.textContent = '';
+    }
+    var total = tabla.querySelector('#totalCantidadProductos');
+    if (total) total.textContent = '0';
+  }
+  window.productosRobados = [];
+  localStorage.removeItem('productosRobados');
+  if (typeof guardarProductosRobados === 'function') {
+    guardarProductosRobados();
+  }
+  if (typeof mostrarNotificacion === 'function') {
+    mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+  } else {
+    alert('Top 20 de productos robados eliminado correctamente.');
+  }
+};
+</script>
+<!-- Modal para cambio de contraseña de administrador -->
+<div id="modalCambioPassword" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 0; border: 1px solid #888; width: 420px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow:hidden;">
+        <div class="modal-header" style="padding: 12px 16px; background:#0d47a1; color:#fff; display:flex; align-items:center; justify-content:space-between;">
+            <h4 style="margin: 0;">Cambiar Contraseña de Administrador</h4>
+            <span class="close" onclick="cerrarModalCambioPassword()" style="color: #fff; font-size: 24px; font-weight: bold; cursor: pointer;">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="msgCambioPassword" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 4px;"></div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="currentPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Contraseña Actual:</label>
+                <input type="password" id="currentPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="newPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Nueva Contraseña:</label>
+                <input type="password" id="newPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="confirmPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Confirmar Nueva Contraseña:</label>
+                <input type="password" id="confirmPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div class="form-group" style="text-align: right;">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalCambioPassword()" style="padding: 8px 15px; margin-right: 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="cambiarPasswordAdmin()" style="padding: 8px 15px; background-color: #1565C0; color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Panel de Administración -->
+<div id="modalAdminPanel" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
+  <div class="modal-content" style="background:#fff; margin:10% auto; width:460px; border-radius:8px; overflow:hidden;">
+    <div style="padding:12px 16px; background:#0d47a1; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0;">Panel de Administración</h4>
+      <span class="close" onclick="cerrarModalAdminPanel()" style="cursor:pointer; font-size:22px;">&times;</span>
+    </div>
+    <div style="padding:16px;">
+      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:14px;">
+        <button class="btn btn-primary" style="background:#1565C0; color:#fff; border:none; padding:10px 12px; border-radius:6px; text-align:left;" onclick="abrirModalCambioPassword()">
+          <i class="fas fa-key" style="margin-right:8px;"></i> Cambiar contraseña de administrador
+        </button>
+        <button class="btn btn-success" style="background:#2e7d32; color:#fff; border:none; padding:10px 12px; border-radius:6px; text-align:left;" onclick="abrirModalCrearUsuario()">
+          <i class="fas fa-user-plus" style="margin-right:8px;"></i> Crear usuario (rol usuario)
+        </button>
+      </div>
+      <!-- Bloque listado de usuarios -->
+      <div style="border:1px solid #e0e0e0; border-radius:8px; padding:12px; background:#fafafa;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong>Usuarios registrados</strong>
+          <small id="adminPanelUsuariosCount" style="color:#555;">0</small>
+        </div>
+        <div id="adminPanelUsuariosLista" style="max-height:220px; overflow:auto;">
+          <div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="cerrarModalAdminPanel()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Cerrar</button>
+    </div>
+  </div>
+  </div>
+
+<!-- Modal Crear Usuario -->
+<div id="modalCrearUsuario" class="modal" style="display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
+  <div class="modal-content" style="background:#fff; margin:8% auto; width:460px; border-radius:8px; overflow:hidden;">
+    <div style="padding:12px 16px; background:#2e7d32; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0;">Crear Usuario</h4>
+      <span class="close" onclick="cerrarModalCrearUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
+    </div>
+    <div style="padding:16px;">
+      <div id="msgCrearUsuario" style="display:none; margin-bottom:10px; padding:8px; border-radius:4px;"></div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Usuario</label>
+        <input id="cu_usuario" type="text" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Nombre completo</label>
+        <input id="cu_nombreCompleto" type="text" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Cédula</label>
+        <input id="cu_cedula" type="text" class="form-control" placeholder="Ej: E-00-0000-00000" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Contraseña</label>
+        <input id="cu_password" type="password" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Rol</label>
+        <select id="cu_rol" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <option value="usuario" selected>Usuario</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <div style="font-size:12px; color:#666; margin-top:6px;">Solo administradores pueden crear cuentas y asignar roles.</div>
+      </div>
+    </div>
+    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="cerrarModalCrearUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
+      <button class="btn btn-success" onclick="crearUsuarioDesdeAdmin()" style="background:#2e7d32; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cambiar Contraseña (usuario) -->
+<div id="modalCambiarContrasenaUsuario" class="modal" style="display:none; position:fixed; z-index:1002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
+  <div class="modal-content" style="background:#fff; margin:12% auto; width:420px; border-radius:8px; overflow:hidden;">
+    <div style="padding:12px 16px; background:#1565C0; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0;">Cambiar contraseña de usuario</h4>
+      <span class="close" onclick="cerrarModalCambiarContrasenaUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
+    </div>
+    <div style="padding:16px;">
+      <div style="margin-bottom:10px; font-size:14px; color:#555;">
+        Usuario: <strong id="ccu_username"></strong>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Nueva contraseña</label>
+        <input id="ccu_new" type="password" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px;">Confirmar nueva contraseña</label>
+        <input id="ccu_confirm" type="password" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+      </div>
+      <div id="ccu_msg" style="display:none; margin-top:6px; font-size:13px;"></div>
+      <input id="ccu_target" type="hidden" value="">
+    </div>
+    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="cerrarModalCambiarContrasenaUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCambioContrasenaUsuario()" style="background:#1565C0; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Guardar</button>
+    </div>
+  </div>
+ </div>
+
+<script>
+// Funciones para el modal de cambio de contraseña
+function abrirModalCambioPassword() {
+    // Cerrar panel admin si está abierto para evitar superposición
+    const panel = document.getElementById('modalAdminPanel');
+    if (panel && panel.style.display !== 'none') {
+        panel.style.display = 'none';
+    }
+    document.getElementById('modalCambioPassword').style.display = 'flex';
+    document.getElementById('modalCambioPassword').style.setProperty('display', 'flex', 'important');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('msgCambioPassword').style.display = 'none';
+    setTimeout(function() {
+        document.getElementById('currentPassword').focus();
+    }, 100);
+}
+
+function cerrarModalCambioPassword() {
+    document.getElementById('modalCambioPassword').style.display = 'none';
+}
+
+function cambiarPasswordAdmin() {
+    var currentPassword = document.getElementById('currentPassword').value;
+    var newPassword = document.getElementById('newPassword').value;
+    var confirmPassword = document.getElementById('confirmPassword').value;
+    var msgElement = document.getElementById('msgCambioPassword');
+    
+    // Verificar que los campos no estén vacíos
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        mostrarMensajeCambioPassword('Todos los campos son obligatorios', 'error');
+        return;
+    }
+    
+    // Verificar que la contraseña actual sea correcta (SupervisorIT2025 por defecto)
+    var adminPass = localStorage.getItem('adminPassword') || 'SupervisorIT2025';
+    if (currentPassword !== adminPass) {
+        mostrarMensajeCambioPassword('La contraseña actual es incorrecta', 'error');
+        return;
+    }
+    
+    // Verificar que las nuevas contraseñas coincidan
+    if (newPassword !== confirmPassword) {
+        mostrarMensajeCambioPassword('Las nuevas contraseñas no coinciden', 'error');
+        return;
+    }
+    
+    // Verificar que la nueva contraseña tenga al menos 6 caracteres
+    if (newPassword.length < 6) {
+        mostrarMensajeCambioPassword('La nueva contraseña debe tener al menos 6 caracteres', 'error');
+        return;
+    }
+    
+    // Guardar la nueva contraseña en localStorage
+    localStorage.setItem('adminPassword', newPassword);
+    
+    // Mostrar mensaje de éxito
+    mostrarMensajeCambioPassword('Contraseña actualizada correctamente', 'success');
+    
+    // Cerrar el modal después de 2 segundos
+    setTimeout(function() {
+        cerrarModalCambioPassword();
+    }, 2000);
+}
+
+function mostrarMensajeCambioPassword(mensaje, tipo) {
+    var msgElement = document.getElementById('msgCambioPassword');
+    msgElement.textContent = mensaje;
+    msgElement.style.display = 'block';
+    
+    if (tipo === 'error') {
+        msgElement.style.backgroundColor = '#f8d7da';
+        msgElement.style.color = '#721c24';
+        msgElement.style.borderColor = '#f5c6cb';
+    } else if (tipo === 'success') {
+        msgElement.style.backgroundColor = '#d4edda';
+        msgElement.style.color = '#155724';
+        msgElement.style.borderColor = '#c3e6cb';
+    }
+}
+
+// Actualizar las funciones existentes para usar la nueva contraseña de admin
+window.autenticarYLimpiar = function() {
+  var usuario = document.getElementById('authUser').value.trim();
+  var password = document.getElementById('authPass').value;
+  var tipo = document.getElementById('tipoLimpieza').value;
+  var adminUser = 'admin';
+  var adminPass = localStorage.getItem('adminPassword') || 'SupervisorIT2025';
+  var msg = document.getElementById('authMsg');
+  if (usuario === adminUser && password === adminPass) {
+    if (tipo === 'delincuentes') {
+      if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem('delincuentes');
+        localStorage.removeItem('delincuentesPersistentes');
+        if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+          renderizarTablaHistorialDelincuentes();
+        }
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
+        } else {
+          alert('Historial de delincuentes eliminado correctamente.');
+        }
+        cerrarModalAuthLimpiar();
+      }
+    } else if (tipo === 'productos') {
+      if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
+        localStorage.removeItem('productosRobados');
+        // Limpiar visualmente la tabla de productos robados
+        if (typeof actualizarTablaProductos === 'function') {
+          actualizarTablaProductos();
+        } else {
+          // Limpieza forzada si la función no existe
+          var tabla = document.getElementById('tablaProductos');
+          if (tabla) {
+            var tbody = tabla.querySelector('tbody');
+            if (tbody) tbody.innerHTML = '';
+            // Actualizar el total en el pie de tabla, si existe
+            var total = tabla.querySelector('#totalCantidadProductos');
+            if (total) total.textContent = '0';
+          }
+        }
+        if (typeof mostrarNotificacion === 'function') {
+          mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
+        } else {
+          alert('Top 20 de productos robados eliminado correctamente.');
+        }
+        cerrarModalAuthLimpiar();
+      }
+    }
+  } else {
+    msg.textContent = 'Usuario o contraseña incorrectos.';
+    msg.style.display = 'block';
+  }
+};
+</script>
+
+    <!-- Módulo de persistencia a archivos (Excel) -->
+    <script src="persistencia-archivos.js"></script>
+</body>
+</html>

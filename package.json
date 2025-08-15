@@ -1,0 +1,27 @@
+{
+  "name": "registro-actividad-criminal",
+  "version": "1.0.0",
+  "description": "Sistema de Registro Actividad Criminal",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve -s ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SupervisorIT/registro-actividad-criminal.git"
+  },
+  "keywords": [
+    "seguridad",
+    "registro",
+    "criminal"
+  ],
+  "author": "SupervisorIT",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SupervisorIT/registro-actividad-criminal/issues"
+  },
+  "homepage": "https://github.com/SupervisorIT/registro-actividad-criminal",
+  "dependencies": {
+    "serve": "^14.0.0"
+  }
+}
