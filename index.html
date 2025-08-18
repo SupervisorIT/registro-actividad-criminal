@@ -866,11 +866,55 @@ function obtenerUsuariosCombinados() {
   return Object.values(map);
 }
 
-function renderizarUsuariosAdminPanel() {
+async function renderizarUsuariosAdminPanel() {
   const cont = document.getElementById('adminPanelUsuariosLista');
   const count = document.getElementById('adminPanelUsuariosCount');
+  const origenEl = document.getElementById('adminPanelOrigen');
+  const aviso = document.getElementById('adminPanelAviso');
   cont.innerHTML = '';
-  const usuarios = obtenerUsuariosCombinados();
+
+  const base = localStorage.getItem('AUTH_API_BASE');
+  const token = sessionStorage.getItem('authToken');
+  let usuarios = null;
+  let esRemoto = false;
+
+  if (base && token) {
+    try {
+      const resp = await fetch(String(base).replace(/\/$/, '') + '/users', {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Array.isArray(data)) {
+          usuarios = data.map(u => ({
+            username: u.username || u.usuario || u.email || '',
+            nombre: u.nombre || u.nombreCompleto || u.name || '',
+            nombreCompleto: u.nombreCompleto || u.nombre || u.name || '',
+            cedula: u.cedula || '',
+            rol: u.rol || u.role || 'usuario'
+          }));
+          esRemoto = true;
+        }
+      }
+    } catch (_) {
+      // Silenciar y continuar con fallback
+    }
+  }
+
+  if (!usuarios) {
+    usuarios = obtenerUsuariosCombinados();
+    esRemoto = false;
+  }
+
+  if (origenEl) {
+    origenEl.textContent = 'Origen: ' + (esRemoto ? 'Remoto' : 'Local');
+    origenEl.style.background = esRemoto ? '#e6f4ea' : '#eef2f7';
+    origenEl.style.color = esRemoto ? '#1e7e34' : '#555';
+  }
+  if (aviso) {
+    aviso.style.display = esRemoto ? 'none' : 'block';
+  }
+
   count.textContent = usuarios.length;
   if (!usuarios.length) {
     cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>';
@@ -880,7 +924,7 @@ function renderizarUsuariosAdminPanel() {
     const fila = document.createElement('div');
     fila.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee;';
     const info = document.createElement('div');
-    info.innerHTML = `<strong>${u.username}</strong> <span style="color:#666;">(${u.rol === 'admin' ? 'Administrador' : 'Usuario'})</span><br><span style="color:#555; font-size:12px;">${u.nombreCompleto || u.nombre || ''}</span>`;
+    info.innerHTML = `<strong>${u.username}</strong> <span style="color:#666;">(${u.rol === 'admin' ? 'Administrador' : 'Usuario'})</span><br><span style=\"color:#555; font-size:12px;\">${u.nombreCompleto || u.nombre || ''}</span>`;
     const acciones = document.createElement('div');
     acciones.style.cssText = 'display:flex; gap:6px;';
     const btnPerfil = document.createElement('button');
@@ -1395,6 +1439,9 @@ window.limpiarProductosRobados = function() {
             <small id="adminPanelOrigen" style="color:#555; background:#eef2f7; padding:2px 6px; border-radius:10px;">Origen: Local</small>
             <small id="adminPanelUsuariosCount" style="color:#555;">0</small>
           </div>
+        </div>
+        <div id="adminPanelAviso" style="display:none; margin:6px 0 10px; padding:8px; font-size:12px; border-radius:6px; background:#fff3cd; color:#664d03; border:1px solid #ffecb5;">
+          No se pudo cargar desde el servidor remoto. Mostrando datos locales. Ver consola del navegador para más detalles (CORS/Red).
         </div>
         <div id="adminPanelUsuariosLista" style="max-height:220px; overflow:auto;">
           <div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>
