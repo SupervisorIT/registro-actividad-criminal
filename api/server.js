@@ -9,12 +9,33 @@ import usersRouter from './routes/users.js';
 const app = express();
 
 const PORT = process.env.PORT || 8080;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+// Orígenes permitidos para el front (agrega/quita según despliegues)
+const allowedOrigins = [
+  'https://registro-de-actividad-criminal.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  process.env.CORS_ORIGIN // opcional desde env
+].filter(Boolean);
 
-app.use(cors({
-  origin: (origin, cb) => cb(null, true), // permitir todos; ajustar a CORS_ORIGIN en producción si se desea
-  credentials: true
-}));
+const corsOptions = {
+  origin: (origin, cb) => {
+    // Permitir llamadas sin origin (pings internos) y orígenes explícitos
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error('CORS: origin no permitido: ' + origin), false);
+  },
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false, // usamos Bearer token, no cookies
+  maxAge: 86400
+};
+
+// CORS antes de las rutas
+app.use(cors(corsOptions));
+// Preflight explícito
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 app.get('/health', (req, res) => {
