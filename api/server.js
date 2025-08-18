@@ -11,7 +11,9 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 // Orígenes permitidos para el front (agrega/quita según despliegues)
 const allowedOrigins = [
-  'https://registro-de-actividad-criminal.onrender.com',
+  // Dominio correcto del frontend en Render
+  'https://registro-actividad-criminal.onrender.com',
+  // Orígenes locales comunes
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5500',
@@ -23,6 +25,7 @@ const corsOptions = {
   origin: (origin, cb) => {
     // Permitir llamadas sin origin (pings internos) y orígenes explícitos
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    console.warn('[CORS] Origen rechazado:', origin, 'Permitidos:', allowedOrigins);
     return cb(new Error('CORS: origin no permitido: ' + origin), false);
   },
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
