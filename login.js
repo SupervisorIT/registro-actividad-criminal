@@ -7,6 +7,10 @@ const usuariosPredefinidos = [
 // Lista de usuarios que se puede modificar (inicialmente contiene los usuarios predefinidos)
 let listaUsuarios = [...usuariosPredefinidos];
 
+// Configuración de API remota (opcional)
+// Para habilitar login remoto, guardar en localStorage: AUTH_API_BASE = "https://tu-api.onrender.com"
+const AUTH_API_BASE = (typeof localStorage !== 'undefined' && localStorage.getItem('AUTH_API_BASE')) || '';
+
 // Verificar si ya hay una sesión activa
 document.addEventListener('DOMContentLoaded', function() {
     // Cargar usuarios guardados en localStorage si existen
@@ -53,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('error-message');
 
     if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const usernameRaw = document.getElementById('username').value;
@@ -62,7 +66,41 @@ document.addEventListener('DOMContentLoaded', function() {
             const password = (passwordRaw || '').trim();
             const usernameLower = username.toLowerCase();
             
-            // Lógica simplificada para garantizar el acceso
+            // Intento 1: Login remoto si está configurado
+            if (AUTH_API_BASE) {
+                try {
+                    const resp = await fetch(`${AUTH_API_BASE.replace(/\/$/, '')}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        const user = (data && data.user) || null;
+                        if (user) {
+                            const payload = {
+                                username: user.username,
+                                nombre: user.nombre || user.nombreCompleto,
+                                nombreCompleto: user.nombreCompleto || user.nombre,
+                                cedula: user.cedula || '',
+                                rol: user.rol,
+                                timestamp: new Date().getTime()
+                            };
+                            // Guardar token si llega
+                            if (data.token) {
+                                sessionStorage.setItem('authToken', data.token);
+                            }
+                            sessionStorage.setItem('usuarioActivo', JSON.stringify(payload));
+                            window.location.href = 'index.html';
+                            return; // éxito remoto, salir
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Fallo login remoto, usando fallback local:', err);
+                }
+            }
+            
+            // Lógica simplificada para garantizar el acceso (fallback local)
             let usuario = null;
             
             // CASO ESPECIAL: Verificar primero si es el usuario admin con la contraseña predeterminada
