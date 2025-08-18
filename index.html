@@ -39,6 +39,37 @@
         </button>
     </div>
 
+    <!-- Modal: Completar Perfil (bloquea uso hasta completar) -->
+    <div id="modalCompletarPerfil" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+      <div style="background:#fff;width:92vw;max-width:520px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden;">
+        <div style="background:#0d6efd;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+          <h4 style="margin:0;font-weight:600;">Completar perfil</h4>
+          <span title="Obligatorio" style="opacity:.85;font-size:13px;">Requerido</span>
+        </div>
+        <form id="formCompletarPerfil" style="padding:16px;">
+          <p style="margin-top:0;color:#444;font-size:14px;">Para usar el sistema, complete los siguientes datos. Serán guardados en su perfil.</p>
+          <div style="display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center;">
+            <label for="cp_nombre">Nombre corto</label>
+            <input id="cp_nombre" name="nombre" class="form-control" type="text" placeholder="Ej: Juan" required>
+            <label for="cp_nombreCompleto">Nombre Completo</label>
+            <input id="cp_nombreCompleto" name="nombreCompleto" class="form-control" type="text" placeholder="Ej: Juan Pérez" required>
+            <label for="cp_cedula">Cédula</label>
+            <input id="cp_cedula" name="cedula" class="form-control" type="text" placeholder="E-00-0000-00000" required>
+            <label for="cp_empresa">Empresa</label>
+            <input id="cp_empresa" name="empresa" class="form-control" type="text" placeholder="Empresa" required>
+            <label for="cp_correo">Correo</label>
+            <input id="cp_correo" name="correo" class="form-control" type="email" placeholder="correo@dominio.com" required>
+            <label for="cp_celular">Celular</label>
+            <input id="cp_celular" name="celular" class="form-control" type="text" placeholder="6000-0000" required>
+          </div>
+          <div id="cp_msg" style="display:none;margin-top:10px;font-size:13px;"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+            <button type="submit" class="btn btn-primary">Guardar y continuar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 <!-- Modal Perfil de Usuario -->
 <div id="modalPerfilUsuario" class="modal" style="display:none; position:fixed; z-index:1002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
   <div class="modal-content" style="background:#fff; margin:12% auto; width:420px; border-radius:8px; overflow:hidden;">
@@ -480,7 +511,6 @@
         </div>
     </div>
 
-    <!-- Dependencias externas -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -505,6 +535,115 @@
         } else {
             console.error('Error: jsPDF no está disponible');
         }
+    });
+
+    // Enforce: completar perfil si faltan campos requeridos
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const raw = sessionStorage.getItem('usuarioActivo');
+            if (!raw) return; // session-check.js se encarga de redirigir
+            const user = JSON.parse(raw);
+            const required = ['nombre','nombreCompleto','cedula','empresa','correo','celular'];
+            const values = {
+                nombre: (user.nombre||'').toString().trim(),
+                nombreCompleto: (user.nombreCompleto||'').toString().trim(),
+                cedula: (user.cedula||'').toString().trim(),
+                empresa: (user.empresa||'').toString().trim(),
+                correo: (user.correo||'').toString().trim(),
+                celular: (user.celular||'').toString().trim()
+            };
+            const missing = required.filter(k => !values[k]);
+            if (!missing.length) return;
+
+            // Prefill inputs
+            const id = s => document.getElementById(s);
+            id('cp_nombre').value = values.nombre || '';
+            id('cp_nombreCompleto').value = values.nombreCompleto || '';
+            id('cp_cedula').value = values.cedula || '';
+            id('cp_empresa').value = values.empresa || '';
+            id('cp_correo').value = values.correo || '';
+            id('cp_celular').value = values.celular || '';
+
+            // Show modal
+            const modal = document.getElementById('modalCompletarPerfil');
+            modal.style.display = 'flex';
+
+            // Submit handler
+            const form = document.getElementById('formCompletarPerfil');
+            const msg = document.getElementById('cp_msg');
+            form.addEventListener('submit', async function(ev){
+                ev.preventDefault();
+                msg.style.display='none';
+                msg.textContent='';
+                msg.style.background='';
+                msg.style.color='';
+                msg.style.border='';
+
+                // Gather
+                const updates = {
+                    nombre: id('cp_nombre').value.trim(),
+                    nombreCompleto: id('cp_nombreCompleto').value.trim(),
+                    cedula: id('cp_cedula').value.trim(),
+                    empresa: id('cp_empresa').value.trim(),
+                    correo: id('cp_correo').value.trim(),
+                    celular: id('cp_celular').value.trim()
+                };
+
+                // Basic validations
+                const emailOk = /.+@.+\..+/.test(updates.correo);
+                if (!emailOk) { showMsg('Correo inválido.'); return; }
+                if (!updates.nombre || !updates.nombreCompleto || !updates.cedula || !updates.empresa || !updates.celular) {
+                    showMsg('Complete todos los campos.'); return;
+                }
+
+                // Try remote PATCH when configured
+                const base = (typeof localStorage!== 'undefined' && localStorage.getItem('AUTH_API_BASE')) || '';
+                const token = sessionStorage.getItem('authToken');
+                let patchedOk = false;
+                if (base && token) {
+                    try {
+                        const resp = await fetch(`${base.replace(/\/$/, '')}/users/me`, {
+                            method:'PATCH',
+                            headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
+                            body: JSON.stringify(updates)
+                        });
+                        if (!resp.ok) {
+                            console.warn('PATCH remoto falló:', await resp.text());
+                        } else {
+                            patchedOk = true;
+                            try {
+                                const data = await resp.json();
+                                if (data && data.user) {
+                                    Object.assign(updates, data.user);
+                                }
+                            } catch {}
+                        }
+                    } catch (e) { console.warn('Error PATCH remoto:', e); }
+                }
+
+                // Persist to session and close modal regardless of remote result
+                const nuevo = {
+                    ...user,
+                    nombre: updates.nombre || updates.nombreCompleto,
+                    nombreCompleto: updates.nombreCompleto || updates.nombre,
+                    cedula: updates.cedula || '',
+                    empresa: updates.empresa || '',
+                    correo: updates.correo || '',
+                    celular: updates.celular || ''
+                };
+                sessionStorage.setItem('usuarioActivo', JSON.stringify(nuevo));
+                // Visual feedback
+                showMsg(patchedOk ? 'Perfil actualizado correctamente.' : 'Perfil guardado localmente.', 'success');
+                setTimeout(() => { modal.style.display='none'; }, 600);
+
+                function showMsg(text, type){
+                    msg.textContent = text;
+                    msg.style.display='block';
+                    if (type==='success'){ msg.style.background='#d4edda'; msg.style.color='#155724'; msg.style.border='1px solid #c3e6cb'; }
+                    else { msg.style.background='#f8d7da'; msg.style.color='#721c24'; msg.style.border='1px solid #f5c6cb'; }
+                }
+            }, { once: true });
+        } catch (e) { console.error('Modal completar perfil error:', e); }
     });
 
     // Stub: solo administradores pueden abrir este flujo
@@ -680,6 +819,18 @@ function abrirModalAdminPanel() {
   } catch (e) { alert('Acceso restringido.'); return; }
   const modal = document.getElementById('modalAdminPanel');
   modal.style.display = 'block';
+  // Establecer indicador de origen
+  try {
+    const origenEl = document.getElementById('adminPanelOrigen');
+    if (origenEl) {
+      const base = localStorage.getItem('AUTH_API_BASE');
+      const token = sessionStorage.getItem('authToken');
+      const esRemoto = !!(base && token);
+      origenEl.textContent = 'Origen: ' + (esRemoto ? 'Remoto' : 'Local');
+      origenEl.style.background = esRemoto ? '#e6f4ea' : '#eef2f7';
+      origenEl.style.color = esRemoto ? '#1e7e34' : '#555';
+    }
+  } catch(_) {}
   renderizarUsuariosAdminPanel();
 }
 
@@ -1238,9 +1389,12 @@ window.limpiarProductosRobados = function() {
       </div>
       <!-- Bloque listado de usuarios -->
       <div style="border:1px solid #e0e0e0; border-radius:8px; padding:12px; background:#fafafa;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
           <strong>Usuarios registrados</strong>
-          <small id="adminPanelUsuariosCount" style="color:#555;">0</small>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <small id="adminPanelOrigen" style="color:#555; background:#eef2f7; padding:2px 6px; border-radius:10px;">Origen: Local</small>
+            <small id="adminPanelUsuariosCount" style="color:#555;">0</small>
+          </div>
         </div>
         <div id="adminPanelUsuariosLista" style="max-height:220px; overflow:auto;">
           <div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>

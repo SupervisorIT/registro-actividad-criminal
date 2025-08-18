@@ -48,62 +48,90 @@ window.onclick = function(event) {
 };
 
 // Funciones para gestión de usuarios
-function cargarUsuarios() {
+async function cargarUsuarios() {
     const tablaUsuarios = document.getElementById('tablaUsuarios').getElementsByTagName('tbody')[0];
     tablaUsuarios.innerHTML = '';
-    
-    // Obtener lista de usuarios
+
+    // Helper para renderizar filas
+    const renderUsuarios = (lista) => {
+        lista.forEach(usuario => {
+            const fila = tablaUsuarios.insertRow();
+
+            const celdaUsuario = fila.insertCell(0);
+            celdaUsuario.textContent = usuario.username || usuario.usuario || usuario.email || '';
+
+            const celdaNombre = fila.insertCell(1);
+            celdaNombre.textContent = usuario.nombre || usuario.nombreCompleto || usuario.name || '';
+
+            const celdaRol = fila.insertCell(2);
+            const rolValor = usuario.rol || usuario.role || 'usuario';
+            celdaRol.textContent = rolValor === 'admin' ? 'Administrador' : 'Usuario estándar';
+
+            const celdaAcciones = fila.insertCell(3);
+            // No permitir eliminar usuarios predefinidos locales
+            const usernameVal = usuario.username || '';
+            if (usernameVal === 'admin' || usernameVal === 'usuario') {
+                celdaAcciones.innerHTML = '<span style="color: #999; font-style: italic;">Predefinido</span>';
+            } else {
+                celdaAcciones.innerHTML = '<button class="btn btn-sm btn-danger" onclick="eliminarUsuario(\'' + (usernameVal || '') + '\')"><i class="fas fa-trash"></i></button>';
+            }
+        });
+    };
+
+    // Intentar obtener desde API remota
+    const base = localStorage.getItem('AUTH_API_BASE');
+    const token = sessionStorage.getItem('authToken');
+
+    if (base && token) {
+        try {
+            const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    renderUsuarios(data);
+                    return; // Éxito remoto, no usar fallback
+                }
+            }
+            // Si no ok o sin datos, continuar a fallback
+        } catch (e) {
+            // Silenciar error y usar fallback local
+        }
+    }
+
+    // Fallback local: predefinidos + localStorage
     let listaUsuarios = [];
-    
-    // Agregar usuarios predefinidos
+
     const usuariosPredefinidos = [
         { username: "admin", password: "admin123", nombre: "Administrador", rol: "admin" },
         { username: "usuario", password: "usuario123", nombre: "Usuario Estándar", rol: "usuario" }
     ];
-    
+
     listaUsuarios = [...usuariosPredefinidos];
-    
-    // Agregar usuarios guardados en localStorage
+
     const usuariosGuardados = localStorage.getItem('usuariosRegistrados');
     if (usuariosGuardados) {
         const usuariosParsed = JSON.parse(usuariosGuardados);
-        
-        // Crear un mapa de usuarios predefinidos por nombre de usuario
+
         const usuariosPredefinidosMap = {};
         usuariosPredefinidos.forEach(u => {
             usuariosPredefinidosMap[u.username] = true;
         });
-        
-        // Agregar solo usuarios que no estén en la lista predefinida
+
         usuariosParsed.forEach(u => {
             if (!usuariosPredefinidosMap[u.username]) {
                 listaUsuarios.push(u);
             }
         });
     }
-    
-    // Mostrar usuarios en la tabla
-    listaUsuarios.forEach(usuario => {
-        const fila = tablaUsuarios.insertRow();
-        
-        const celdaUsuario = fila.insertCell(0);
-        celdaUsuario.textContent = usuario.username;
-        
-        const celdaNombre = fila.insertCell(1);
-        celdaNombre.textContent = usuario.nombre;
-        
-        const celdaRol = fila.insertCell(2);
-        celdaRol.textContent = usuario.rol === 'admin' ? 'Administrador' : 'Usuario estándar';
-        
-        const celdaAcciones = fila.insertCell(3);
-        
-        // No permitir eliminar usuarios predefinidos
-        if (usuario.username === 'admin' || usuario.username === 'usuario') {
-            celdaAcciones.innerHTML = '<span style="color: #999; font-style: italic;">Predefinido</span>';
-        } else {
-            celdaAcciones.innerHTML = '<button class="btn btn-sm btn-danger" onclick="eliminarUsuario(\'' + usuario.username + '\')"><i class="fas fa-trash"></i></button>';
-        }
-    });
+
+    renderUsuarios(listaUsuarios);
 }
 
 function agregarUsuario() {
