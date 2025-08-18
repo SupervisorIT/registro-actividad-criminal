@@ -608,7 +608,7 @@
                             body: JSON.stringify(updates)
                         });
                         if (!resp.ok) {
-                            console.warn('PATCH remoto falló:', await resp.text());
+                            try { console.debug('PATCH remoto no OK:', await resp.text()); } catch {}
                         } else {
                             patchedOk = true;
                             try {
@@ -618,7 +618,7 @@
                                 }
                             } catch {}
                         }
-                    } catch (e) { console.warn('Error PATCH remoto:', e); }
+                    } catch (e) { /* Silenciar error de red/CORS para no alarmar la consola */ }
                 }
 
                 // Persist to session and close modal regardless of remote result
@@ -697,42 +697,6 @@
         document.getElementById('modalAdminPanel').style.display = 'none';
     }
 
-    // Crear usuario persistiendo en localStorage (rol forzado a 'usuario')
-    function crearUsuarioDesdeAdmin() {
-        const u = (document.getElementById('cu_usuario').value || '').trim();
-        const n = (document.getElementById('cu_nombreCompleto').value || '').trim();
-        const c = (document.getElementById('cu_cedula').value || '').trim();
-        const p = (document.getElementById('cu_password').value || '').trim();
-        const r = (document.getElementById('cu_rol') && document.getElementById('cu_rol').value) ? document.getElementById('cu_rol').value : 'usuario';
-        const msg = document.getElementById('msgCrearUsuario');
-
-        const showMsg = (text, type) => {
-          msg.textContent = text;
-          msg.style.display = 'block';
-          if (type === 'error') { msg.style.background='#f8d7da'; msg.style.color='#721c24'; msg.style.border='1px solid #f5c6cb'; }
-          else { msg.style.background='#d4edda'; msg.style.color='#155724'; msg.style.border='1px solid #c3e6cb'; }
-        };
-
-        if (!u || !n || !p) { showMsg('Complete usuario, nombre y contraseña.', 'error'); return; }
-
-        // Construir lista para verificar duplicados (predefinidos + registrados)
-        const predef = [
-          { username: 'admin' },
-          { username: 'usuario' }
-        ];
-        let registrados = [];
-        try { registrados = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]'); } catch(e) { registrados = []; }
-        const lista = [...predef, ...registrados];
-        if (lista.some(x => x.username.toLowerCase() === u.toLowerCase())) { showMsg('El usuario ya existe.', 'error'); return; }
-
-        // Crear objeto usuario con rol seleccionado
-        const nuevo = { username: u, password: p, nombreCompleto: n, cedula: c, rol: r, nombre: n };
-        registrados.push(nuevo);
-        localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
-
-        showMsg('Usuario creado correctamente.', 'success');
-        setTimeout(() => { cerrarModalCrearUsuario(); renderUsuariosPanel(); }, 800);
-    }
 
     // Utilidad: obtener lista de usuarios (predefinidos + registrados, sin duplicar)
     function obtenerListaUsuarios() {
@@ -960,7 +924,7 @@ function cerrarModalPerfilUsuario() {
   document.getElementById('modalPerfilUsuario').style.display = 'none';
 }
 
-function crearUsuarioDesdeAdmin() {
+async function crearUsuarioDesdeAdmin() {
   const username = document.getElementById('cu_usuario').value.trim();
   const nombreCompleto = document.getElementById('cu_nombreCompleto').value.trim();
   const cedula = document.getElementById('cu_cedula').value.trim();
@@ -968,15 +932,52 @@ function crearUsuarioDesdeAdmin() {
   const rol = document.getElementById('cu_rol').value;
   const msg = document.getElementById('msgCrearUsuario');
   msg.style.display = 'none';
+
   if (!username || !nombreCompleto || !password) {
-    msg.textContent = 'Complete los campos obligatorios';
+    msg.textContent = 'Complete los campos obligatorios: Usuario, Nombre Completo y Contraseña.';
     msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
     return;
   }
-  // Validar duplicado
+
+  const base = localStorage.getItem('AUTH_API_BASE');
+  const token = sessionStorage.getItem('authToken');
+  const esRemoto = !!(base && token);
+
+  // --- Creación Remota ---
+  if (esRemoto) {
+    try {
+      const resp = await fetch(String(base).replace(/\/$/, '') + '/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password, rol, nombreCompleto, cedula })
+      });
+
+      if (resp.ok) {
+        msg.textContent = 'Usuario creado remotamente con éxito.';
+        msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
+        document.getElementById('formCrearUsuario').reset();
+        renderizarUsuariosAdminPanel();
+        setTimeout(cerrarModalCrearUsuario, 1500);
+      } else {
+        const err = await resp.json();
+        const errMsg = err.message || (resp.status === 409 ? 'El nombre de usuario ya existe.' : 'Error al crear usuario.');
+        msg.textContent = errMsg;
+        msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+      }
+    } catch (e) {
+      msg.textContent = 'Error de red. No se pudo crear el usuario remoto.';
+      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+    }
+    return;
+  }
+
+  // --- Creación Local (fallback) ---
   const existentes = obtenerUsuariosCombinados();
   if (existentes.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-    msg.textContent = 'El nombre de usuario ya existe';
+    msg.textContent = 'El nombre de usuario ya existe localmente.';
     msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
     return;
   }
@@ -985,16 +986,12 @@ function crearUsuarioDesdeAdmin() {
   if (raw) { try { registrados = JSON.parse(raw); } catch(_){} }
   registrados.push({ username, nombreCompleto, cedula, password, rol });
   localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
-  // limpiar
-  document.getElementById('cu_usuario').value = '';
-  document.getElementById('cu_nombreCompleto').value = '';
-  document.getElementById('cu_cedula').value = '';
-  document.getElementById('cu_password').value = '';
-  document.getElementById('cu_rol').value = 'usuario';
-  // feedback
-  msg.textContent = 'Usuario creado correctamente';
+  
+  msg.textContent = 'Usuario creado localmente con éxito.';
   msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
+  document.getElementById('formCrearUsuario').reset();
   renderizarUsuariosAdminPanel();
+  setTimeout(cerrarModalCrearUsuario, 1500);
 }
 
 function abrirModalCambiarContrasenaUsuario(username) {
