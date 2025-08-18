@@ -5,8 +5,8 @@ import { verifyToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Aplica auth y rol admin a todas las rutas de /users
-router.use(verifyToken, requireAdmin);
+// Aplica solo autenticación a todo el router
+router.use(verifyToken);
 
 function mapRow(row) {
   return {
@@ -24,7 +24,7 @@ function mapRow(row) {
 }
 
 // GET /users - listar usuarios (sin password)
-router.get('/', async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const { rows } = await query(
       `SELECT username, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /users - crear usuario
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { username, password, rol = 'usuario', nombre, nombreCompleto, cedula, area, empresa, correo, celular, activo = true } = req.body || {};
     if (!username || !password) return res.status(400).json({ error: 'username y password son requeridos' });
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /users/:username - actualizar datos (y opcionalmente password)
-router.patch('/:username', async (req, res) => {
+router.patch('/:username', requireAdmin, async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase();
     if (!username) return res.status(400).json({ error: 'username requerido' });
@@ -98,8 +98,43 @@ router.patch('/:username', async (req, res) => {
   }
 });
 
+// PATCH /users/me - actualizar perfil del usuario autenticado (sin admin)
+router.patch('/me', async (req, res) => {
+  try {
+    // req.user viene de verifyToken()
+    const username = String(req.user?.username || '').toLowerCase();
+    if (!username) return res.status(401).json({ error: 'No autenticado' });
+
+    const { nombre, nombreCompleto, cedula, area, empresa, correo, celular } = req.body || {};
+
+    const sets = [];
+    const vals = [];
+    let i = 1;
+
+    if (nombre !== undefined) { sets.push(`nombre = $${i++}`); vals.push(nombre); }
+    if (nombreCompleto !== undefined) { sets.push(`nombre_completo = $${i++}`); vals.push(nombreCompleto); }
+    if (cedula !== undefined) { sets.push(`cedula = $${i++}`); vals.push(cedula); }
+    if (area !== undefined) { sets.push(`area = $${i++}`); vals.push(area); }
+    if (empresa !== undefined) { sets.push(`empresa = $${i++}`); vals.push(empresa); }
+    if (correo !== undefined) { sets.push(`correo = $${i++}`); vals.push(correo); }
+    if (celular !== undefined) { sets.push(`celular = $${i++}`); vals.push(celular); }
+
+    if (!sets.length) return res.status(400).json({ error: 'Nada para actualizar' });
+
+    vals.push(username);
+    const sql = `UPDATE users SET ${sets.join(', ')} WHERE username = $${i} RETURNING username, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo`;
+    const { rows } = await query(sql, vals);
+    if (!rows?.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    return res.json({ ok: true, user: mapRow(rows[0]) });
+  } catch (err) {
+    console.error('PATCH /users/me error', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // PATCH /users/:username/state - activar/desactivar
-router.patch('/:username/state', async (req, res) => {
+router.patch('/:username/state', requireAdmin, async (req, res) => {
   try {
     const username = String(req.params.username || '').toLowerCase();
     const { activo } = req.body || {};

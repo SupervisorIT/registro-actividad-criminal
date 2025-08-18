@@ -11,7 +11,11 @@ function mapUserRowToPayload(row) {
     nombre: row.nombre || row.nombre_completo,
     nombreCompleto: row.nombre_completo || row.nombre,
     cedula: row.cedula || '',
-    rol: row.rol || 'usuario'
+    rol: row.rol || 'usuario',
+    area: row.area || '',
+    empresa: row.empresa || '',
+    correo: row.correo || '',
+    celular: row.celular || ''
   };
 }
 
@@ -23,7 +27,7 @@ router.post('/login', async (req, res) => {
     }
 
     const { rows } = await query(
-      `SELECT id, username, password_hash, rol, nombre, nombre_completo, cedula, activo
+      `SELECT id, username, password_hash, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo
        FROM users WHERE username = $1 LIMIT 1`,
       [String(username).toLowerCase()]
     );
@@ -43,7 +47,17 @@ router.post('/login', async (req, res) => {
     );
 
     const payload = mapUserRowToPayload(user);
-    return res.json({ token, user: payload });
+    // Detectar campos faltantes que queremos exigir completos para operar
+    const required = ['nombre', 'nombreCompleto', 'cedula', 'empresa', 'correo', 'celular'];
+    const missingFields = [];
+    if (!payload.nombre) missingFields.push('nombre');
+    if (!payload.nombreCompleto) missingFields.push('nombreCompleto');
+    if (!payload.cedula) missingFields.push('cedula');
+    if (!payload.empresa) missingFields.push('empresa');
+    if (!payload.correo) missingFields.push('correo');
+    if (!payload.celular) missingFields.push('celular');
+
+    return res.json({ token, user: payload, missingFields });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Error interno' });
