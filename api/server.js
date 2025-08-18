@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import bcrypt from 'bcrypt';
+import { query } from './db.js';
 import authRouter from './routes/auth.js';
 
 const app = express();
@@ -27,3 +29,62 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`Auth API listening on port ${PORT}`);
 });
+
+// --- Auto-migraciones y seed mínimo al iniciar (idempotente, sin shell) ---
+async function ensureSchema() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(64) UNIQUE NOT NULL,
+      password_hash VARCHAR(120) NOT NULL,
+      rol VARCHAR(24) NOT NULL DEFAULT 'usuario',
+      nombre VARCHAR(120),
+      nombre_completo VARCHAR(180),
+      cedula VARCHAR(60),
+      area VARCHAR(120),
+      empresa VARCHAR(180),
+      correo VARCHAR(180),
+      celular VARCHAR(60),
+      activo BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+}
+
+async function insertIfNotExists({ username, password, rol, nombre, nombreCompleto, cedula }) {
+  const { rows } = await query('SELECT 1 FROM users WHERE username = $1 LIMIT 1', [username.toLowerCase()]);
+  if (rows.length) return; // no sobrescribir si existe
+  const hash = await bcrypt.hash(password, 10);
+  await query(
+    `INSERT INTO users (username, password_hash, rol, nombre, nombre_completo, cedula)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [username.toLowerCase(), hash, rol, nombre || null, nombreCompleto || null, cedula || null]
+  );
+}
+
+async function bootMigrations() {
+  try {
+    await ensureSchema();
+    await insertIfNotExists({
+      username: 'admin',
+      password: 'SupervisorIT2025',
+      rol: 'admin',
+      nombre: 'Administrador',
+      nombreCompleto: 'Administrador del Sistema',
+      cedula: 'E-00-0000-00000'
+    });
+    await insertIfNotExists({
+      username: 'usuario',
+      password: 'usuario123',
+      rol: 'usuario',
+      nombre: 'Usuario Estándar',
+      nombreCompleto: 'Usuario Estándar',
+      cedula: 'E-00-0000-00001'
+    });
+    console.log('DB schema ensured and minimal seed applied');
+  } catch (err) {
+    console.error('Migration/seed on boot failed:', err);
+  }
+}
+
+bootMigrations();
