@@ -4,6 +4,7 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import { query } from './db.js';
 import authRouter from './routes/auth.js';
+import usersRouter from './routes/users.js';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/auth', authRouter);
+app.use('/users', usersRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
