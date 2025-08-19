@@ -10,15 +10,22 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 // Orígenes permitidos para el front (agrega/quita según despliegues)
+// Permite configurar múltiples orígenes usando CORS_ORIGINS="https://a.com,https://b.com"
+const envCorsList = (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(s => s && s.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  // Dominio correcto del frontend en Render
+  // Dominios de frontend en Render (agrega los que uses)
   'https://registro-actividad-criminal.onrender.com',
+  'https://registro-de-actividad-criminal.onrender.com',
   // Orígenes locales comunes
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
-  process.env.CORS_ORIGIN // opcional desde env
+  ...envCorsList
 ].filter(Boolean);
 
 const corsOptions = {
