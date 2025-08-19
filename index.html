@@ -1054,11 +1054,6 @@ async function renderizarUsuariosAdminPanel() {
       btnEdit.textContent = 'Editar';
       btnEdit.onclick = () => abrirModalEditarUsuario(u.username);
       acciones.appendChild(btnEdit);
-      const btnPwd = document.createElement('button');
-      btnPwd.className = 'btn btn-sm btn-warning';
-      btnPwd.textContent = 'Cambiar contraseña';
-      btnPwd.onclick = () => abrirModalCambiarContrasenaUsuario(u.username);
-      acciones.appendChild(btnPwd);
     }
     fila.appendChild(info);
     fila.appendChild(acciones);
@@ -1769,38 +1764,6 @@ window.limpiarProductosRobados = function() {
   }
 };
 </script>
-<!-- Modal para cambio de contraseña de administrador -->
-<div id="modalCambioPassword" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
-    <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 0; border: 1px solid #888; width: 420px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow:hidden;">
-        <div class="modal-header" style="padding: 12px 16px; background:#0d47a1; color:#fff; display:flex; align-items:center; justify-content:space-between;">
-            <h4 style="margin: 0;">Cambiar Contraseña de Administrador</h4>
-            <span class="close" onclick="cerrarModalCambioPassword()" style="color: #fff; font-size: 24px; font-weight: bold; cursor: pointer;">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div id="msgCambioPassword" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 4px;"></div>
-            
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label for="currentPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Contraseña Actual:</label>
-                <input type="password" id="currentPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            </div>
-            
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label for="newPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Nueva Contraseña:</label>
-                <input type="password" id="newPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            </div>
-            
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label for="confirmPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Confirmar Nueva Contraseña:</label>
-                <input type="password" id="confirmPassword" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            </div>
-            
-            <div class="form-group" style="text-align: right;">
-                <button type="button" class="btn btn-secondary" onclick="cerrarModalCambioPassword()" style="padding: 8px 15px; margin-right: 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="cambiarPasswordAdmin()" style="padding: 8px 15px; background-color: #1565C0; color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar Cambios</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Modal Panel de Administración -->
 <div id="modalAdminPanel" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
@@ -1811,9 +1774,6 @@ window.limpiarProductosRobados = function() {
     </div>
     <div style="padding:16px;">
       <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:14px;">
-        <button class="btn btn-primary" style="background:#1565C0; color:#fff; border:none; padding:10px 12px; border-radius:6px; text-align:left;" onclick="abrirModalCambioPassword()">
-          <i class="fas fa-key" style="margin-right:8px;"></i> Cambiar contraseña de administrador
-        </button>
         <button class="btn btn-success" style="background:#2e7d32; color:#fff; border:none; padding:10px 12px; border-radius:6px; text-align:left;" onclick="abrirModalCrearUsuario()">
           <i class="fas fa-user-plus" style="margin-right:8px;"></i> Crear usuario (rol usuario)
         </button>
@@ -1894,118 +1854,10 @@ window.limpiarProductosRobados = function() {
   </div>
 </div>
 
-<!-- Modal Cambiar Contraseña (usuario) -->
-<div id="modalCambiarContrasenaUsuario" class="modal" style="display:none; position:fixed; z-index:1002; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
-  <div class="modal-content" style="background:#fff; margin:12% auto; width:420px; border-radius:8px; overflow:hidden;">
-    <div style="padding:12px 16px; background:#1565C0; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-      <h4 style="margin:0;">Cambiar contraseña de usuario</h4>
-      <span class="close" onclick="cerrarModalCambiarContrasenaUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
-    </div>
-    <div style="padding:16px;">
-      <div style="margin-bottom:10px; font-size:14px; color:#555;">
-        Usuario: <strong id="ccu_username"></strong>
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Nueva contraseña</label>
-        <input id="ccu_new" type="password" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Confirmar nueva contraseña</label>
-        <input id="ccu_confirm" type="password" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div id="ccu_msg" style="display:none; margin-top:6px; font-size:13px;"></div>
-      <input id="ccu_target" type="hidden" value="">
-    </div>
-    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
-      <button class="btn btn-secondary" onclick="cerrarModalCambiarContrasenaUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCambioContrasenaUsuario()" style="background:#1565C0; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Guardar</button>
-    </div>
-  </div>
- </div>
+<!-- (Modal Cambiar Contraseña eliminado; la edición de contraseña se hace desde Perfil/Editar) -->
 
 <script>
-// Funciones para el modal de cambio de contraseña
-function abrirModalCambioPassword() {
-    // Cerrar panel admin si está abierto para evitar superposición
-    const panel = document.getElementById('modalAdminPanel');
-    if (panel && panel.style.display !== 'none') {
-        panel.style.display = 'none';
-    }
-    document.getElementById('modalCambioPassword').style.display = 'flex';
-    document.getElementById('modalCambioPassword').style.setProperty('display', 'flex', 'important');
-    document.getElementById('currentPassword').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmPassword').value = '';
-    document.getElementById('msgCambioPassword').style.display = 'none';
-    setTimeout(function() {
-        document.getElementById('currentPassword').focus();
-    }, 100);
-}
-
-function cerrarModalCambioPassword() {
-    document.getElementById('modalCambioPassword').style.display = 'none';
-}
-
-function cambiarPasswordAdmin() {
-    var currentPassword = document.getElementById('currentPassword').value;
-    var newPassword = document.getElementById('newPassword').value;
-    var confirmPassword = document.getElementById('confirmPassword').value;
-    var msgElement = document.getElementById('msgCambioPassword');
-    
-    // Verificar que los campos no estén vacíos
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        mostrarMensajeCambioPassword('Todos los campos son obligatorios', 'error');
-        return;
-    }
-    
-    // Verificar que la contraseña actual sea correcta (SupervisorIT2025 por defecto)
-    var adminPass = localStorage.getItem('adminPassword') || 'SupervisorIT2025';
-    if (currentPassword !== adminPass) {
-        mostrarMensajeCambioPassword('La contraseña actual es incorrecta', 'error');
-        return;
-    }
-    
-    // Verificar que las nuevas contraseñas coincidan
-    if (newPassword !== confirmPassword) {
-        mostrarMensajeCambioPassword('Las nuevas contraseñas no coinciden', 'error');
-        return;
-    }
-    
-    // Verificar que la nueva contraseña tenga al menos 6 caracteres
-    if (newPassword.length < 6) {
-        mostrarMensajeCambioPassword('La nueva contraseña debe tener al menos 6 caracteres', 'error');
-        return;
-    }
-    
-    // Guardar la nueva contraseña en localStorage
-    localStorage.setItem('adminPassword', newPassword);
-    
-    // Mostrar mensaje de éxito
-    mostrarMensajeCambioPassword('Contraseña actualizada correctamente', 'success');
-    
-    // Cerrar el modal después de 2 segundos
-    setTimeout(function() {
-        cerrarModalCambioPassword();
-    }, 2000);
-}
-
-function mostrarMensajeCambioPassword(mensaje, tipo) {
-    var msgElement = document.getElementById('msgCambioPassword');
-    msgElement.textContent = mensaje;
-    msgElement.style.display = 'block';
-    
-    if (tipo === 'error') {
-        msgElement.style.backgroundColor = '#f8d7da';
-        msgElement.style.color = '#721c24';
-        msgElement.style.borderColor = '#f5c6cb';
-    } else if (tipo === 'success') {
-        msgElement.style.backgroundColor = '#d4edda';
-        msgElement.style.color = '#155724';
-        msgElement.style.borderColor = '#c3e6cb';
-    }
-}
-
-// Actualizar las funciones existentes para usar la nueva contraseña de admin
+// Actualizar las funciones existentes para usar la contraseña de admin (sin modal propio)
 window.autenticarYLimpiar = function() {
   var usuario = document.getElementById('authUser').value.trim();
   var password = document.getElementById('authPass').value;
