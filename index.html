@@ -489,7 +489,7 @@
             <div class="modal-content" style="border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
                 <div class="modal-header bg-primary text-white" style="border-bottom: none; padding: 15px 20px;">
                     <h5 class="modal-title" id="modalTipificacionLabel" style="font-weight: 600;">Seleccionar Tipificación</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 1;">
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 1;" onclick="cerrarModalTipificacion()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -1102,7 +1102,73 @@ function mostrarPerfilUsuario(username) {
 function cerrarModalPerfilUsuario() {
   document.getElementById('modalPerfilUsuario').style.display = 'none';
 }
-</script>
+ </script>
+
+ <!-- Modal: Panel de Administración -->
+ <div id="modalAdminPanel" class="modal" style="display:none; position:fixed; z-index:1300; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.45);">
+   <div class="modal-content" style="background:#f8f9fa; margin:4% auto; width:clamp(320px, 92vw, 900px); max-height:90vh; overflow:auto; border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.25);">
+     <div class="modal-header" style="padding:12px 16px; background:#0d6efd; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+       <h3 style="margin:0; font-size:18px;">Panel de Administración</h3>
+       <span class="close" onclick="cerrarModalAdminPanel()" style="cursor:pointer; font-size:22px;">&times;</span>
+     </div>
+     <div class="modal-body" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+         <span id="adminPanelOrigen" style="padding:4px 8px; background:#eef2f7; color:#555; border-radius:6px; font-size:12px;">Origen: Local</span>
+         <span style="font-size:12px; color:#666;">Usuarios: <strong id="adminPanelUsuariosCount">0</strong></span>
+         <div id="adminPanelAviso" style="display:none; font-size:12px; padding:6px 8px; border-radius:6px; background:#fff3cd; color:#664d03; border:1px solid #ffecb5;"></div>
+         <div style="flex:1"></div>
+         <button class="btn btn-sm btn-primary" onclick="abrirModalCrearUsuario()" style="background:#0d6efd; color:#fff; border:none; padding:6px 10px; border-radius:6px;">Crear Usuario</button>
+       </div>
+       <div id="adminPanelUsuariosLista" style="display:flex; flex-direction:column; gap:6px;"></div>
+     </div>
+     <div class="modal-footer" style="padding:12px 16px; text-align:right; border-top:1px solid #e9ecef;">
+       <button class="btn btn-secondary" onclick="cerrarModalAdminPanel()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Cerrar</button>
+     </div>
+   </div>
+ </div>
+
+ <!-- Modal: Crear Usuario -->
+ <div id="modalCrearUsuario" class="modal" style="display:none; position:fixed; z-index:1350; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.45);">
+   <div class="modal-content" style="background:#fff; margin:6% auto; width:clamp(320px, 92vw, 560px); max-height:88vh; overflow:auto; border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.25);">
+     <div class="modal-header" style="padding:12px 16px; background:#198754; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+       <h3 style="margin:0; font-size:18px;">Crear Usuario</h3>
+       <span class="close" onclick="cerrarModalCrearUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
+     </div>
+     <div class="modal-body" style="padding:16px;">
+       <div id="msgCrearUsuario" style="display:none; margin-bottom:10px; font-size:13px;"></div>
+       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+         <div>
+           <label>Usuario</label>
+           <input id="cu_usuario" type="text" class="form-control" placeholder="username" required>
+         </div>
+         <div>
+           <label>Nombre Completo</label>
+           <input id="cu_nombreCompleto" type="text" class="form-control" placeholder="Nombre y Apellido" required>
+         </div>
+         <div>
+           <label>Cédula</label>
+           <input id="cu_cedula" type="text" class="form-control" placeholder="E-00-0000-00000">
+         </div>
+         <div>
+           <label>Contraseña</label>
+           <input id="cu_password" type="password" class="form-control" placeholder="********" required>
+         </div>
+         <div>
+           <label>Rol</label>
+           <select id="cu_rol" class="form-control">
+             <option value="usuario">Usuario</option>
+             <option value="admin">Administrador</option>
+           </select>
+         </div>
+       </div>
+     </div>
+     <div class="modal-footer" style="padding:12px 16px; text-align:right; border-top:1px solid #e9ecef;">
+       <button class="btn btn-secondary" onclick="cerrarModalCrearUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
+       <!-- La lógica de guardado se maneja desde admin/index scripts -->
+       <button class="btn btn-primary" onclick="agregarUsuario && agregarUsuario()" style="background:#0d6efd; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Guardar</button>
+     </div>
+   </div>
+ </div>
 
 <!-- Modal: Nuevo Delincuente -->
 <div id="nuevoDelincuenteModal" class="modal" style="display:none; position:fixed; z-index:1200; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.45);" aria-hidden="true">

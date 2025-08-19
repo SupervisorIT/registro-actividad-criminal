@@ -72,11 +72,15 @@ function configurarTarjetasTipificacion() {
                 botonActual.classList.remove('tipificacion-selector-btn-activo');
             }
             
-            // Efecto de selección
+            // Efecto de selección y cierre de modal sin jQuery
             this.style.transform = 'scale(0.95)';
             setTimeout(() => {
                 this.style.transform = 'translateY(0)';
-                $('#modalTipificacion').modal('hide');
+                const modal = document.getElementById('modalTipificacion');
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
             }, 200);
         });
     });
@@ -92,8 +96,21 @@ window.abrirModalTipificacion = function(boton) {
     // Marcar este botón como activo
     boton.classList.add('tipificacion-selector-btn-activo');
     
-    // Abrir el modal
-    $('#modalTipificacion').modal('show');
+    // Abrir el modal sin jQuery
+    const modal = document.getElementById('modalTipificacion');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+// Cierre manual del modal (por si el botón de cerrar no usa Bootstrap)
+window.cerrarModalTipificacion = function() {
+    const modal = document.getElementById('modalTipificacion');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 };
 
 // Actualizar la función agregarFilaTipificacion si existe

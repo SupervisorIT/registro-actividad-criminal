@@ -1649,6 +1649,87 @@ document.addEventListener('DOMContentLoaded', inicializarApp);
 
 // --- Funciones Globales (si son llamadas desde HTML onclick) ---
 
+// Crea una nueva fila de caso con los mismos campos que la fila inicial
+function crearFilaCasoHTML() {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="width: 120px;">
+            <div class="tipificacion-container">
+                <span class="tipificacion-texto">Hurto</span>
+                <button type="button" class="btn btn-xs btn-primary tipificacion-selector-btn" style="padding: 2px 5px; font-size: 10px; margin-left: 5px;" onclick="abrirModalTipificacion(this)">...</button>
+                <input type="hidden" name="tipificacion[]" value="Hurto" class="tipificacion-input" required>
+            </div>
+        </td>
+        <td style="width: 120px;">
+            <input type="text" name="fecha[]" class="form-control fecha-input input-fecha-delito" placeholder="DD/MM/AAAA" inputmode="numeric" style="width: 100%; box-sizing: border-box;" required>
+        </td>
+        <td style="width: 100px;">
+            <input type="number" min="0" name="cantidad[]" class="form-control cantidad-input" style="width: 100%;" required placeholder="0">
+        </td>
+        <td style="width: 120px;">
+            <input type="number" min="0" step="0.01" name="cuantia[]" class="form-control cuantia-input" style="width: 100%;" required placeholder="0.00">
+        </td>
+        <td style="width: 100px;">
+            <input type="number" min="0" name="denuncias[]" class="form-control denuncias-input" style="width: 100%;" required placeholder="0">
+        </td>
+        <td style="width: 150px;">
+            <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
+        </td>
+        <td style="width: 200px;">
+            <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required onchange="onObservacionCambio(this)">
+        </td>
+        <td style="width: 80px; text-align: center;">
+            <div style="display: flex; justify-content: center; gap: 5px;">
+                <button type="button" class="btn btn-success btn-sm" title="Agregar" onclick="agregarFilaProductoSoloVisual()">+</button>
+                <button type="button" class="btn btn-danger btn-sm" title="Eliminar" onclick="eliminarFila(this)">X</button>
+            </div>
+        </td>
+    `;
+    return tr;
+}
+
+// Agrega una fila nueva justo antes de la fila TOTAL
+window.agregarFilaProductoSoloVisual = function agregarFilaProductoSoloVisual() {
+    const tbody = document.querySelector('#tablaCasosDelictivos tbody');
+    if (!tbody) return;
+    const totalRow = tbody.querySelector('tr.total-row');
+    const nuevaFila = crearFilaCasoHTML();
+    if (totalRow) {
+        tbody.insertBefore(nuevaFila, totalRow);
+    } else {
+        tbody.appendChild(nuevaFila);
+    }
+    asegurarFilaVaciaCasos();
+    calcularTotalesCasos();
+    actualizarReportePerdidas();
+};
+
+// Alias para compatibilidad con tipificacion-selector.js
+window.agregarFilaTipificacion = function agregarFilaTipificacion() {
+    window.agregarFilaProductoSoloVisual();
+};
+
+// Elimina la fila actual
+window.eliminarFila = function eliminarFila(btn) {
+    try {
+        const tr = btn && btn.closest ? btn.closest('tr') : null;
+        if (tr && tr.parentNode) {
+            tr.parentNode.removeChild(tr);
+            asegurarFilaVaciaCasos();
+            calcularTotalesCasos();
+            actualizarReportePerdidas();
+        }
+    } catch (e) {
+        console.warn('No se pudo eliminar la fila:', e);
+    }
+};
+
+// Handler mínimo para cambio de observaciones (por ahora solo asegura string limpio)
+window.onObservacionCambio = function onObservacionCambio(input) {
+    if (!input) return;
+    input.value = (input.value || '').toString().trim();
+};
+
 // Ejemplo: si 'script_casos.js' no define estas globalmente
 window.agregarFilaEditable = window.agregarFilaEditable || function(btn) {
     console.log("Agregar fila editable llamado...");
