@@ -65,6 +65,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(() => errorMessage.classList.remove('show'), 4000);
                             return;
                         }
+                        // Bloquear cuentas inactivas (borrado lógico)
+                        if (user && user.activo === false) {
+                            errorMessage.textContent = 'Tu cuenta está desactivada. Contacta al administrador.';
+                            errorMessage.classList.add('show');
+                            setTimeout(() => errorMessage.classList.remove('show'), 5000);
+                            return;
+                        }
                         if (user) {
                             // Guardar token obligatorio
                             sessionStorage.setItem('authToken', data.token);
