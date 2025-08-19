@@ -969,6 +969,7 @@ async function renderizarUsuariosAdminPanel() {
   const token = sessionStorage.getItem('authToken');
   let usuarios = null;
   let esRemoto = false;
+  let incluyoAdminLocal = false;
 
   if (base && token) {
     try {
@@ -986,6 +987,19 @@ async function renderizarUsuariosAdminPanel() {
             rol: u.rol || u.role || 'usuario'
           }));
           esRemoto = true;
+
+          // Agregar admin local si no existe en la lista remota
+          const tieneAdminRemoto = usuarios.some(x => String(x.username).toLowerCase() === 'admin');
+          if (!tieneAdminRemoto) {
+            usuarios.unshift({
+              username: 'admin',
+              nombre: 'Administrador',
+              nombreCompleto: 'Administrador del Sistema',
+              cedula: '',
+              rol: 'admin'
+            });
+            incluyoAdminLocal = true;
+          }
         }
       }
     } catch (_) {
@@ -999,7 +1013,8 @@ async function renderizarUsuariosAdminPanel() {
   }
 
   if (origenEl) {
-    origenEl.textContent = 'Origen: ' + (esRemoto ? 'Remoto' : 'Local');
+    const suf = esRemoto && incluyoAdminLocal ? ' (+admin local)' : '';
+    origenEl.textContent = 'Origen: ' + (esRemoto ? 'Remoto' : 'Local') + suf;
     origenEl.style.background = esRemoto ? '#e6f4ea' : '#eef2f7';
     origenEl.style.color = esRemoto ? '#1e7e34' : '#555';
   }
@@ -1187,6 +1202,35 @@ function guardarCambioContrasenaUsuario() {
     msg.style.cssText = 'display:block;background:#fff3cd;color:#856404;border:1px solid #ffeeba;padding:8px;border-radius:4px;';
     return;
   }
+  // Preferir cambio remoto si hay backend y sesión
+  const base = localStorage.getItem('AUTH_API_BASE');
+  const token = sessionStorage.getItem('authToken');
+  if (base && token) {
+    (async () => {
+      try {
+        const resp = await fetch(String(base).replace(/\/$/, '') + '/users/' + encodeURIComponent(username.toLowerCase()), {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: newPwd })
+        });
+        if (resp.ok) {
+          msg.textContent = 'Contraseña actualizada correctamente en el servidor';
+          msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
+          setTimeout(() => { cerrarModalCambiarContrasenaUsuario(); }, 1000);
+        } else {
+          const err = await resp.json().catch(() => ({}));
+          msg.textContent = err.error || 'No se pudo actualizar la contraseña remota';
+          msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+        }
+      } catch (e) {
+        msg.textContent = 'Error de red al actualizar contraseña';
+        msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
+      }
+    })();
+    return;
+  }
+
+  // Fallback local solo si no hay backend (modo offline)
   if (username === 'usuario') {
     // Guardar como predefinido modificado
     let mods = [];
@@ -1208,7 +1252,7 @@ function guardarCambioContrasenaUsuario() {
     registrados[idx].password = newPwd;
     localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
   }
-  msg.textContent = 'Contraseña actualizada correctamente';
+  msg.textContent = 'Contraseña actualizada localmente';
   msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
   setTimeout(() => { cerrarModalCambiarContrasenaUsuario(); renderizarUsuariosAdminPanel(); }, 1200);
 }
