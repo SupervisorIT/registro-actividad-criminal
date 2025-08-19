@@ -621,7 +621,7 @@
                     } catch (e) { /* Silenciar error de red/CORS para no alarmar la consola */ }
                 }
 
-                // Persist to session and close modal regardless of remote result
+                // Persist to session y cerrar modal (independiente del resultado remoto)
                 const nuevo = {
                     ...user,
                     nombre: updates.nombre || updates.nombreCompleto,
@@ -632,9 +632,16 @@
                     celular: updates.celular || ''
                 };
                 sessionStorage.setItem('usuarioActivo', JSON.stringify(nuevo));
-                // Visual feedback
+                // Feedback visual y cierre inmediato
                 showMsg(patchedOk ? 'Perfil actualizado correctamente.' : 'Perfil guardado localmente.', 'success');
-                setTimeout(() => { modal.style.display='none'; }, 600);
+                setTimeout(() => {
+                  try {
+                    modal.style.display='none';
+                    if (modal && modal.parentNode) {
+                      modal.parentNode.removeChild(modal); // evita que vuelva a mostrarse en esta sesión
+                    }
+                  } catch {}
+                }, 200);
 
                 function showMsg(text, type){
                     msg.textContent = text;
@@ -727,13 +734,71 @@
         return Array.from(map.values());
     }
 
-    // Renderiza el listado de usuarios en el Panel de Administración
-    function renderUsuariosPanel() {
+    // Renderiza el listado de usuarios en el Panel de Administración (prioriza remoto)
+    async function renderUsuariosPanel() {
         const cont = document.getElementById('adminPanelUsuariosLista');
         const countEl = document.getElementById('adminPanelUsuariosCount');
+        const origenEl = document.getElementById('adminPanelUsuariosOrigen');
         if (!cont || !countEl) return;
+
+        const base = localStorage.getItem('AUTH_API_BASE');
+        const token = sessionStorage.getItem('authToken');
+
+        // Intento remoto primero
+        if (base && token) {
+            try {
+                const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const usuarios = Array.isArray(data) ? data : [];
+                    countEl.textContent = usuarios.length;
+                    if (origenEl) origenEl.textContent = 'Remoto';
+                    if (!usuarios.length) {
+                        cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios en el servidor.</div>';
+                        return;
+                    }
+                    const lista = document.createElement('div');
+                    lista.style.display = 'flex';
+                    lista.style.flexDirection = 'column';
+                    lista.style.gap = '6px';
+                    usuarios.forEach(u => {
+                        const item = document.createElement('div');
+                        item.style.display = 'flex';
+                        item.style.justifyContent = 'space-between';
+                        item.style.alignItems = 'center';
+                        item.style.padding = '8px';
+                        item.style.background = '#fff';
+                        item.style.border = '1px solid #e0e0e0';
+                        item.style.borderRadius = '6px';
+                        const left = document.createElement('div');
+                        left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+                        const right = document.createElement('div');
+                        const link = document.createElement('a');
+                        link.href = 'javascript:void(0)';
+                        link.textContent = 'Perfil';
+                        link.style.color = '#1565C0';
+                        link.style.textDecoration = 'underline';
+                        link.onclick = () => abrirModalPerfilUsuario(u.username);
+                        right.appendChild(link);
+                        item.appendChild(left);
+                        item.appendChild(right);
+                        lista.appendChild(item);
+                    });
+                    cont.innerHTML = '';
+                    cont.appendChild(lista);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Fallo listado remoto de usuarios:', e);
+            }
+        }
+
+        // Fallback local si no hay remoto
         const usuarios = obtenerListaUsuarios();
         countEl.textContent = usuarios.length;
+        if (origenEl) origenEl.textContent = 'Local';
         if (!usuarios.length) {
             cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>';
             return;
@@ -752,7 +817,7 @@
             item.style.border = '1px solid #e0e0e0';
             item.style.borderRadius = '6px';
             const left = document.createElement('div');
-            left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+            left.innerHTML = `<strong>${u.username}</strong> — <span style=\"color:#555;\">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style=\"color:#666;\">${u.nombreCompleto || u.nombre || ''}</small>`;
             const right = document.createElement('div');
             const link = document.createElement('a');
             link.href = 'javascript:void(0)';
