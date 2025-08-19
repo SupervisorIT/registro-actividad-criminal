@@ -651,30 +651,44 @@
         try {
             const data = sessionStorage.getItem('usuarioActivo');
             if (!data) {
-                alert('Sesión expirada. Inicie sesión nuevamente.');
-                window.location.href = 'login.html';
+                alert('Debe iniciar sesión.');
                 return;
             }
             const user = JSON.parse(data);
-            if (user.rol !== 'admin') {
-                alert('Acceso restringido a administradores.');
+            if (String(user.rol).toLowerCase() !== 'admin') {
+                alert('Solo administradores pueden crear usuarios.');
                 return;
             }
             // Abrir modal real de creación
-            document.getElementById('modalCrearUsuario').style.display = 'flex';
-            document.getElementById('modalAdminPanel').style.display = 'none';
+            const modal = document.getElementById('modalCrearUsuario');
+            modal.style.display = 'flex';
+            const panel = document.getElementById('modalAdminPanel');
+            if (panel) panel.style.display = 'none';
             // Limpiar campos
             ['cu_usuario','cu_nombreCompleto','cu_cedula','cu_password'].forEach(id => {
-              const el = document.getElementById(id);
-              if (el) el.value = '';
+                const el = document.getElementById(id);
+                if (el) el.value = '';
             });
-            const rolSel = document.getElementById('cu_rol');
-            if (rolSel) rolSel.value = 'usuario';
+            document.getElementById('cu_rol').value = 'usuario';
+            // Estado de conexión (Render vs Local)
+            const base = localStorage.getItem('AUTH_API_BASE');
+            const token = sessionStorage.getItem('authToken');
             const msg = document.getElementById('msgCrearUsuario');
-            if (msg) { msg.style.display='none'; msg.textContent=''; }
+            if (msg) {
+                if (base && token) {
+                    msg.textContent = 'Conectado al servidor remoto. Los usuarios se crearán en la base de datos de Render.';
+                    msg.style.cssText = 'display:block;background:#e7f3ff;color:#084298;border:1px solid #b6d4fe;padding:8px;border-radius:4px;';
+                } else if (base && !token) {
+                    msg.textContent = 'Backend remoto configurado, pero no hay sesión activa. Inicie sesión para crear usuarios en Render.';
+                    msg.style.cssText = 'display:block;background:#fff3cd;color:#664d03;border:1px solid #ffecb5;padding:8px;border-radius:4px;';
+                } else {
+                    msg.textContent = 'No hay backend remoto configurado (AUTH_API_BASE). La creación será local (solo para pruebas).';
+                    msg.style.cssText = 'display:block;background:#fff3cd;color:#664d03;border:1px solid #ffecb5;padding:8px;border-radius:4px;';
+                }
+            }
         } catch (e) {
-            console.error('Error al validar rol para crear usuario:', e);
-            alert('No se pudo validar permisos.');
+            console.error(e);
+            alert('Error al abrir el modal de creación de usuario');
         }
     }
 
@@ -755,8 +769,36 @@
         cont.appendChild(lista);
     }
 
-    // Abre modal de perfil poblado
-    function abrirModalPerfilUsuario(username) {
+    // Abre modal de perfil poblado (prioriza backend remoto si disponible)
+    async function abrirModalPerfilUsuario(username) {
+        const base = localStorage.getItem('AUTH_API_BASE');
+        const token = sessionStorage.getItem('authToken');
+        // 1) Intento remoto (requiere rol admin)
+        if (base && token) {
+            try {
+                const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (Array.isArray(data)) {
+                        const u = data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase());
+                        if (u) {
+                            document.getElementById('pu_username').textContent = u.username || '';
+                            document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+                            document.getElementById('pu_cedula').textContent = u.cedula || '';
+                            document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
+                            document.getElementById('modalPerfilUsuario').style.display = 'flex';
+                            return;
+                        }
+                    }
+                }
+            } catch (e) {
+                // continúa a fallback local
+                console.warn('Perfil remoto no disponible, usando datos locales:', e);
+            }
+        }
+        // 2) Fallback local
         const usuarios = obtenerListaUsuarios();
         const u = usuarios.find(x => x.username.toLowerCase() === String(username).toLowerCase());
         if (!u) return;
@@ -803,12 +845,13 @@ function cerrarModalAdminPanel() {
   modal.style.display = 'none';
 }
 
-function abrirModalCrearUsuario() {
+// Evitar redefinir funciones: versiones legacy (no usadas)
+function abrirModalCrearUsuario_legacy() {
   const modal = document.getElementById('modalCrearUsuario');
-  modal.style.display = 'block';
+  modal.style.display = 'flex';
 }
 
-function cerrarModalCrearUsuario() {
+function cerrarModalCrearUsuario_legacy() {
   const modal = document.getElementById('modalCrearUsuario');
   modal.style.display = 'none';
 }
@@ -910,14 +953,40 @@ async function renderizarUsuariosAdminPanel() {
 }
 
 function mostrarPerfilUsuario(username) {
-  const usuarios = obtenerUsuariosCombinados();
-  const u = usuarios.find(x => x.username === username);
-  if (!u) { alert('Usuario no encontrado'); return; }
-  document.getElementById('pu_username').textContent = u.username || '';
-  document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
-  document.getElementById('pu_cedula').textContent = u.cedula || '';
-  document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
-  document.getElementById('modalPerfilUsuario').style.display = 'block';
+  // Versión que prioriza backend remoto y cae a local si no disponible
+  (async () => {
+    const base = localStorage.getItem('AUTH_API_BASE');
+    const token = sessionStorage.getItem('authToken');
+    if (base && token) {
+      try {
+        const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+          headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (Array.isArray(data)) {
+            const u = data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase());
+            if (u) {
+              document.getElementById('pu_username').textContent = u.username || '';
+              document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+              document.getElementById('pu_cedula').textContent = u.cedula || '';
+              document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
+              document.getElementById('modalPerfilUsuario').style.display = 'block';
+              return;
+            }
+          }
+        }
+      } catch (e) { console.warn('Perfil remoto no disponible, usando local:', e); }
+    }
+    const usuarios = obtenerUsuariosCombinados();
+    const u = usuarios.find(x => x.username === username);
+    if (!u) { alert('Usuario no encontrado'); return; }
+    document.getElementById('pu_username').textContent = u.username || '';
+    document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+    document.getElementById('pu_cedula').textContent = u.cedula || '';
+    document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
+    document.getElementById('modalPerfilUsuario').style.display = 'block';
+  })();
 }
 
 function cerrarModalPerfilUsuario() {
@@ -941,10 +1010,14 @@ async function crearUsuarioDesdeAdmin() {
 
   const base = localStorage.getItem('AUTH_API_BASE');
   const token = sessionStorage.getItem('authToken');
-  const esRemoto = !!(base && token);
 
-  // --- Creación Remota ---
-  if (esRemoto) {
+  // Si hay backend remoto configurado, exigir sesión y NO caer a local
+  if (base) {
+    if (!token) {
+      msg.textContent = 'Debe iniciar sesión para crear usuarios en la base remota.';
+      msg.style.cssText = 'display:block;background:#fff3cd;color:#664d03;border:1px solid #ffecb5;padding:8px;border-radius:4px;';
+      return;
+    }
     try {
       const resp = await fetch(String(base).replace(/\/$/, '') + '/users', {
         method: 'POST',
@@ -974,7 +1047,7 @@ async function crearUsuarioDesdeAdmin() {
     return;
   }
 
-  // --- Creación Local (fallback) ---
+  // --- Creación Local (solo si no hay backend configurado) ---
   const existentes = obtenerUsuariosCombinados();
   if (existentes.some(u => u.username.toLowerCase() === username.toLowerCase())) {
     msg.textContent = 'El nombre de usuario ya existe localmente.';

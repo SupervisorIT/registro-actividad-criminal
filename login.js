@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (data.token) {
                                 sessionStorage.setItem('authToken', data.token);
                             }
+                            // Marcar origen remoto
+                            sessionStorage.setItem('authOrigin', 'remote');
 
                             // Si faltan datos, pedirlos y actualizarlos antes de entrar
                             const requiredKeys = ['nombre','nombreCompleto','cedula','empresa','correo','celular'];
@@ -162,8 +164,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             return; // éxito remoto, salir
                         }
                     }
+                    // Si la respuesta remota no es OK o no devolvió usuario, mostrar error y NO hacer fallback local
+                    try {
+                        const t = await resp.text();
+                        console.warn('Login remoto no OK:', resp.status, t);
+                    } catch {}
+                    errorMessage.textContent = 'No se pudo iniciar sesión contra el servidor remoto. Verifique credenciales o conexión.';
+                    errorMessage.classList.add('show');
+                    setTimeout(() => errorMessage.classList.remove('show'), 4000);
+                    return;
                 } catch (err) {
-                    console.warn('Fallo login remoto, usando fallback local:', err);
+                    // Error de red u origen CORS. Mostrar error y NO hacer fallback si está configurado el remoto.
+                    console.warn('Fallo login remoto:', err);
+                    errorMessage.textContent = 'Error conectando al servidor remoto (CORS/Red). Revise configuración y reintente.';
+                    errorMessage.classList.add('show');
+                    setTimeout(() => errorMessage.classList.remove('show'), 4000);
+                    return;
                 }
             }
             
@@ -204,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 // Guardar información de sesión
                 sessionStorage.setItem('usuarioActivo', JSON.stringify(payload));
+                sessionStorage.setItem('authOrigin', 'local');
                 
                 // Redirigir al formulario principal
                 window.location.href = 'index.html';

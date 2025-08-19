@@ -169,56 +169,101 @@ function agregarUsuario() {
         return;
     }
     
-    // Crear nuevo usuario
-    const nuevoUsuario = {
-        username,
-        nombre,
-        password,
-        rol
-    };
-    
-    // Guardar en localStorage
-    let usuariosRegistrados = [];
-    if (usuariosGuardados) {
-        usuariosRegistrados = JSON.parse(usuariosGuardados);
-    }
-    
-    usuariosRegistrados.push(nuevoUsuario);
-    localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosRegistrados));
-    
-    // Limpiar campos
-    document.getElementById('nuevoUsuario').value = '';
-    document.getElementById('nuevoNombre').value = '';
-    document.getElementById('nuevaContrasena').value = '';
-    document.getElementById('nuevoRol').value = 'usuario';
-    
-    // Recargar tabla
-    cargarUsuarios();
-    
-    alert('Usuario agregado correctamente');
+    // Si hay backend remoto configurado, intentar crear de forma remota
+    (async () => {
+        const base = localStorage.getItem('AUTH_API_BASE');
+        const token = sessionStorage.getItem('authToken');
+        if (base && token) {
+            try {
+                const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ username, password, rol, nombre })
+                });
+                if (!resp.ok) {
+                    const t = await resp.text().catch(() => '');
+                    alert('No se pudo crear el usuario en el servidor: ' + (t || resp.status));
+                } else {
+                    // Limpiar campos
+                    document.getElementById('nuevoUsuario').value = '';
+                    document.getElementById('nuevoNombre').value = '';
+                    document.getElementById('nuevaContrasena').value = '';
+                    document.getElementById('nuevoRol').value = 'usuario';
+                    await cargarUsuarios();
+                    alert('Usuario creado en servidor correctamente');
+                    return;
+                }
+            } catch (e) {
+                // Continuará al modo local
+                console.warn('Fallo creando usuario remoto, usando almacenamiento local:', e);
+            }
+        }
+
+        // Fallback local: Crear nuevo usuario
+        const nuevoUsuario = { username, nombre, password, rol };
+        let usuariosRegistrados = [];
+        if (usuariosGuardados) {
+            usuariosRegistrados = JSON.parse(usuariosGuardados);
+        }
+        usuariosRegistrados.push(nuevoUsuario);
+        localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosRegistrados));
+
+        // Limpiar campos
+        document.getElementById('nuevoUsuario').value = '';
+        document.getElementById('nuevoNombre').value = '';
+        document.getElementById('nuevaContrasena').value = '';
+        document.getElementById('nuevoRol').value = 'usuario';
+
+        // Recargar tabla
+        cargarUsuarios();
+        alert('Usuario agregado localmente');
+    })();
 }
 
 function eliminarUsuario(username) {
     if (!confirm('¿Está seguro de eliminar este usuario?')) {
         return;
     }
-    
-    // Obtener usuarios guardados
-    const usuariosGuardados = localStorage.getItem('usuariosRegistrados');
-    if (!usuariosGuardados) return;
-    
-    let usuariosRegistrados = JSON.parse(usuariosGuardados);
-    
-    // Filtrar el usuario a eliminar
-    usuariosRegistrados = usuariosRegistrados.filter(u => u.username !== username);
-    
-    // Guardar en localStorage
-    localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosRegistrados));
-    
-    // Recargar tabla
-    cargarUsuarios();
-    
-    alert('Usuario eliminado correctamente');
+
+    (async () => {
+        const base = localStorage.getItem('AUTH_API_BASE');
+        const token = sessionStorage.getItem('authToken');
+        if (base && token) {
+            try {
+                // No hay endpoint DELETE; usar desactivación lógica
+                const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username) + '/state', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ activo: false })
+                });
+                if (!resp.ok) {
+                    const t = await resp.text().catch(() => '');
+                    alert('No se pudo desactivar el usuario en el servidor: ' + (t || resp.status));
+                } else {
+                    await cargarUsuarios();
+                    alert('Usuario desactivado en servidor');
+                    return;
+                }
+            } catch (e) {
+                console.warn('Fallo desactivando usuario remoto, usando almacenamiento local:', e);
+            }
+        }
+
+        // Fallback local
+        const usuariosGuardados = localStorage.getItem('usuariosRegistrados');
+        if (!usuariosGuardados) return;
+        let usuariosRegistrados = JSON.parse(usuariosGuardados);
+        usuariosRegistrados = usuariosRegistrados.filter(u => u.username !== username);
+        localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosRegistrados));
+        cargarUsuarios();
+        alert('Usuario eliminado localmente');
+    })();
 }
 
 // Funciones para cambio de contraseña
