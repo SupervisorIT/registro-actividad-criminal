@@ -27,6 +27,19 @@
             }
         };
     </script>
+    <script>
+      // Guard global: si hay backend configurado pero no hay token, forzar login remoto
+      (function(){
+        try {
+          const base = (typeof localStorage !== 'undefined' && localStorage.getItem('AUTH_API_BASE')) || '';
+          const token = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('authToken')) || '';
+          const path = (location.pathname || '').toLowerCase();
+          if (base && !token && path.indexOf('login.html') === -1) {
+            window.location.href = 'login.html';
+          }
+        } catch(e) { /* noop */ }
+      })();
+    </script>
     
     </head>
 <body>
@@ -596,10 +609,9 @@
                     showMsg('Complete todos los campos.'); return;
                 }
 
-                // Try remote PATCH when configured
+                // Intento remoto obligatorio cuando hay backend/token
                 const base = (typeof localStorage!== 'undefined' && localStorage.getItem('AUTH_API_BASE')) || '';
                 const token = sessionStorage.getItem('authToken');
-                let patchedOk = false;
                 if (base && token) {
                     try {
                         const resp = await fetch(`${base.replace(/\/$/, '')}/users/me`, {
@@ -608,20 +620,25 @@
                             body: JSON.stringify(updates)
                         });
                         if (!resp.ok) {
-                            try { console.debug('PATCH remoto no OK:', await resp.text()); } catch {}
-                        } else {
-                            patchedOk = true;
-                            try {
-                                const data = await resp.json();
-                                if (data && data.user) {
-                                    Object.assign(updates, data.user);
-                                }
-                            } catch {}
+                            let t = '';
+                            try { t = await resp.text(); } catch {}
+                            showMsg(`No se pudo guardar en el servidor (${resp.status}). ${t || ''}`.trim(), null);
+                            return; // no cerrar ni guardar local para evitar inconsistencia
                         }
-                    } catch (e) { /* Silenciar error de red/CORS para no alarmar la consola */ }
+                        try {
+                            const data = await resp.json();
+                            if (data && data.user) {
+                                Object.assign(updates, data.user);
+                            }
+                        } catch {}
+                    } catch (e) {
+                        console.error('Error de red/CORS en PATCH /users/me', e);
+                        showMsg('Error de red guardando en el servidor (CORS/Red). Verifique conexión y reintente.', null);
+                        return; // no cerrar ni guardar local
+                    }
                 }
 
-                // Persist to session y cerrar modal (independiente del resultado remoto)
+                // Si no hay backend, o el remoto ya fue OK: persistir en sesión y cerrar
                 const nuevo = {
                     ...user,
                     nombre: updates.nombre || updates.nombreCompleto,
@@ -633,12 +650,12 @@
                 };
                 sessionStorage.setItem('usuarioActivo', JSON.stringify(nuevo));
                 // Feedback visual y cierre inmediato
-                showMsg(patchedOk ? 'Perfil actualizado correctamente.' : 'Perfil guardado localmente.', 'success');
+                showMsg('Perfil actualizado correctamente.', 'success');
                 setTimeout(() => {
                   try {
                     modal.style.display='none';
                     if (modal && modal.parentNode) {
-                      modal.parentNode.removeChild(modal); // evita que vuelva a mostrarse en esta sesión
+                      modal.parentNode.removeChild(modal);
                     }
                   } catch {}
                 }, 200);
@@ -842,7 +859,8 @@
         const activo = activoRaw ? (() => { try { return JSON.parse(activoRaw); } catch(_) { return null; } })() : null;
 
         if (!(base && token)) {
-            alert('No hay conexión remota activa. Inicie sesión contra el servidor para ver el perfil.');
+            // Forzar login remoto en lugar de alertar
+            window.location.href = 'login.html';
             return;
         }
 
