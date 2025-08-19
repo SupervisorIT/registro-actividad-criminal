@@ -94,8 +94,8 @@ async function cargarUsuarios() {
 
             if (resp.ok) {
                 const data = await resp.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    renderUsuarios(data);
+                if (Array.isArray(data)) {
+                    renderUsuarios(data); // usar remoto incluso si está vacío
                     return; // Éxito remoto, no usar fallback
                 }
             }
