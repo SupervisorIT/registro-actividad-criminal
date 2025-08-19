@@ -769,44 +769,46 @@
         cont.appendChild(lista);
     }
 
-    // Abre modal de perfil poblado (prioriza backend remoto si disponible)
+    // Abre modal de perfil poblado (solo datos del servidor Render o sesión remota)
     async function abrirModalPerfilUsuario(username) {
         const base = localStorage.getItem('AUTH_API_BASE');
         const token = sessionStorage.getItem('authToken');
-        // 1) Intento remoto (requiere rol admin)
-        if (base && token) {
-            try {
-                const resp = await fetch(base.replace(/\/$/, '') + '/users', {
-                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-                });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (Array.isArray(data)) {
-                        const u = data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase());
-                        if (u) {
-                            document.getElementById('pu_username').textContent = u.username || '';
-                            document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
-                            document.getElementById('pu_cedula').textContent = u.cedula || '';
-                            document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
-                            document.getElementById('modalPerfilUsuario').style.display = 'flex';
-                            return;
-                        }
-                    }
-                }
-            } catch (e) {
-                // continúa a fallback local
-                console.warn('Perfil remoto no disponible, usando datos locales:', e);
-            }
+        const activoRaw = sessionStorage.getItem('usuarioActivo');
+        const activo = activoRaw ? (() => { try { return JSON.parse(activoRaw); } catch(_) { return null; } })() : null;
+
+        if (!(base && token)) {
+            alert('No hay conexión remota activa. Inicie sesión contra el servidor para ver el perfil.');
+            return;
         }
-        // 2) Fallback local
-        const usuarios = obtenerListaUsuarios();
-        const u = usuarios.find(x => x.username.toLowerCase() === String(username).toLowerCase());
-        if (!u) return;
-        document.getElementById('pu_username').textContent = u.username || '';
-        document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
-        document.getElementById('pu_cedula').textContent = u.cedula || '';
-        document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
-        document.getElementById('modalPerfilUsuario').style.display = 'flex';
+
+        // Si el perfil solicitado es el del usuario autenticado, usar la sesión remota (procede del backend)
+        if (activo && String(activo.username||'').toLowerCase() === String(username).toLowerCase()) {
+            document.getElementById('pu_username').textContent = activo.username || '';
+            document.getElementById('pu_nombre').textContent = activo.nombreCompleto || activo.nombre || '';
+            document.getElementById('pu_cedula').textContent = activo.cedula || '';
+            document.getElementById('pu_rol').textContent = (activo.rol === 'admin' ? 'Administrador' : 'Usuario');
+            document.getElementById('modalPerfilUsuario').style.display = 'flex';
+            return;
+        }
+
+        // Si se consulta a otro usuario (lista remota, requiere admin)
+        try {
+            const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            const u = Array.isArray(data) ? data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase()) : null;
+            if (!u) { alert('Usuario no encontrado en el servidor.'); return; }
+            document.getElementById('pu_username').textContent = u.username || '';
+            document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+            document.getElementById('pu_cedula').textContent = u.cedula || '';
+            document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
+            document.getElementById('modalPerfilUsuario').style.display = 'flex';
+        } catch (e) {
+            console.error('Error obteniendo perfil remoto:', e);
+            alert('No se pudo obtener el perfil desde el servidor.');
+        }
     }
 
     function cerrarModalPerfilUsuario() {
@@ -953,39 +955,39 @@ async function renderizarUsuariosAdminPanel() {
 }
 
 function mostrarPerfilUsuario(username) {
-  // Versión que prioriza backend remoto y cae a local si no disponible
+  // Solo datos del servidor o sesión remota; sin fallback local
   (async () => {
     const base = localStorage.getItem('AUTH_API_BASE');
     const token = sessionStorage.getItem('authToken');
-    if (base && token) {
-      try {
-        const resp = await fetch(base.replace(/\/$/, '') + '/users', {
-          headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (Array.isArray(data)) {
-            const u = data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase());
-            if (u) {
-              document.getElementById('pu_username').textContent = u.username || '';
-              document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
-              document.getElementById('pu_cedula').textContent = u.cedula || '';
-              document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
-              document.getElementById('modalPerfilUsuario').style.display = 'block';
-              return;
-            }
-          }
-        }
-      } catch (e) { console.warn('Perfil remoto no disponible, usando local:', e); }
+    const activoRaw = sessionStorage.getItem('usuarioActivo');
+    const activo = activoRaw ? (() => { try { return JSON.parse(activoRaw); } catch(_) { return null; } })() : null;
+    if (!(base && token)) { alert('No hay conexión remota activa.'); return; }
+
+    if (activo && String(activo.username||'').toLowerCase() === String(username).toLowerCase()) {
+      document.getElementById('pu_username').textContent = activo.username || '';
+      document.getElementById('pu_nombre').textContent = activo.nombreCompleto || activo.nombre || '';
+      document.getElementById('pu_cedula').textContent = activo.cedula || '';
+      document.getElementById('pu_rol').textContent = (activo.rol === 'admin' ? 'Administrador' : 'Usuario');
+      document.getElementById('modalPerfilUsuario').style.display = 'block';
+      return;
     }
-    const usuarios = obtenerUsuariosCombinados();
-    const u = usuarios.find(x => x.username === username);
-    if (!u) { alert('Usuario no encontrado'); return; }
-    document.getElementById('pu_username').textContent = u.username || '';
-    document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
-    document.getElementById('pu_cedula').textContent = u.cedula || '';
-    document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
-    document.getElementById('modalPerfilUsuario').style.display = 'block';
+    try {
+      const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      const u = Array.isArray(data) ? data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase()) : null;
+      if (!u) { alert('Usuario no encontrado en el servidor.'); return; }
+      document.getElementById('pu_username').textContent = u.username || '';
+      document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+      document.getElementById('pu_cedula').textContent = u.cedula || '';
+      document.getElementById('pu_rol').textContent = u.rol === 'admin' ? 'Administrador' : 'Usuario';
+      document.getElementById('modalPerfilUsuario').style.display = 'block';
+    } catch (e) {
+      console.error('Error obteniendo perfil remoto:', e);
+      alert('No se pudo obtener el perfil desde el servidor.');
+    }
   })();
 }
 
