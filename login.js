@@ -71,76 +71,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Marcar origen remoto
                             sessionStorage.setItem('authOrigin', 'remote');
 
-                            // Si faltan datos, pedirlos y actualizarlos antes de entrar
-                            const requiredKeys = ['nombre','nombreCompleto','cedula','empresa','correo','celular'];
-                            const localMissing = requiredKeys.filter(k => !((user[k] || '').toString().trim()));
-                            let missing = Array.isArray(data.missingFields) ? data.missingFields.filter(Boolean) : [];
-                            missing = Array.from(new Set([...(missing||[]), ...localMissing]));
-                            if (missing.length) {
-                                try {
-                                    const updates = {};
-                                    if (missing.includes('nombre')) {
-                                        const v = prompt('Falta su Nombre corto/Mostrable. Ingréselo:');
-                                        if (v && v.trim()) updates.nombre = v.trim();
-                                    }
-                                    if (missing.includes('nombreCompleto')) {
-                                        const v = prompt('Falta su Nombre Completo. Ingréselo:');
-                                        if (v && v.trim()) updates.nombreCompleto = v.trim();
-                                    }
-                                    if (missing.includes('cedula')) {
-                                        const v = prompt('Falta su Cédula (formato E-00-0000-00000). Ingrésela:');
-                                        if (v && v.trim()) updates.cedula = v.trim();
-                                    }
-                                    if (missing.includes('empresa')) {
-                                        const v = prompt('Falta su Empresa. Ingrésela:');
-                                        if (v && v.trim()) updates.empresa = v.trim();
-                                    }
-                                    if (missing.includes('correo')) {
-                                        const v = prompt('Falta su Correo. Ingréselo:');
-                                        if (v && v.trim()) updates.correo = v.trim();
-                                    }
-                                    if (missing.includes('celular')) {
-                                        const v = prompt('Falta su Celular. Ingréselo:');
-                                        if (v && v.trim()) updates.celular = v.trim();
-                                    }
-
-                                    if (Object.keys(updates).length) {
-                                        const token = sessionStorage.getItem('authToken');
-                                        const patch = await fetch(`${AUTH_API_BASE.replace(/\/$/, '')}/users/me`, {
-                                            method: 'PATCH',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'Authorization': `Bearer ${token}`
-                                            },
-                                            body: JSON.stringify(updates)
-                                        });
-                                        // No bloquear el acceso si el PATCH falla; solo avisar
-                                        if (!patch.ok) {
-                                            console.warn('No se pudo actualizar el perfil remoto:', await patch.text());
-                                        } else {
-                                            try {
-                                                const patched = await patch.json();
-                                                if (patched && patched.user) {
-                                                    user = { ...user, ...patched.user, nombreCompleto: patched.user.nombreCompleto || patched.user.nombre };
-                                                } else {
-                                                    // si la API no devuelve user, al menos reflejar updates localmente
-                                                    user = { ...user, ...updates };
-                                                }
-                                            } catch {
-                                                user = { ...user, ...updates };
-                                            }
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn('Error completando datos faltantes:', e);
-                                }
-                            }
-
+                            // No más prompts ni PATCH aquí; el modal en index.html gestionará datos faltantes
                             const payload = {
                                 username: user.username,
-                                nombre: user.nombre || user.nombreCompleto,
-                                nombreCompleto: user.nombreCompleto || user.nombre,
+                                nombre: user.nombre || user.nombreCompleto || '',
+                                nombreCompleto: user.nombreCompleto || user.nombre || '',
                                 cedula: user.cedula || '',
+                                empresa: user.empresa || '',
+                                correo: user.correo || '',
+                                celular: user.celular || '',
                                 rol: user.rol,
                                 timestamp: new Date().getTime()
                             };
