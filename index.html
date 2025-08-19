@@ -729,20 +729,8 @@
         document.getElementById('modalCrearUsuario').style.display = 'none';
     }
 
-    function abrirModalAdminPanel() {
-        try {
-            const data = sessionStorage.getItem('usuarioActivo');
-            if (!data) { window.location.href='login.html'; return; }
-            const user = JSON.parse(data);
-            if (user.rol !== 'admin') { alert('Acceso restringido a administradores.'); return; }
-            document.getElementById('modalAdminPanel').style.display = 'flex';
-            renderUsuariosPanel();
-        } catch (e) { console.error(e); }
-    }
-
-    function cerrarModalAdminPanel() {
-        document.getElementById('modalAdminPanel').style.display = 'none';
-    }
+    // Eliminado: versiones antiguas duplicadas de abrir/cerrar panel admin que llamaban a renderUsuariosPanel()
+    // La versión vigente está más abajo y usa renderizarUsuariosAdminPanel().
 
 
     // Utilidad: obtener lista de usuarios (predefinidos + registrados, sin duplicar)
@@ -1524,6 +1512,7 @@ async function guardarEdicionUsuario() {
   }
 }
 
+</script>
 <!-- Modal Panel de Administración -->
 <div id="modalAdminPanel" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
   <div class="modal-content" style="background:#fff; margin:10% auto; width:460px; border-radius:8px; overflow:hidden;">
