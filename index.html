@@ -736,23 +736,23 @@
     // Utilidad: obtener lista de usuarios (predefinidos + registrados, sin duplicar)
     function obtenerListaUsuarios() {
         const predef = [
-          { username: 'admin', nombreCompleto: 'Administrador del Sistema', cedula: 'E-00-0000-00000', rol: 'admin', nombre: 'Administrador' },
-          { username: 'usuario', nombreCompleto: 'Usuario Estándar', cedula: 'E-00-0000-00001', rol: 'usuario', nombre: 'Usuario Estándar' }
+          { username: 'admin', password: 'SupervisorIT2025', nombreCompleto: 'Administrador', rol: 'admin' },
+          { username: 'usuario', password: 'usuario123', nombreCompleto: 'Usuario Estándar', rol: 'usuario' }
         ];
         let registrados = [];
         try { registrados = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]'); } catch(e) { registrados = []; }
         // Evitar duplicados por username manteniendo el predef como preferente
-        const map = new Map();
-        predef.forEach(u => map.set(u.username.toLowerCase(), u));
-        registrados.forEach(u => { if (!map.has(u.username.toLowerCase())) map.set(u.username.toLowerCase(), u); });
-        return Array.from(map.values());
+        const map = {};
+        predef.forEach(u => map[u.username] = u);
+        registrados.forEach(u => { if (!map[u.username]) map[u.username] = u; });
+        return Object.values(map);
     }
 
     // Renderiza el listado de usuarios en el Panel de Administración (prioriza remoto)
     async function renderUsuariosPanel() {
         const cont = document.getElementById('adminPanelUsuariosLista');
         const countEl = document.getElementById('adminPanelUsuariosCount');
-        const origenEl = document.getElementById('adminPanelUsuariosOrigen');
+        const origenEl = document.getElementById('adminPanelOrigen');
         if (!cont || !countEl) return;
 
         const base = localStorage.getItem('AUTH_API_BASE');
@@ -761,7 +761,7 @@
         // Intento remoto primero
         if (base && token) {
             try {
-                const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                const resp = await fetch(String(base).replace(/\/$/, '') + '/users', {
                     headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
                 });
                 if (resp.ok) {
@@ -831,7 +831,7 @@
             item.style.border = '1px solid #e0e0e0';
             item.style.borderRadius = '6px';
             const left = document.createElement('div');
-            left.innerHTML = `<strong>${u.username}</strong> — <span style=\"color:#555;\">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style=\"color:#666;\">${u.nombreCompleto || u.nombre || ''}</small>`;
+            left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
             const right = document.createElement('div');
             const link = document.createElement('a');
             link.href = 'javascript:void(0)';
@@ -940,19 +940,16 @@ function cerrarModalCrearUsuario_legacy() {
 
 function obtenerUsuariosCombinados() {
   const predef = [
-    { username: 'admin', password: 'SupervisorIT2025', nombreCompleto: 'Administrador', rol: 'admin' },
-    { username: 'usuario', password: 'usuario123', nombreCompleto: 'Usuario Estándar', rol: 'usuario' }
+    { username: 'admin', nombreCompleto: 'Administrador del Sistema', cedula: 'E-00-0000-00000', rol: 'admin', nombre: 'Administrador' },
+    { username: 'usuario', nombreCompleto: 'Usuario Estándar', cedula: 'E-00-0000-00001', rol: 'usuario', nombre: 'Usuario Estándar' }
   ];
   let registrados = [];
-  try {
-    const raw = localStorage.getItem('usuariosRegistrados');
-    if (raw) registrados = JSON.parse(raw);
-  } catch (_) {}
-  // Evitar duplicados por username; prioridad a registrados para datos extendidos (cedula)
-  const map = {};
-  predef.forEach(u => map[u.username] = u);
-  registrados.forEach(u => map[u.username] = u);
-  return Object.values(map);
+  try { registrados = JSON.parse(localStorage.getItem('usuariosRegistrados') || '[]'); } catch(e) { registrados = []; }
+  // Evitar duplicados por username manteniendo el predef como preferente
+  const map = new Map();
+  predef.forEach(u => map.set(u.username.toLowerCase(), u));
+  registrados.forEach(u => { if (!map.has(u.username.toLowerCase())) map.set(u.username.toLowerCase(), u); });
+  return Array.from(map.values());
 }
 
 async function renderizarUsuariosAdminPanel() {
@@ -975,94 +972,86 @@ async function renderizarUsuariosAdminPanel() {
       });
       if (resp.ok) {
         const data = await resp.json();
-        if (Array.isArray(data)) {
-          usuarios = data.map(u => ({
-            username: u.username || u.usuario || u.email || '',
-            nombre: u.nombre || u.nombreCompleto || u.name || '',
-            nombreCompleto: u.nombreCompleto || u.nombre || u.name || '',
-            cedula: u.cedula || '',
-            empresa: u.empresa || '',
-            correo: u.correo || u.email || '',
-            celular: u.celular || '',
-            rol: u.rol || u.role || 'usuario',
-            activo: (u.activo !== false)
-          }));
-          esRemoto = true;
-
-          // Agregar admin local si no existe en la lista remota
-          const tieneAdminRemoto = usuarios.some(x => String(x.username).toLowerCase() === 'admin');
-          if (!tieneAdminRemoto) {
-            usuarios.unshift({
-              username: 'admin',
-              nombre: 'Administrador',
-              nombreCompleto: 'Administrador del Sistema',
-              cedula: '',
-              rol: 'admin'
-            });
-            incluyoAdminLocal = true;
-          }
+        usuarios = Array.isArray(data) ? data : [];
+        count.textContent = usuarios.length;
+        if (origenEl) origenEl.textContent = 'Remoto';
+        if (!usuarios.length) {
+          cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios en el servidor.</div>';
+          return;
         }
+        const lista = document.createElement('div');
+        lista.style.display = 'flex';
+        lista.style.flexDirection = 'column';
+        lista.style.gap = '6px';
+        usuarios.forEach(u => {
+          const item = document.createElement('div');
+          item.style.display = 'flex';
+          item.style.justifyContent = 'space-between';
+          item.style.alignItems = 'center';
+          item.style.padding = '8px';
+          item.style.background = '#fff';
+          item.style.border = '1px solid #e0e0e0';
+          item.style.borderRadius = '6px';
+          const left = document.createElement('div');
+          left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+          const right = document.createElement('div');
+          const link = document.createElement('a');
+          link.href = 'javascript:void(0)';
+          link.textContent = 'Perfil';
+          link.style.color = '#1565C0';
+          link.style.textDecoration = 'underline';
+          link.onclick = () => abrirModalPerfilUsuario(u.username);
+          right.appendChild(link);
+          item.appendChild(left);
+          item.appendChild(right);
+          lista.appendChild(item);
+        });
+        cont.innerHTML = '';
+        cont.appendChild(lista);
+        return;
       }
-    } catch (_) {
-      // Silenciar y continuar con fallback
+    } catch (e) {
+      console.warn('Fallo listado remoto de usuarios:', e);
     }
   }
 
-  if (!usuarios) {
-    usuarios = obtenerUsuariosCombinados();
-    esRemoto = false;
-  }
-
-  if (origenEl) {
-    const suf = esRemoto && incluyoAdminLocal ? ' (+admin local)' : '';
-    origenEl.textContent = 'Origen: ' + (esRemoto ? 'Remoto' : 'Local') + suf;
-    origenEl.style.background = esRemoto ? '#e6f4ea' : '#eef2f7';
-    origenEl.style.color = esRemoto ? '#1e7e34' : '#555';
-  }
-  if (aviso) {
-    aviso.style.display = esRemoto ? 'none' : 'block';
-  }
-
-  // Mostrar inactivos según toggle
-  const toggleInact = document.getElementById('adminPanelToggleInactivos');
-  const mostrarInactivos = !!(toggleInact && toggleInact.checked);
-  const usuariosFiltrados = mostrarInactivos ? usuarios : usuarios.filter(u => u.activo !== false);
-  count.textContent = usuariosFiltrados.length;
-  if (!usuariosFiltrados.length) {
+  // Fallback local si no hay remoto
+  const usuariosLocales = obtenerUsuariosCombinados();
+  count.textContent = usuariosLocales.length;
+  if (origenEl) origenEl.textContent = 'Local';
+  if (!usuariosLocales.length) {
     cont.innerHTML = '<div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>';
     return;
   }
-  usuariosFiltrados.forEach(u => {
-    const fila = document.createElement('div');
-    fila.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-bottom:1px solid #eee;';
-    const info = document.createElement('div');
-    const badgeInactivo = (u.activo === false) ? ` <span style="color:#b71c1c; font-weight:600;">(Inactivo)</span>` : '';
-    info.innerHTML = `<strong>${u.username}</strong> <span style="color:#666;">(${u.rol === 'admin' ? 'Administrador' : 'Usuario'})</span>${badgeInactivo}<br><span style=\"color:#555; font-size:12px;\">${u.nombreCompleto || u.nombre || ''}</span>`;
-    const acciones = document.createElement('div');
-    acciones.style.cssText = 'display:flex; gap:6px;';
-    const btnPerfil = document.createElement('button');
-    btnPerfil.className = 'btn btn-sm btn-info';
-    btnPerfil.textContent = 'Perfil';
-    btnPerfil.onclick = () => mostrarPerfilUsuario(u.username);
-    acciones.appendChild(btnPerfil);
-    if (u.rol !== 'admin' && u.activo !== false) {
-      const btnEdit = document.createElement('button');
-      btnEdit.className = 'btn btn-sm btn-primary';
-      btnEdit.textContent = 'Editar';
-      btnEdit.onclick = () => abrirModalEditarUsuario(u.username);
-      acciones.appendChild(btnEdit);
-    }
-    if (u.rol !== 'admin' && u.activo === false) {
-      const btnRestore = document.createElement('button');
-      btnRestore.className = 'btn btn-sm btn-success';
-      btnRestore.textContent = 'Restaurar';
-      btnRestore.onclick = () => restaurarUsuario(u.username);
-      acciones.appendChild(btnRestore);
-    }
-    fila.appendChild(info);
-    fila.appendChild(acciones);
-    cont.appendChild(fila);
+  const lista = document.createElement('div');
+  lista.style.display = 'flex';
+  lista.style.flexDirection = 'column';
+  lista.style.gap = '6px';
+  usuariosLocales.forEach(u => {
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.justifyContent = 'space-between';
+    item.style.alignItems = 'center';
+    item.style.padding = '8px';
+    item.style.background = '#fff';
+    item.style.border = '1px solid #e0e0e0';
+    item.style.borderRadius = '6px';
+    const left = document.createElement('div');
+    left.innerHTML = `<strong>${u.username}</strong> — <span style=\"color:#555;\">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style=\"color:#666;\">${u.nombreCompleto || u.nombre || ''}</small>`;
+    const right = document.createElement('div');
+    const link = document.createElement('a');
+    link.href = 'javascript:void(0)';
+    link.textContent = 'Perfil';
+    link.style.color = '#1565C0';
+    link.style.textDecoration = 'underline';
+    link.onclick = () => abrirModalPerfilUsuario(u.username);
+    right.appendChild(link);
+    item.appendChild(left);
+    item.appendChild(right);
+    lista.appendChild(item);
   });
+  cont.innerHTML = '';
+  cont.appendChild(lista);
 }
 
 function mostrarPerfilUsuario(username) {
@@ -1072,23 +1061,24 @@ function mostrarPerfilUsuario(username) {
     const token = sessionStorage.getItem('authToken');
     const activoRaw = sessionStorage.getItem('usuarioActivo');
     const activo = activoRaw ? (() => { try { return JSON.parse(activoRaw); } catch(_) { return null; } })() : null;
-    if (!(base && token)) { alert('No hay conexión remota activa.'); return; }
 
-    if (activo && String(activo.username||'').toLowerCase() === String(username).toLowerCase()) {
-      document.getElementById('pu_username').value = activo.username || '';
-      document.getElementById('pu_nombre').value = activo.nombreCompleto || activo.nombre || '';
-      document.getElementById('pu_correo').value = activo.correo || '';
-      document.getElementById('pu_empresa').value = activo.empresa || '';
-      document.getElementById('pu_celular').value = activo.celular || '';
-      document.getElementById('pu_rol').value = (activo.rol === 'admin' ? 'admin' : 'usuario');
-      document.getElementById('pu_password').value = '';
-      // Habilitar edición solo si el usuario activo es admin y no es perfil admin
-      const ua = (()=>{try{return JSON.parse(sessionStorage.getItem('usuarioActivo')||'{}');}catch(_){return {};}})();
-      const editable = (ua.rol === 'admin' && (activo.rol !== 'admin'));
-      habilitarEdicionPerfil(editable);
-      document.getElementById('modalPerfilUsuario').style.display = 'block';
+    if (!(base && token)) {
+      // Forzar login remoto en lugar de alertar
+      window.location.href = 'login.html';
       return;
     }
+
+    // Si el perfil solicitado es el del usuario autenticado, usar la sesión remota (procede del backend)
+    if (activo && String(activo.username||'').toLowerCase() === String(username).toLowerCase()) {
+      document.getElementById('pu_username').textContent = activo.username || '';
+      document.getElementById('pu_nombre').textContent = activo.nombreCompleto || activo.nombre || '';
+      document.getElementById('pu_cedula').textContent = activo.cedula || '';
+      document.getElementById('pu_rol').textContent = (activo.rol === 'admin' ? 'Administrador' : 'Usuario');
+      document.getElementById('modalPerfilUsuario').style.display = 'flex';
+      return;
+    }
+
+    // Si se consulta a otro usuario (lista remota, requiere admin)
     try {
       const resp = await fetch(base.replace(/\/$/, '') + '/users', {
         headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
@@ -1096,18 +1086,12 @@ function mostrarPerfilUsuario(username) {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const data = await resp.json();
       const u = Array.isArray(data) ? data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase()) : null;
-      if (!u) { alert('Usuario no encontrado.'); return; }
-      document.getElementById('pu_username').value = u.username || '';
-      document.getElementById('pu_nombre').value = u.nombreCompleto || u.nombre || '';
-      document.getElementById('pu_correo').value = u.correo || '';
-      document.getElementById('pu_empresa').value = u.empresa || '';
-      document.getElementById('pu_celular').value = u.celular || '';
-      document.getElementById('pu_rol').value = (u.rol === 'admin' ? 'admin' : 'usuario');
-      document.getElementById('pu_password').value = '';
-      const ua = (()=>{try{return JSON.parse(sessionStorage.getItem('usuarioActivo')||'{}');}catch(_){return {};}})();
-      const editable = (ua.rol === 'admin' && u.rol !== 'admin');
-      habilitarEdicionPerfil(editable);
-      document.getElementById('modalPerfilUsuario').style.display = 'block';
+      if (!u) { alert('Usuario no encontrado en el servidor.'); return; }
+      document.getElementById('pu_username').textContent = u.username || '';
+      document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
+      document.getElementById('pu_cedula').textContent = u.cedula || '';
+      document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
+      document.getElementById('modalPerfilUsuario').style.display = 'flex';
     } catch (e) {
       console.error('Error obteniendo perfil remoto:', e);
       alert('No se pudo obtener el perfil desde el servidor.');
@@ -1118,549 +1102,92 @@ function mostrarPerfilUsuario(username) {
 function cerrarModalPerfilUsuario() {
   document.getElementById('modalPerfilUsuario').style.display = 'none';
 }
-
-function habilitarEdicionPerfil(editable) {
-  ['pu_nombre','pu_correo','pu_empresa','pu_celular','pu_rol','pu_password']
-    .forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.readOnly = !editable;
-      if (el.tagName === 'SELECT') el.disabled = !editable;
-    });
-  document.getElementById('pu_btn_guardar').style.display = editable ? 'inline-block' : 'none';
-  document.getElementById('pu_btn_eliminar').style.display = editable ? 'inline-block' : 'none';
-}
-
-async function guardarPerfilUsuario() {
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-  const msg = document.getElementById('pu_msg');
-  msg.style.display = 'none';
-  if (!(base && token)) { alert('No hay sesión remota.'); return; }
-
-  const username = document.getElementById('pu_username').value.trim().toLowerCase();
-  const payload = {
-    nombreCompleto: document.getElementById('pu_nombre').value.trim(),
-    empresa: document.getElementById('pu_empresa').value.trim(),
-    correo: document.getElementById('pu_correo').value.trim(),
-    celular: document.getElementById('pu_celular').value.trim(),
-    rol: document.getElementById('pu_rol').value
-  };
-  const pwd = document.getElementById('pu_password').value;
-  if (pwd) payload.password = pwd;
-
-  try {
-    const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
-      method: 'PATCH',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (resp.ok) {
-      msg.textContent = 'Usuario actualizado correctamente';
-      msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;';
-      renderizarUsuariosAdminPanel();
-      setTimeout(() => { msg.style.display='none'; }, 1500);
-    } else {
-      const err = await resp.json().catch(() => ({}));
-      msg.textContent = err.error || 'No se pudo actualizar el usuario';
-      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;';
-    }
-  } catch (e) {
-    msg.textContent = 'Error de red';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;';
-  }
-}
-
-async function eliminarUsuarioPerfil() {
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-  if (!(base && token)) { alert('No hay sesión remota.'); return; }
-  const username = document.getElementById('pu_username').value.trim();
-  if (!username) return;
-  if (username.toLowerCase() === 'admin') { alert('No se puede eliminar el usuario administrador.'); return; }
-  const ok = confirm(`¿Está seguro que desea eliminar al usuario "${username}"? Esta acción no se puede deshacer.`);
-  if (!ok) return;
-  const msg = document.getElementById('pu_msg');
-  msg.style.display = 'none';
-  try {
-    const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
-      method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ activo: false })
-    });
-    if (resp.ok) {
-      msg.textContent = 'Usuario desactivado y ocultado correctamente';
-      msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;';
-      renderizarUsuariosAdminPanel();
-      setTimeout(() => { cerrarModalPerfilUsuario(); }, 800);
-    } else {
-      const err = await resp.json().catch(() => ({}));
-      msg.textContent = err.error || 'No se pudo desactivar el usuario';
-      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;';
-    }
-  } catch(e) {
-    msg.textContent = 'Error de red';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;';
-  }
-}
-
-async function restaurarUsuario(username) {
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-  if (!(base && token)) { alert('No hay sesión remota.'); return; }
-  if (!username) return;
-  if (String(username).toLowerCase() === 'admin') { alert('El usuario administrador ya está activo por defecto.'); return; }
-  const ok = confirm(`¿Desea restaurar al usuario "${username}"?`);
-  if (!ok) return;
-  try {
-    const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
-      method: 'PATCH',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ activo: true })
-    });
-    if (resp.ok) {
-      alert('Usuario restaurado correctamente');
-      renderizarUsuariosAdminPanel();
-    } else {
-      const err = await resp.json().catch(() => ({}));
-      alert(err.error || 'No se pudo restaurar el usuario');
-    }
-  } catch (e) {
-    alert('Error de red al restaurar');
-  }
-}
-
-async function crearUsuarioDesdeAdmin() {
-  const username = document.getElementById('cu_usuario').value.trim();
-  const nombreCompleto = document.getElementById('cu_nombreCompleto').value.trim();
-  const empresa = document.getElementById('cu_empresa').value.trim();
-  const correo = document.getElementById('cu_correo').value.trim();
-  const celular = document.getElementById('cu_celular').value.trim();
-  const password = document.getElementById('cu_password').value.trim();
-  const rol = document.getElementById('cu_rol').value;
-  const msg = document.getElementById('msgCrearUsuario');
-  msg.style.display = 'none';
-
-  if (!username || !nombreCompleto || !password) {
-    msg.textContent = 'Complete los campos obligatorios: Usuario, Nombre Completo y Contraseña.';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-    return;
-  }
-
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-
-  // Si hay backend remoto configurado, exigir sesión y NO caer a local
-  if (base) {
-    if (!token) {
-      msg.textContent = 'Debe iniciar sesión para crear usuarios en la base remota.';
-      msg.style.cssText = 'display:block;background:#fff3cd;color:#664d03;border:1px solid #ffecb5;padding:8px;border-radius:4px;';
-      return;
-    }
-    try {
-      const resp = await fetch(String(base).replace(/\/$/, '') + '/users', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, password, rol, nombreCompleto, empresa, correo, celular })
-      });
-
-      if (resp.ok) {
-        msg.textContent = 'Usuario creado remotamente con éxito.';
-        msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
-        // Limpiar campos
-        ['cu_usuario','cu_nombreCompleto','cu_cedula','cu_empresa','cu_correo','cu_celular','cu_password']
-          .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        renderizarUsuariosAdminPanel();
-        setTimeout(cerrarModalCrearUsuario, 1500);
-      } else {
-        const err = await resp.json();
-        const errMsg = err.message || (resp.status === 409 ? 'El nombre de usuario ya existe.' : 'Error al crear usuario.');
-        msg.textContent = errMsg;
-        msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-      }
-    } catch (e) {
-      msg.textContent = 'Error de red. No se pudo crear el usuario remoto.';
-      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-    }
-    return;
-  }
-
-  // --- Creación Local (solo si no hay backend configurado) ---
-  const existentes = obtenerUsuariosCombinados();
-  if (existentes.some(u => u.username.toLowerCase() === username.toLowerCase())) {
-    msg.textContent = 'El nombre de usuario ya existe localmente.';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-    return;
-  }
-  let registrados = [];
-  const raw = localStorage.getItem('usuariosRegistrados');
-  if (raw) { try { registrados = JSON.parse(raw); } catch(_){} }
-  registrados.push({ username, nombreCompleto, empresa, correo, celular, password, rol });
-  localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
-  
-  msg.textContent = 'Usuario creado localmente con éxito.';
-  msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
-  ['cu_usuario','cu_nombreCompleto','cu_cedula','cu_empresa','cu_correo','cu_celular','cu_password']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  renderizarUsuariosAdminPanel();
-  setTimeout(cerrarModalCrearUsuario, 1500);
-}
-
-function abrirModalCambiarContrasenaUsuario(username) {
-  document.getElementById('ccu_target').value = username;
-  document.getElementById('ccu_username').textContent = username;
-  document.getElementById('ccu_new').value = '';
-  document.getElementById('ccu_confirm').value = '';
-  const msg = document.getElementById('ccu_msg');
-  msg.style.display = 'none';
-  document.getElementById('modalCambiarContrasenaUsuario').style.display = 'block';
-}
-
-function cerrarModalCambiarContrasenaUsuario() {
-  document.getElementById('modalCambiarContrasenaUsuario').style.display = 'none';
-}
-
-function guardarCambioContrasenaUsuario() {
-  const username = document.getElementById('ccu_target').value;
-  const newPwd = document.getElementById('ccu_new').value.trim();
-  const confirmPwd = document.getElementById('ccu_confirm').value.trim();
-  const msg = document.getElementById('ccu_msg');
-  msg.style.display = 'none';
-  if (!newPwd || !confirmPwd) {
-    msg.textContent = 'Complete ambos campos';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-    return;
-  }
-  if (newPwd !== confirmPwd) {
-    msg.textContent = 'Las contraseñas no coinciden';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-    return;
-  }
-  if (username === 'admin') {
-    msg.textContent = 'No disponible para administrador';
-    msg.style.cssText = 'display:block;background:#fff3cd;color:#856404;border:1px solid #ffeeba;padding:8px;border-radius:4px;';
-    return;
-  }
-  // Preferir cambio remoto si hay backend y sesión
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-  if (base && token) {
-    (async () => {
-      try {
-        const resp = await fetch(String(base).replace(/\/$/, '') + '/users/' + encodeURIComponent(username.toLowerCase()), {
-          method: 'PATCH',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: newPwd })
-        });
-        if (resp.ok) {
-          msg.textContent = 'Contraseña actualizada correctamente en el servidor';
-          msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
-          setTimeout(() => { cerrarModalCambiarContrasenaUsuario(); }, 1000);
-        } else {
-          const err = await resp.json().catch(() => ({}));
-          msg.textContent = err.error || 'No se pudo actualizar la contraseña remota';
-          msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-        }
-      } catch (e) {
-        msg.textContent = 'Error de red al actualizar contraseña';
-        msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-      }
-    })();
-    return;
-  }
-
-  // Fallback local solo si no hay backend (modo offline)
-  if (username === 'usuario') {
-    // Guardar como predefinido modificado
-    let mods = [];
-    const rawMods = localStorage.getItem('usuariosPredefinidosModificados');
-    if (rawMods) { try { mods = JSON.parse(rawMods); } catch(_){} }
-    const idx = mods.findIndex(m => m.username === 'usuario');
-    if (idx >= 0) mods[idx].password = newPwd; else mods.push({ username: 'usuario', password: newPwd });
-    localStorage.setItem('usuariosPredefinidosModificados', JSON.stringify(mods));
-  } else {
-    let registrados = [];
-    const raw = localStorage.getItem('usuariosRegistrados');
-    if (raw) { try { registrados = JSON.parse(raw); } catch(_){} }
-    const idx = registrados.findIndex(u => u.username === username);
-    if (idx === -1) {
-      msg.textContent = 'Usuario no encontrado';
-      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;padding:8px;border-radius:4px;';
-      return;
-    }
-    registrados[idx].password = newPwd;
-    localStorage.setItem('usuariosRegistrados', JSON.stringify(registrados));
-  }
-  msg.textContent = 'Contraseña actualizada localmente';
-  msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;padding:8px;border-radius:4px;';
-  setTimeout(() => { cerrarModalCambiarContrasenaUsuario(); renderizarUsuariosAdminPanel(); }, 1200);
-}
-
-// --- Modal Editar Usuario ---
-// UI
-document.write(`
-<div id="modalEditarUsuario" class="modal" style="display:none; position:fixed; z-index:1003; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
-  <div class="modal-content" style="background:#fff; margin:6% auto; width:520px; border-radius:8px; overflow:hidden;">
-    <div style="padding:12px 16px; background:#0d6efd; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-      <h4 style="margin:0;">Editar usuario</h4>
-      <span class="close" onclick="cerrarModalEditarUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
-    </div>
-    <div style="padding:16px;">
-      <div id="eu_msg" style="display:none; margin-bottom:10px; padding:8px; border-radius:4px;"></div>
-      <div style="display:grid; grid-template-columns:160px 1fr; gap:10px; align-items:center;">
-        <label>Usuario</label><input id="eu_username" class="form-control" type="text" readonly>
-        <label>Nombre completo</label><input id="eu_nombreCompleto" class="form-control" type="text">
-        <label>Cédula</label><input id="eu_cedula" class="form-control" type="text">
-        <label>Empresa</label><input id="eu_empresa" class="form-control" type="text">
-        <label>Correo</label><input id="eu_correo" class="form-control" type="email">
-        <label>Celular</label><input id="eu_celular" class="form-control" type="text">
-        <label>Rol</label>
-        <select id="eu_rol" class="form-control"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select>
-        <label>Activo</label><input id="eu_activo" type="checkbox">
-        <label>Nueva contraseña</label><input id="eu_password" class="form-control" type="password" placeholder="(opcional)">
-      </div>
-    </div>
-    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
-      <button class="btn btn-secondary" onclick="cerrarModalEditarUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarEdicionUsuario()" style="background:#0d6efd; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Guardar</button>
-    </div>
-  </div>
-</div>`);
-
-function abrirModalEditarUsuario(username) {
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-  if (!(base && token)) { alert('No hay sesión remota.'); return; }
-  (async () => {
-    try {
-      const resp = await fetch(base.replace(/\/$/, '') + '/users', { headers: { 'Authorization': 'Bearer ' + token }});
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      const u = Array.isArray(data) ? data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase()) : null;
-      if (!u) { alert('Usuario no encontrado en el servidor.'); return; }
-      document.getElementById('eu_username').value = u.username || '';
-      document.getElementById('eu_nombreCompleto').value = u.nombreCompleto || u.nombre || '';
-      document.getElementById('eu_cedula').value = u.cedula || '';
-      document.getElementById('eu_empresa').value = u.empresa || '';
-      document.getElementById('eu_correo').value = u.correo || '';
-      document.getElementById('eu_celular').value = u.celular || '';
-      document.getElementById('eu_rol').value = (u.rol === 'admin' ? 'admin' : 'usuario');
-      document.getElementById('eu_activo').checked = (u.activo !== false);
-      document.getElementById('eu_password').value = '';
-      document.getElementById('eu_msg').style.display = 'none';
-      document.getElementById('modalEditarUsuario').style.display = 'block';
-    } catch (e) {
-      console.error(e); alert('No se pudo cargar el usuario.');
-    }
-  })();
-}
-
-function cerrarModalEditarUsuario() {
-  document.getElementById('modalEditarUsuario').style.display = 'none';
-}
-
-async function guardarEdicionUsuario() {
-  const base = localStorage.getItem('AUTH_API_BASE');
-  const token = sessionStorage.getItem('authToken');
-  const msg = document.getElementById('eu_msg');
-  msg.style.display = 'none';
-  if (!(base && token)) { alert('No hay sesión remota.'); return; }
-
-  const username = document.getElementById('eu_username').value.trim().toLowerCase();
-  const payload = {
-    nombreCompleto: document.getElementById('eu_nombreCompleto').value.trim(),
-    cedula: document.getElementById('eu_cedula').value.trim(),
-    empresa: document.getElementById('eu_empresa').value.trim(),
-    correo: document.getElementById('eu_correo').value.trim(),
-    celular: document.getElementById('eu_celular').value.trim(),
-    rol: document.getElementById('eu_rol').value,
-    activo: document.getElementById('eu_activo').checked
-  };
-  const pwd = document.getElementById('eu_password').value;
-  if (pwd) payload.password = pwd;
-
-  try {
-    const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
-      method: 'PATCH',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (resp.ok) {
-      msg.textContent = 'Usuario actualizado correctamente';
-      msg.style.cssText = 'display:block;background:#d4edda;color:#155724;border:1px solid #c3e6cb;';
-      renderizarUsuariosAdminPanel();
-      setTimeout(() => { cerrarModalEditarUsuario(); }, 1000);
-    } else {
-      const err = await resp.json().catch(() => ({}));
-      msg.textContent = err.error || 'No se pudo actualizar el usuario';
-      msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;';
-    }
-  } catch (e) {
-    msg.textContent = 'Error de red';
-    msg.style.cssText = 'display:block;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;';
-  }
-}
-
 </script>
-<!-- Modal Panel de Administración -->
-<div id="modalAdminPanel" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
-  <div class="modal-content" style="background:#fff; margin:10% auto; width:460px; border-radius:8px; overflow:hidden;">
-    <div style="padding:12px 16px; background:#0d47a1; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-      <h4 style="margin:0;">Panel de Administración</h4>
-      <span class="close" onclick="cerrarModalAdminPanel()" style="cursor:pointer; font-size:22px;">&times;</span>
+
+<!-- Modal: Nuevo Delincuente -->
+<div id="nuevoDelincuenteModal" class="modal" style="display:none; position:fixed; z-index:1200; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.45);" aria-hidden="true">
+  <div class="modal-content" style="background:#fff; margin:4% auto; width:clamp(320px, 92vw, 800px); max-height:90vh; overflow:auto; border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,.25);">
+    <div class="modal-header" style="padding:12px 16px; background:#1565C0; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0; font-size:18px;">Agregar Delincuente</h3>
+      <span class="close" onclick="cerrarModalNuevoDelincuente()" style="cursor:pointer; font-size:22px;">&times;</span>
     </div>
-    <div style="padding:16px;">
-      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:14px;">
-        <button class="btn btn-success" style="background:#2e7d32; color:#fff; border:none; padding:10px 12px; border-radius:6px; text-align:left;" onclick="abrirModalCrearUsuario()">
-          <i class="fas fa-user-plus" style="margin-right:8px;"></i> Crear usuario (rol usuario)
-        </button>
-      </div>
-      <!-- Bloque listado de usuarios -->
-      <div style="border:1px solid #e0e0e0; border-radius:8px; padding:12px; background:#fafafa;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
-          <strong>Usuarios registrados</strong>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#444;">
-              <input id="adminPanelToggleInactivos" type="checkbox" onchange="renderizarUsuariosAdminPanel()"> Mostrar inactivos
-            </label>
-            <small id="adminPanelOrigen" style="color:#555; background:#eef2f7; padding:2px 6px; border-radius:10px;">Origen: Local</small>
-            <small id="adminPanelUsuariosCount" style="color:#555;">0</small>
+    <div class="modal-body" style="padding:16px;">
+      <form id="formNuevoDelincuente">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label>Nombre y Apellido</label>
+            <input id="nuevoNombreCompleto" type="text" class="form-control" required>
+          </div>
+          <div>
+            <label>Cédula</label>
+            <input id="nuevoCedula" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Edad</label>
+            <input id="nuevoEdad" type="number" class="form-control" min="0">
+          </div>
+          <div>
+            <label>Dirección</label>
+            <input id="nuevoDireccion" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Vehículo</label>
+            <input id="nuevoVehiculo" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Placa</label>
+            <input id="nuevoPlaca" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Color</label>
+            <input id="nuevoColor" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Fecha de captura</label>
+            <input id="nuevoFecha" type="date" class="form-control" required>
+          </div>
+          <div>
+            <label>Delito cometido</label>
+            <input id="nuevoDelito" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Productos</label>
+            <input id="nuevoProductos" type="text" class="form-control">
+          </div>
+          <div>
+            <label>Cuantía</label>
+            <input id="nuevoCuantia" type="text" class="form-control" placeholder="B/. 0.00">
+          </div>
+          <div>
+            <label>N° de denuncia / resolución</label>
+            <input id="nuevoDenuncia" type="text" class="form-control">
           </div>
         </div>
-        <div id="adminPanelAviso" style="display:none; margin:6px 0 10px; padding:8px; font-size:12px; border-radius:6px; background:#fff3cd; color:#664d03; border:1px solid #ffecb5;">
-          No se pudo cargar desde el servidor remoto. Mostrando datos locales. Ver consola del navegador para más detalles (CORS/Red).
-        </div>
-        <div id="adminPanelUsuariosLista" style="max-height:220px; overflow:auto;">
-          <div style="color:#777; font-size:13px;">No hay usuarios registrados.</div>
-        </div>
-      </div>
+      </form>
     </div>
-    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
-      <button class="btn btn-secondary" onclick="cerrarModalAdminPanel()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Cerrar</button>
+    <div class="modal-footer" style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
+      <button class="btn btn-secondary" onclick="cerrarModalNuevoDelincuente()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarNuevoDelincuente()" style="background:#1565C0; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Guardar</button>
     </div>
   </div>
   </div>
 
-<!-- Modal Crear Usuario -->
-<div id="modalCrearUsuario" class="modal" style="display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4);">
-  <div class="modal-content" style="background:#fff; margin:8% auto; width:clamp(320px, 90vw, 520px); max-height:88vh; border-radius:8px; overflow:auto; box-shadow:0 8px 24px rgba(0,0,0,.2);">
-    <div style="padding:12px 16px; background:#2e7d32; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-      <h4 style="margin:0;">Crear Usuario</h4>
-      <span class="close" onclick="cerrarModalCrearUsuario()" style="cursor:pointer; font-size:22px;">&times;</span>
-    </div>
-    <div style="padding:16px;">
-      <div id="msgCrearUsuario" style="display:none; margin-bottom:10px; padding:8px; border-radius:4px;"></div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Usuario</label>
-        <input id="cu_usuario" type="text" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Nombre completo</label>
-        <input id="cu_nombreCompleto" type="text" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Cédula</label>
-        <input id="cu_cedula" type="text" class="form-control" placeholder="Ej: E-00-0000-00000" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Empresa</label>
-        <input id="cu_empresa" type="text" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Correo</label>
-        <input id="cu_correo" type="email" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Celular</label>
-        <input id="cu_celular" type="text" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:16px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Contraseña</label>
-        <input id="cu_password" type="password" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-      </div>
-      <div class="form-group" style="margin-bottom:16px;">
-        <label style="display:block; font-weight:600; margin-bottom:6px;">Rol</label>
-        <select id="cu_rol" class="form-control" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
-          <option value="usuario" selected>Usuario</option>
-          <option value="admin">Administrador</option>
-        </select>
-        <div style="font-size:12px; color:#666; margin-top:6px;">Solo administradores pueden crear cuentas y asignar roles.</div>
-      </div>
-    </div>
-    <div style="padding:12px 16px; text-align:right; border-top:1px solid #eee;">
-      <button class="btn btn-secondary" onclick="cerrarModalCrearUsuario()" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px; margin-right:8px;">Cancelar</button>
-      <button class="btn btn-success" onclick="crearUsuarioDesdeAdmin()" style="background:#2e7d32; color:#fff; border:none; padding:8px 12px; border-radius:6px;">Crear</button>
-    </div>
-  </div>
-</div>
-
-<!-- (Modal Cambiar Contraseña eliminado; la edición de contraseña se hace desde Perfil/Editar) -->
-
+<!-- Scripts de gestión de delincuentes/historial -->
+<script src="script_delincuentes_nuevo.js"></script>
+<script src="historial-delincuentes.js"></script>
 <script>
-// Actualizar las funciones existentes para usar la contraseña de admin (sin modal propio)
-window.autenticarYLimpiar = function() {
-  var usuario = document.getElementById('authUser').value.trim();
-  var password = document.getElementById('authPass').value;
-  var tipo = document.getElementById('tipoLimpieza').value;
-  var adminUser = 'admin';
-  var adminPass = localStorage.getItem('adminPassword') || 'SupervisorIT2025';
-  var msg = document.getElementById('authMsg');
-  if (usuario === adminUser && password === adminPass) {
-    if (tipo === 'delincuentes') {
-      if (confirm('¿Está seguro que desea borrar todo el historial de delincuentes? Esta acción no se puede deshacer.')) {
-        localStorage.removeItem('delincuentes');
-        localStorage.removeItem('delincuentesPersistentes');
-        if (typeof renderizarTablaHistorialDelincuentes === 'function') {
-          renderizarTablaHistorialDelincuentes();
-        }
-        if (typeof mostrarNotificacion === 'function') {
-          mostrarNotificacion('Historial de delincuentes eliminado correctamente.', 'success');
-        } else {
-          alert('Historial de delincuentes eliminado correctamente.');
-        }
-        cerrarModalAuthLimpiar();
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      if (typeof renderizarTablaDelincuentesSimple === 'function') {
+        renderizarTablaDelincuentesSimple();
       }
-    } else if (tipo === 'productos') {
-      if (confirm('¿Está seguro que desea borrar el Top 20 de productos robados? Esta acción no se puede deshacer.')) {
-        localStorage.removeItem('productosRobados');
-        // Limpiar visualmente la tabla de productos robados
-        if (typeof actualizarTablaProductos === 'function') {
-          actualizarTablaProductos();
-        } else {
-          // Limpieza forzada si la función no existe
-          var tabla = document.getElementById('tablaProductos');
-          if (tabla) {
-            var tbody = tabla.querySelector('tbody');
-            if (tbody) tbody.innerHTML = '';
-            // Actualizar el total en el pie de tabla, si existe
-            var total = tabla.querySelector('#totalCantidadProductos');
-            if (total) total.textContent = '0';
-          }
-        }
-        if (typeof mostrarNotificacion === 'function') {
-          mostrarNotificacion('Top 20 de productos robados eliminado correctamente.', 'success');
-        } else {
-          alert('Top 20 de productos robados eliminado correctamente.');
-        }
-        cerrarModalAuthLimpiar();
+      if (typeof renderizarTablaHistorialDelincuentes === 'function') {
+        renderizarTablaHistorialDelincuentes();
       }
-    }
-  } else {
-    msg.textContent = 'Usuario o contraseña incorrectos.';
-    msg.style.display = 'block';
-  }
-};
+    } catch (e) { console.warn(e); }
+  });
+  // Los handlers abrirModalNuevoDelincuente, cerrarModalNuevoDelincuente y guardarNuevoDelincuente
+  // son provistos por script_delincuentes_nuevo.js
 </script>
 
     <!-- Módulo de persistencia a archivos (Excel) -->
