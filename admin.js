@@ -120,6 +120,35 @@ async function cargarUsuariosAdminPanel() {
         btnPwd.textContent = 'Cambiar contraseña';
         btnPwd.onclick = () => cambiarContrasenaDe(String(u.username||''));
         acciones.appendChild(btnPwd);
+
+        // Switch rápido activar/desactivar
+        const wrapSwitch = document.createElement('label');
+        wrapSwitch.style.cssText = 'margin-left:10px; display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#334155;';
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = (u.activo !== false);
+        chk.title = chk.checked ? 'Desactivar usuario' : 'Activar usuario';
+        chk.onchange = async () => {
+            const nuevoActivo = !!chk.checked;
+            const prev = !nuevoActivo; // para revertir si falla
+            chk.disabled = true;
+            try {
+                await cambiarEstadoUsuario(String(u.username||''), nuevoActivo);
+                // refrescar lista según filtro
+                await cargarUsuariosAdminPanel();
+            } catch (e) {
+                alert('No se pudo cambiar el estado: ' + (e && e.message || e));
+                chk.checked = prev;
+            } finally {
+                chk.disabled = false;
+            }
+        };
+        const txt = document.createElement('span');
+        txt.textContent = 'Activo';
+        wrapSwitch.appendChild(chk);
+        wrapSwitch.appendChild(txt);
+        acciones.appendChild(wrapSwitch);
+
         const linkPerfil = document.createElement('a');
         linkPerfil.href = 'javascript:void(0)';
         linkPerfil.textContent = 'Perfil';
@@ -139,6 +168,34 @@ async function cargarUsuariosAdminPanel() {
     });
 
     cont.appendChild(frag);
+}
+
+// Cambiar estado activo/inactivo en backend (o local como fallback)
+async function cambiarEstadoUsuario(username, activo) {
+    if (!username) throw new Error('Usuario inválido');
+    const base = localStorage.getItem('AUTH_API_BASE');
+    const token = sessionStorage.getItem('authToken');
+    if (base && token) {
+        const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ activo })
+        });
+        if (!resp.ok) {
+            const t = await resp.text().catch(()=> '');
+            throw new Error(t || ('HTTP ' + resp.status));
+        }
+        return;
+    }
+    // Fallback local
+    try {
+        const guardados = JSON.parse(localStorage.getItem('usuariosRegistrados')||'[]');
+        const idx = guardados.findIndex(u => u.username === username);
+        if (idx !== -1) {
+            guardados[idx].activo = !!activo;
+            localStorage.setItem('usuariosRegistrados', JSON.stringify(guardados));
+        }
+    } catch(_){ /* ignore */ }
 }
 
 function mostrarCambioContrasena() {

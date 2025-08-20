@@ -101,7 +101,7 @@
           </div>
           <div style="display:flex; gap:12px; align-items:center;">
             <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#334155;">
-              <input type="checkbox" id="adminVerInactivos" onchange="if(window.renderizarUsuariosAdminPanel) renderizarUsuariosAdminPanel();">
+              <input type="checkbox" id="adminVerInactivos" onchange="if(window.renderizarUsuariosAdminPanel) renderizarUsuariosAdminPanel(); if(window.cargarUsuariosAdminPanel) cargarUsuariosAdminPanel();">
               Ver inactivos
             </label>
             <button class="btn" style="background:#2e7d32;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="abrirModalCrearUsuario()">
