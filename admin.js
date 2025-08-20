@@ -109,6 +109,18 @@ async function cargarUsuariosAdminPanel() {
         btnPwd.textContent = 'Cambiar contraseña';
         btnPwd.onclick = () => cambiarContrasenaDe(String(u.username||''));
         acciones.appendChild(btnPwd);
+        const linkPerfil = document.createElement('a');
+        linkPerfil.href = 'javascript:void(0)';
+        linkPerfil.textContent = 'Perfil';
+        linkPerfil.style.cssText = 'margin-left:10px;color:#1565C0;text-decoration:underline;';
+        linkPerfil.onclick = () => {
+            if (typeof abrirModalPerfilUsuario === 'function') {
+                abrirModalPerfilUsuario(String(u.username||''));
+            } else {
+                alert('Función de perfil no disponible.');
+            }
+        };
+        acciones.appendChild(linkPerfil);
 
         item.appendChild(info);
         item.appendChild(acciones);
@@ -272,72 +284,45 @@ function agregarUsuario() {
         return;
     }
     
-    // Si hay backend remoto configurado, intentar crear de forma remota
+    // Crear SOLO en backend remoto
     (async () => {
         const base = localStorage.getItem('AUTH_API_BASE');
         const token = sessionStorage.getItem('authToken');
-        if (base && token) {
-            try {
-                const resp = await fetch(base.replace(/\/$/, '') + '/users', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: JSON.stringify({ username, password, rol, nombre })
-                });
-                if (!resp.ok) {
-                    const t = await resp.text().catch(() => '');
-                    alert('No se pudo crear el usuario en el servidor: ' + (t || resp.status));
-                } else {
-                    // Limpiar campos
-                    document.getElementById('nuevoUsuario').value = '';
-                    document.getElementById('nuevoNombre').value = '';
-                    document.getElementById('nuevaContrasena').value = '';
-                    document.getElementById('nuevoRol').value = 'usuario';
-                    // Cerrar modal si existe
-                    const modal = document.getElementById('adminCrearUsuarioModal');
-                    if (modal) modal.style.display = 'none';
-                    // Refrescar lista del panel si está abierto
-                    if (typeof cargarUsuariosAdminPanel === 'function') {
-                        await cargarUsuariosAdminPanel();
-                    } else if (typeof cargarUsuarios === 'function') {
-                        await cargarUsuarios();
-                    }
-                    alert('Usuario creado en servidor correctamente');
-                    return;
-                }
-            } catch (e) {
-                // Continuará al modo local
-                console.warn('Fallo creando usuario remoto, usando almacenamiento local:', e);
+        if (!(base && token)) {
+            alert('No hay backend remoto configurado o sesión inválida. Configure AUTH_API_BASE e inicie sesión.');
+            return;
+        }
+        try {
+            const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ username, password, rol, nombre })
+            });
+            if (!resp.ok) {
+                const t = await resp.text().catch(() => '');
+                alert('No se pudo crear el usuario en el servidor: ' + (t || resp.status));
+                return;
             }
+            // Limpiar campos
+            document.getElementById('nuevoUsuario').value = '';
+            document.getElementById('nuevoNombre').value = '';
+            document.getElementById('nuevaContrasena').value = '';
+            document.getElementById('nuevoRol').value = 'usuario';
+            // Cerrar modal si existe
+            const modal = document.getElementById('adminCrearUsuarioModal');
+            if (modal) modal.style.display = 'none';
+            // Refrescar lista del panel si está abierto
+            if (typeof cargarUsuariosAdminPanel === 'function') {
+                await cargarUsuariosAdminPanel();
+            }
+            alert('Usuario creado en servidor correctamente');
+        } catch (e) {
+            console.warn('Error creando usuario remoto:', e);
+            alert('Error creando usuario en el servidor: ' + (e && e.message || e));
         }
-
-        // Fallback local: Crear nuevo usuario
-        const nuevoUsuario = { username, nombre, password, rol };
-        let usuariosRegistrados = [];
-        if (usuariosGuardados) {
-            usuariosRegistrados = JSON.parse(usuariosGuardados);
-        }
-        usuariosRegistrados.push(nuevoUsuario);
-        localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosRegistrados));
-
-        // Limpiar campos
-        document.getElementById('nuevoUsuario').value = '';
-        document.getElementById('nuevoNombre').value = '';
-        document.getElementById('nuevaContrasena').value = '';
-        document.getElementById('nuevoRol').value = 'usuario';
-
-        // Cerrar modal si existe
-        const modal = document.getElementById('adminCrearUsuarioModal');
-        if (modal) modal.style.display = 'none';
-        // Refrescar lista del panel si está abierto
-        if (typeof cargarUsuariosAdminPanel === 'function') {
-            cargarUsuariosAdminPanel();
-        } else {
-            cargarUsuarios();
-        }
-        alert('Usuario agregado localmente');
     })();
 }
 
