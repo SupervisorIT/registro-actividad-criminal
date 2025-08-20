@@ -106,7 +106,8 @@ function guardarNuevoDelincuente(actualizando = false) {
 
     // Recoger los datos del formulario
     var delincuente = {
-        nombreCompleto: document.getElementById('nuevoNombreCompleto').value.trim(),
+        // En index.html el input se llama 'nuevoNombreCompletoModal'. Mantenemos compatibilidad
+        nombreCompleto: (document.getElementById('nuevoNombreCompletoModal') || document.getElementById('nuevoNombreCompleto') || { value: '' }).value.trim(),
         cedula: document.getElementById('nuevoCedula').value.trim(),
         edad: document.getElementById('nuevoEdad').value.trim(),
         direccion: document.getElementById('nuevoDireccion').value.trim(),
