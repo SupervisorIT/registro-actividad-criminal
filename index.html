@@ -52,6 +52,35 @@
         </button>
     </div>
 
+    <!-- Modal: Crear Usuario (independiente del panel) -->
+    <div id="adminCrearUsuarioModal" class="modal-admin" style="display:none;position:fixed;z-index:2050;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+      <div class="modal-content" style="background:#fff; margin:8% auto; width:600px; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.25);">
+        <div style="padding:12px 16px; background:#2e7d32; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="margin:0;">Crear usuario</h4>
+          <span class="close" onclick="cerrarModal('adminCrearUsuarioModal')" style="cursor:pointer; font-size:22px;">&times;</span>
+        </div>
+        <div style="padding:14px 16px;">
+          <div style="display:grid; grid-template-columns:140px 1fr 140px 1fr; gap:10px; align-items:center;">
+            <label>Usuario</label>
+            <input id="nuevoUsuario" class="form-control" type="text" placeholder="Usuario">
+            <label>Nombre</label>
+            <input id="nuevoNombre" class="form-control" type="text" placeholder="Nombre">
+            <label>Contraseña</label>
+            <input id="nuevaContrasena" class="form-control" type="password" placeholder="Contraseña">
+            <label>Rol</label>
+            <select id="nuevoRol" class="form-control">
+              <option value="usuario" selected>Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+        </div>
+        <div style="padding:12px 16px; text-align:right; border-top:1px solid #e6eaf0; display:flex; gap:8px; justify-content:flex-end;">
+          <button class="btn btn-primary" style="background:#1565C0;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="agregarUsuario()">Crear</button>
+          <button class="btn btn-secondary" style="background:#6c757d;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="cerrarModal('adminCrearUsuarioModal')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Panel de Administración -->
     <div id="adminPanelModal" class="modal-admin" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
       <div class="modal-content" style="background:#fff; margin:6% auto; width:680px; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.25);">
@@ -65,31 +94,12 @@
             <span style="margin-left:10px; color:#6b7280; font-size:13px;">Usuarios: <strong id="adminTotalUsuarios">0</strong></span>
           </div>
           <div style="display:flex; gap:8px;">
-            <button class="btn" style="background:#0d6efd;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="mostrarCambioContrasena()">
-              🔑 Cambiar contraseña de administrador
-            </button>
-            <button class="btn" style="background:#2e7d32;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="document.getElementById('adminCrearUsuario').style.display='block'">
+            <button class="btn" style="background:#2e7d32;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="abrirModalCrearUsuario()">
               👤 Crear usuario (rol usuario)
             </button>
           </div>
         </div>
 
-        <!-- Formulario crear usuario -->
-        <div id="adminCrearUsuario" style="display:none;padding:12px 16px;border-bottom:1px solid #e6eaf0;">
-          <div style="display:grid; grid-template-columns:140px 1fr 120px 120px auto; gap:8px; align-items:center;">
-            <input id="nuevoUsuario" class="form-control" type="text" placeholder="Usuario">
-            <input id="nuevoNombre" class="form-control" type="text" placeholder="Nombre">
-            <input id="nuevaContrasena" class="form-control" type="password" placeholder="Contraseña">
-            <select id="nuevoRol" class="form-control">
-              <option value="usuario" selected>Usuario</option>
-              <option value="admin">Administrador</option>
-            </select>
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
-              <button class="btn btn-primary" style="background:#1565C0;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="agregarUsuario()">Crear</button>
-              <button class="btn btn-secondary" style="background:#6c757d;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="this.closest('div#adminCrearUsuario').style.display='none'">Cancelar</button>
-            </div>
-          </div>
-        </div>
 
         <!-- Lista de usuarios -->
         <div style="padding:12px 16px;">
@@ -923,47 +933,150 @@
         cont.appendChild(lista);
     }
 
-    // Abre modal de perfil poblado (solo datos del servidor Render o sesión remota)
+    // Abre modal de perfil y permite cambiar contraseña desde aquí
     async function abrirModalPerfilUsuario(username) {
         const base = localStorage.getItem('AUTH_API_BASE');
         const token = sessionStorage.getItem('authToken');
         const activoRaw = sessionStorage.getItem('usuarioActivo');
         const activo = activoRaw ? (() => { try { return JSON.parse(activoRaw); } catch(_) { return null; } })() : null;
 
+        const setInputs = (u) => {
+          document.getElementById('pu_username').value = u.username || '';
+          document.getElementById('pu_nombre').value = u.nombreCompleto || u.nombre || '';
+          document.getElementById('pu_correo').value = u.correo || '';
+          document.getElementById('pu_empresa').value = u.empresa || '';
+          document.getElementById('pu_celular').value = u.celular || '';
+          const rolSel = document.getElementById('pu_rol');
+          const rolVal = u.rol || 'usuario';
+          rolSel.value = (rolVal === 'admin') ? 'admin' : 'usuario';
+          // Rol no editable para usuarios no admin
+          try {
+            const esAdmin = (activo && activo.rol === 'admin');
+            rolSel.disabled = !esAdmin;
+          } catch(_) { rolSel.disabled = true; }
+          // Limpiar password opcional
+          document.getElementById('pu_password').value = '';
+          // Botones visibles para guardar propios datos
+          const btnGuardar = document.getElementById('pu_btn_guardar');
+          if (btnGuardar) btnGuardar.style.display = 'inline-block';
+          const btnEliminar = document.getElementById('pu_btn_eliminar');
+          if (btnEliminar) btnEliminar.style.display = 'none';
+        };
+
+        // Si no hay backend, usar datos de sesión/localStorage
         if (!(base && token)) {
-            // Forzar login remoto en lugar de alertar
-            window.location.href = 'login.html';
-            return;
-        }
-
-        // Si el perfil solicitado es el del usuario autenticado, usar la sesión remota (procede del backend)
-        if (activo && String(activo.username||'').toLowerCase() === String(username).toLowerCase()) {
-            document.getElementById('pu_username').textContent = activo.username || '';
-            document.getElementById('pu_nombre').textContent = activo.nombreCompleto || activo.nombre || '';
-            document.getElementById('pu_cedula').textContent = activo.cedula || '';
-            document.getElementById('pu_rol').textContent = (activo.rol === 'admin' ? 'Administrador' : 'Usuario');
+          if (activo && (!username || String(username).toLowerCase() === String(activo.username||'').toLowerCase())) {
+            setInputs(activo);
             document.getElementById('modalPerfilUsuario').style.display = 'flex';
             return;
+          }
+          // Buscar en almacenamiento local si se especifica otro username
+          try {
+            const lista = JSON.parse(localStorage.getItem('usuariosRegistrados')||'[]');
+            const u = lista.find(x => String(x.username||'').toLowerCase() === String(username||'').toLowerCase());
+            if (u) { setInputs(u); document.getElementById('modalPerfilUsuario').style.display = 'flex'; return; }
+          } catch(_) {}
+          alert('No hay sesión válida. Inicie sesión.');
+          window.location.href = 'login.html';
+          return;
         }
 
-        // Si se consulta a otro usuario (lista remota, requiere admin)
+        // Backend remoto: si es el propio
+        if (activo && (!username || String(activo.username||'').toLowerCase() === String(username).toLowerCase())) {
+          setInputs(activo);
+          document.getElementById('modalPerfilUsuario').style.display = 'flex';
+          return;
+        }
+
+        // Consultar otro usuario (solo admin)
         try {
-            const resp = await fetch(base.replace(/\/$/, '') + '/users', {
-                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-            });
-            if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            const data = await resp.json();
-            const u = Array.isArray(data) ? data.find(x => String(x.username||'').toLowerCase() === String(username).toLowerCase()) : null;
-            if (!u) { alert('Usuario no encontrado en el servidor.'); return; }
-            document.getElementById('pu_username').textContent = u.username || '';
-            document.getElementById('pu_nombre').textContent = u.nombreCompleto || u.nombre || '';
-            document.getElementById('pu_cedula').textContent = u.cedula || '';
-            document.getElementById('pu_rol').textContent = (u.rol === 'admin' ? 'Administrador' : 'Usuario');
-            document.getElementById('modalPerfilUsuario').style.display = 'flex';
+          const resp = await fetch(base.replace(/\/$/, '') + '/users', { headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const data = await resp.json();
+          const u = Array.isArray(data) ? data.find(x => String(x.username||'').toLowerCase() === String(username||'').toLowerCase()) : null;
+          if (!u) { alert('Usuario no encontrado en el servidor.'); return; }
+          setInputs(u);
+          document.getElementById('modalPerfilUsuario').style.display = 'flex';
         } catch (e) {
-            console.error('Error obteniendo perfil remoto:', e);
-            alert('No se pudo obtener el perfil desde el servidor.');
+          console.error('Error obteniendo perfil remoto:', e);
+          alert('No se pudo obtener el perfil desde el servidor.');
         }
+    }
+
+    async function guardarPerfilUsuario() {
+      const username = document.getElementById('pu_username').value.trim();
+      const nombre = document.getElementById('pu_nombre').value.trim();
+      const password = document.getElementById('pu_password').value.trim(); // opcional
+      const correo = document.getElementById('pu_correo').value.trim();
+      const empresa = document.getElementById('pu_empresa').value.trim();
+      const celular = document.getElementById('pu_celular').value.trim();
+      const rol = document.getElementById('pu_rol').value;
+      const msg = document.getElementById('pu_msg');
+      msg.style.display = 'none'; msg.textContent=''; msg.style.background=''; msg.style.color='';
+
+      if (!username) { alert('Usuario inválido'); return; }
+
+      const base = localStorage.getItem('AUTH_API_BASE');
+      const token = sessionStorage.getItem('authToken');
+
+      // Si hay backend remoto
+      if (base && token) {
+        try {
+          const body = { nombre, correo, empresa, celular, rol };
+          if (password) body.password = password;
+          const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify(body)
+          });
+          if (!resp.ok) {
+            const t = await resp.text().catch(()=> '');
+            throw new Error(t || ('HTTP ' + resp.status));
+          }
+          // Actualizar sesión si era el propio
+          try {
+            const activo = JSON.parse(sessionStorage.getItem('usuarioActivo')||'null');
+            if (activo && String(activo.username||'') === username) {
+              const updated = { ...activo, nombre, nombreCompleto: nombre, correo, empresa, celular, rol };
+              sessionStorage.setItem('usuarioActivo', JSON.stringify(updated));
+            }
+          } catch(_){ }
+          msg.style.display='block'; msg.style.background='#e6f4ea'; msg.style.color='#1e7e34'; msg.textContent='Perfil actualizado correctamente';
+          document.getElementById('pu_password').value = '';
+          return;
+        } catch(e) {
+          console.error('Error guardando perfil remoto:', e);
+          alert('No se pudo guardar el perfil en el servidor: ' + e.message);
+          return;
+        }
+      }
+
+      // Fallback local
+      try {
+        const guardados = JSON.parse(localStorage.getItem('usuariosRegistrados')||'[]');
+        const idx = guardados.findIndex(u => u.username === username);
+        if (idx !== -1) {
+          guardados[idx] = { ...guardados[idx], nombre, correo, empresa, celular, rol };
+          if (password) guardados[idx].password = password;
+          localStorage.setItem('usuariosRegistrados', JSON.stringify(guardados));
+        }
+        const activoRaw = sessionStorage.getItem('usuarioActivo');
+        if (activoRaw) {
+          const activo = JSON.parse(activoRaw);
+          if (String(activo.username||'') === username) {
+            const updated = { ...activo, nombre, nombreCompleto: nombre, correo, empresa, celular, rol };
+            sessionStorage.setItem('usuarioActivo', JSON.stringify(updated));
+          }
+        }
+        msg.style.display='block'; msg.style.background='#e6f4ea'; msg.style.color='#1e7e34'; msg.textContent='Perfil actualizado localmente';
+        document.getElementById('pu_password').value = '';
+      } catch(e) {
+        alert('No se pudo guardar localmente: ' + (e && e.message || e));
+      }
+    }
+
+    function eliminarUsuarioPerfil() {
+      alert('Esta acción está deshabilitada desde el perfil. Use el Panel de Administración para desactivar usuarios.');
     }
 
     function cerrarModalPerfilUsuario() {

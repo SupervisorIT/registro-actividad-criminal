@@ -20,6 +20,22 @@ function abrirModalAdminPanel() {
     cargarUsuariosAdminPanel();
 }
 
+// Abrir modal independiente para crear usuario
+function abrirModalCrearUsuario() {
+    const modal = document.getElementById('adminCrearUsuarioModal');
+    if (!modal) { alert('No se encontró el modal de creación de usuario.'); return; }
+    // Limpiar campos
+    const u = document.getElementById('nuevoUsuario');
+    const n = document.getElementById('nuevoNombre');
+    const p = document.getElementById('nuevaContrasena');
+    const r = document.getElementById('nuevoRol');
+    if (u) u.value = '';
+    if (n) n.value = '';
+    if (p) p.value = '';
+    if (r) r.value = 'usuario';
+    modal.style.display = 'block';
+}
+
 // Funciones para mostrar los modales
 function mostrarGestionUsuarios() {
     const modal = document.getElementById('usuariosModal');
@@ -279,7 +295,15 @@ function agregarUsuario() {
                     document.getElementById('nuevoNombre').value = '';
                     document.getElementById('nuevaContrasena').value = '';
                     document.getElementById('nuevoRol').value = 'usuario';
-                    await cargarUsuarios();
+                    // Cerrar modal si existe
+                    const modal = document.getElementById('adminCrearUsuarioModal');
+                    if (modal) modal.style.display = 'none';
+                    // Refrescar lista del panel si está abierto
+                    if (typeof cargarUsuariosAdminPanel === 'function') {
+                        await cargarUsuariosAdminPanel();
+                    } else if (typeof cargarUsuarios === 'function') {
+                        await cargarUsuarios();
+                    }
                     alert('Usuario creado en servidor correctamente');
                     return;
                 }
@@ -304,8 +328,15 @@ function agregarUsuario() {
         document.getElementById('nuevaContrasena').value = '';
         document.getElementById('nuevoRol').value = 'usuario';
 
-        // Recargar tabla
-        cargarUsuarios();
+        // Cerrar modal si existe
+        const modal = document.getElementById('adminCrearUsuarioModal');
+        if (modal) modal.style.display = 'none';
+        // Refrescar lista del panel si está abierto
+        if (typeof cargarUsuariosAdminPanel === 'function') {
+            cargarUsuariosAdminPanel();
+        } else {
+            cargarUsuarios();
+        }
         alert('Usuario agregado localmente');
     })();
 }
