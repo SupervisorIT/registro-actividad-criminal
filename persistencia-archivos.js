@@ -22,23 +22,61 @@
   }
 
   // --- Logger simple para modal de auditoría ---
-  const _logs = [];
+  // Cargar logs previos desde localStorage para que viajen entre sesiones
+  const _LOGS_KEY = 'logsAuditoria';
+  function _cargarLogsPrevios() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(_LOGS_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+  }
+  const _logs = _cargarLogsPrevios();
   function _ts() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2,'0');
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function _guardarLogs() {
+    try {
+      // Limitar tamaño a 5000 entradas para evitar crecimiento sin control
+      const MAX = 5000;
+      if (_logs.length > MAX) _logs.splice(0, _logs.length - MAX);
+      localStorage.setItem(_LOGS_KEY, JSON.stringify(_logs));
+    } catch {}
   }
   function log(msg) {
     try {
       const line = `[${_ts()}] ${msg}`;
       _logs.push(line);
       console.log(line);
+      _guardarLogs();
     } catch {}
   }
   function getLogs() { return _logs.slice(); }
-  function clearLogs() { _logs.length = 0; }
+  function clearLogs() {
+    _logs.length = 0;
+    try { localStorage.setItem(_LOGS_KEY, JSON.stringify(_logs)); } catch {}
+  }
   window.getLogsPersist = getLogs;
   window.clearLogsPersist = clearLogs;
+
+  // Acción pública para borrar logs desde la UI (modal propietario o fallback)
+  window.borrarLogsAuditoria = function() {
+    try {
+      const ok = (typeof window.confirm === 'function')
+        ? window.confirm('¿Está seguro de borrar todos los logs de auditoría? Esta acción no se puede deshacer.')
+        : true;
+      if (!ok) return;
+      clearLogs();
+      if (typeof window.abrirModalLogs === 'function') {
+        window.abrirModalLogs('');
+      } else {
+        const pre = document.getElementById('logsContenido');
+        if (pre) pre.textContent = '';
+      }
+      if (typeof window.mostrarNotificacion === 'function') window.mostrarNotificacion('Logs borrados', 'success');
+    } catch (e) { console.warn('Error al borrar logs:', e); }
+  };
 
   // --- Snapshots en localStorage para exportación confiable ---
   function snapshotEncabezadoToStorage() {
@@ -255,6 +293,17 @@
       perdAOA.push([ mes, r.casos || '', r.monto || '', r.rango || '' ]);
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perdAOA), 'Perdidas');
+
+    // Hoja de Logs: incluir logs de auditoría de la sesión para que viaje con el archivo
+    try {
+      const logs = getLogs();
+      const logsAOA = [ ['Timestamp','Mensaje'] ];
+      for (const l of logs) {
+        const m = /^\[(.*?)\]\s*(.*)$/.exec(l) || [];
+        logsAOA.push([ m[1] || '', m[2] || l ]);
+      }
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(logsAOA), 'Logs');
+    } catch {}
 
     return wb;
   }
@@ -577,6 +626,33 @@
       // (Eliminado) No generar 'DelincuentesHist' en actualización
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perdAOA), 'Perdidas');
 
+      // Logs -> fusionar existente + nuevos
+      try {
+        const logsOldSheet = getSheet('Logs');
+        let logsOld = [];
+        if (logsOldSheet) {
+          const raw = XLSX.utils.sheet_to_json(logsOldSheet, { header: 1 });
+          // omitir encabezado si detectado
+          if (Array.isArray(raw)) {
+            const start = (raw[0] && raw[0].length && /timestamp/i.test(String(raw[0][0]||''))) ? 1 : 0;
+            for (let i = start; i < raw.length; i++) {
+              const row = raw[i] || [];
+              if (row.length === 0 || (!String(row[0]||'').trim() && !String(row[1]||'').trim())) continue;
+              logsOld.push([ String(row[0]||''), String(row[1]||'') ]);
+            }
+          }
+        }
+        const logsNew = (getLogs() || []).map(l => {
+          const m = /^\[(.*?)\]\s*(.*)$/.exec(l) || [];
+          return [ m[1] || '', m[2] || l ];
+        });
+        const logsAOA = [ ['Timestamp','Mensaje'], ...logsOld, ...logsNew ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(logsAOA), 'Logs');
+        log(`Logs fusionados: maestro=${logsOld.length}, nuevos=${logsNew.length}`);
+      } catch (e) {
+        console.warn('No se pudieron fusionar logs:', e);
+      }
+
       const nombre = (file.name || 'registro-actividad-criminal.xlsx').replace(/(.xlsx)?$/i,'_actualizado.xlsx');
       XLSX.writeFile(wb, nombre);
       noti('Excel maestro actualizado y descargado.');
@@ -605,14 +681,19 @@
             wrap.id = 'modalLogs';
             wrap.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2000;';
             wrap.innerHTML = '<div style="background:#fff;max-width:90vw;width:800px;max-height:80vh;border-radius:8px;display:flex;flex-direction:column;overflow:hidden;">\
-              <div style="padding:10px 14px;background:#0d6efd;color:#fff;display:flex;justify-content:space-between;align-items:center;">\
+              <div style="padding:10px 14px;background:#0d6efd;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:8px;">\
                 <strong>Logs de actualización</strong>\
-                <button id="cerrarLogsBtn" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;">&times;</button>\
+                <div style="display:flex;gap:8px;align-items:center;">\
+                  <button id="borrarLogsBtn" class="btn btn-light btn-sm" style="background:#fff;color:#0d6efd;border:1px solid #fff;border-radius:4px;cursor:pointer;">Borrar logs</button>\
+                  <button id="cerrarLogsBtn" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;">&times;</button>\
+                </div>\
               </div>\
               <pre id="logsContenido" style="margin:0;padding:12px;white-space:pre-wrap;overflow:auto;flex:1;background:#f8f9fa;"></pre>\
             </div>';
             document.body.appendChild(wrap);
             wrap.querySelector('#cerrarLogsBtn').onclick = () => wrap.style.display='none';
+            const borrarBtn = wrap.querySelector('#borrarLogsBtn');
+            if (borrarBtn) borrarBtn.onclick = () => { try { window.borrarLogsAuditoria(); } catch(e) { console.error(e); } };
           }
           const pre = document.getElementById('logsContenido');
           if (pre) pre.textContent = getLogs().join('\n');
