@@ -646,10 +646,22 @@
       if (shProd) {
         const rows = XLSX.utils.sheet_to_json(shProd, { defval: '' });
         const mapa = new Map();
+        let omitidos = 0;
         for (const r of rows) {
-          const nombre = (r['Producto/Mercancía'] || r['Producto'] || r['Nombre'] || '').toString().trim();
-          const cant = _toNumber(r['Cantidad Total'] ?? r['Cantidad'] ?? r['Total'] ?? 0);
-          if (!nombre) continue;
+          // Buscar nombre y cantidad por clave normalizada
+          const claves = Object.keys(r || {});
+          const norm = (s) => _normTxt(String(s || ''));
+          const keyNombre = claves.find(k => {
+            const nk = norm(k);
+            return (nk.includes('producto') || nk.includes('mercanc')) && !nk.includes('cantidad') && !nk.includes('total');
+          });
+          const keyCantidad = claves.find(k => {
+            const nk = norm(k);
+            return nk.includes('cantidad');
+          }) || claves.find(k => norm(k).includes('total'));
+          const nombre = (keyNombre ? String(r[keyNombre]) : '').trim();
+          const cant = _toNumber(keyCantidad ? r[keyCantidad] : 0);
+          if (!nombre) { omitidos++; continue; }
           const k = _normTxt(nombre);
           const prev = mapa.get(k) || { nombre: nombre, cantidad: 0, valor: 0 };
           prev.cantidad += cant;
@@ -657,7 +669,7 @@
           mapa.set(k, prev);
         }
         productos = Array.from(mapa.values());
-        log(`Productos importados: ${productos.length}`);
+        log(`Productos importados: ${productos.length}. Filas omitidas (sin nombre): ${omitidos}`);
       } else {
         log('Hoja Productos no encontrada, se omitirá');
       }
@@ -720,6 +732,7 @@
         if (productos && Array.isArray(productos)) {
           localStorage.setItem('productosRobados', JSON.stringify(productos));
           window.productosRobados = productos;
+          if (typeof consolidarProductosSimilares === 'function') try { consolidarProductosSimilares(); } catch {}
           if (typeof actualizarTablaProductos === 'function') actualizarTablaProductos();
           document.dispatchEvent(new Event('productosActualizados'));
         }
