@@ -94,19 +94,24 @@ async function cargarUsuariosAdminPanel() {
         }
     }
 
-    // Render
+    // Render con filtro de inactivos
     if (origenBadge) origenBadge.textContent = `Origen: ${origen}`;
-    if (totalSpan) totalSpan.textContent = String(lista.length);
+    const verInactivos = (document.getElementById('adminVerInactivos')?.checked) || false;
+    const listaFiltrada = lista.filter(u => verInactivos ? true : (u.activo !== false));
+    if (totalSpan) totalSpan.textContent = String(listaFiltrada.length);
 
     const frag = document.createDocumentFragment();
-    lista.forEach(u => {
+    listaFiltrada.forEach(u => {
         const item = document.createElement('div');
         item.className = 'admin-user-item';
         item.style.cssText = 'background:#fff;border:1px solid #e6eaf0;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;';
 
         const info = document.createElement('div');
-        info.innerHTML = `<div style="font-weight:700;">${(u.username||'')} — ${((u.rol||'usuario')==='admin'?'Administrador':'Usuario')}</div>
+        const inactivo = (u.activo === false);
+        const badge = inactivo ? ' <span style="margin-left:6px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:1px 6px;border-radius:999px;font-size:11px;">Inactivo</span>' : '';
+        info.innerHTML = `<div style="font-weight:700;">${(u.username||'')} — ${((u.rol||'usuario')==='admin'?'Administrador':'Usuario')}${badge}</div>
                           <div style="color:#666;">${(u.nombreCompleto||u.nombre||'')}</div>`;
+        if (inactivo) { item.style.opacity = '0.7'; }
 
         const acciones = document.createElement('div');
         const btnPwd = document.createElement('button');

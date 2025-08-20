@@ -99,7 +99,11 @@
             <span id="adminOrigenBadge" style="background:#e6fff1;border:1px solid #b6f0d1;color:#1b8f4b;font-size:12px;padding:4px 8px;border-radius:999px;">Origen: —</span>
             <span style="margin-left:10px; color:#6b7280; font-size:13px;">Usuarios: <strong id="adminTotalUsuarios">0</strong></span>
           </div>
-          <div style="display:flex; gap:8px;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#334155;">
+              <input type="checkbox" id="adminVerInactivos" onchange="if(window.renderizarUsuariosAdminPanel) renderizarUsuariosAdminPanel();">
+              Ver inactivos
+            </label>
             <button class="btn" style="background:#2e7d32;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="abrirModalCrearUsuario()">
               👤 Crear usuario (rol usuario)
             </button>
@@ -191,6 +195,8 @@
         <label style="color:#666;">Celular</label><input id="pu_celular" class="form-control" type="text">
         <label style="color:#666;">Rol</label>
         <select id="pu_rol" class="form-control"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select>
+        <label style="color:#666;">Estado</label>
+        <select id="pu_activo" class="form-control"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
       </div>
       <div id="pu_msg" style="display:none; margin-top:10px; padding:8px; border-radius:4px;"></div>
     </div>
@@ -960,6 +966,14 @@
             const esAdmin = (activo && activo.rol === 'admin');
             rolSel.disabled = !esAdmin;
           } catch(_) { rolSel.disabled = true; }
+          // Estado activo/inactivo
+          const selActivo = document.getElementById('pu_activo');
+          const esActivo = (u.activo !== false);
+          selActivo.value = esActivo ? 'activo' : 'inactivo';
+          try {
+            const esAdmin = (activo && activo.rol === 'admin');
+            selActivo.disabled = !esAdmin;
+          } catch(_) { selActivo.disabled = true; }
           // Limpiar password opcional
           document.getElementById('pu_password').value = '';
           // Botones visibles para guardar propios datos
@@ -1017,6 +1031,7 @@
       const empresa = document.getElementById('pu_empresa').value.trim();
       const celular = document.getElementById('pu_celular').value.trim();
       const rol = document.getElementById('pu_rol').value;
+      const selActivo = document.getElementById('pu_activo');
       const msg = document.getElementById('pu_msg');
       msg.style.display = 'none'; msg.textContent=''; msg.style.background=''; msg.style.color='';
 
@@ -1028,7 +1043,14 @@
       // Si hay backend remoto
       if (base && token) {
         try {
-          const body = { nombre, correo, empresa, celular, rol };
+          // Solo admin puede cambiar activo/rol
+          let esAdmin = false;
+          try { const act = JSON.parse(sessionStorage.getItem('usuarioActivo')||'null'); esAdmin = !!(act && act.rol==='admin'); } catch(_){ esAdmin = false; }
+          const body = { nombre, correo, empresa, celular };
+          if (esAdmin) {
+            body.rol = rol;
+            if (selActivo) body.activo = (selActivo.value === 'activo');
+          }
           if (password) body.password = password;
           const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
             method: 'PATCH',
@@ -1043,7 +1065,11 @@
           try {
             const activo = JSON.parse(sessionStorage.getItem('usuarioActivo')||'null');
             if (activo && String(activo.username||'') === username) {
-              const updated = { ...activo, nombre, nombreCompleto: nombre, correo, empresa, celular, rol };
+              const updated = { ...activo, nombre, nombreCompleto: nombre, correo, empresa, celular };
+              if (esAdmin) {
+                updated.rol = rol;
+                if (selActivo) updated.activo = (selActivo.value === 'activo');
+              }
               sessionStorage.setItem('usuarioActivo', JSON.stringify(updated));
             }
           } catch(_){ }
@@ -1062,7 +1088,13 @@
         const guardados = JSON.parse(localStorage.getItem('usuariosRegistrados')||'[]');
         const idx = guardados.findIndex(u => u.username === username);
         if (idx !== -1) {
-          guardados[idx] = { ...guardados[idx], nombre, correo, empresa, celular, rol };
+          let esAdmin = false;
+          try { const act = JSON.parse(sessionStorage.getItem('usuarioActivo')||'null'); esAdmin = !!(act && act.rol==='admin'); } catch(_){ esAdmin = false; }
+          guardados[idx] = { ...guardados[idx], nombre, correo, empresa, celular };
+          if (esAdmin) {
+            guardados[idx].rol = rol;
+            if (selActivo) guardados[idx].activo = (selActivo.value === 'activo');
+          }
           if (password) guardados[idx].password = password;
           localStorage.setItem('usuariosRegistrados', JSON.stringify(guardados));
         }
@@ -1070,7 +1102,13 @@
         if (activoRaw) {
           const activo = JSON.parse(activoRaw);
           if (String(activo.username||'') === username) {
-            const updated = { ...activo, nombre, nombreCompleto: nombre, correo, empresa, celular, rol };
+            let esAdmin = false;
+            try { const act = JSON.parse(sessionStorage.getItem('usuarioActivo')||'null'); esAdmin = !!(act && act.rol==='admin'); } catch(_){ esAdmin = false; }
+            const updated = { ...activo, nombre, nombreCompleto: nombre, correo, empresa, celular };
+            if (esAdmin) {
+              updated.rol = rol;
+              if (selActivo) updated.activo = (selActivo.value === 'activo');
+            }
             sessionStorage.setItem('usuarioActivo', JSON.stringify(updated));
           }
         }
@@ -1177,7 +1215,8 @@ async function renderizarUsuariosAdminPanel() {
         lista.style.display = 'flex';
         lista.style.flexDirection = 'column';
         lista.style.gap = '6px';
-        usuarios.forEach(u => {
+        const verInactivos = (document.getElementById('adminVerInactivos')?.checked) || false;
+        usuarios.filter(u => verInactivos ? true : (u.activo !== false)).forEach(u => {
           const item = document.createElement('div');
           item.style.display = 'flex';
           item.style.justifyContent = 'space-between';
@@ -1187,7 +1226,9 @@ async function renderizarUsuariosAdminPanel() {
           item.style.border = '1px solid #e0e0e0';
           item.style.borderRadius = '6px';
           const left = document.createElement('div');
-          left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+          const inactivo = (u.activo === false);
+          left.innerHTML = `<strong>${u.username}</strong> — <span style=\"color:#555;\">${(u.rol==='admin'?'Administrador':'Usuario')}</span> ${inactivo?'<span style=\"margin-left:6px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:1px 6px;border-radius:999px;font-size:11px;\">Inactivo</span>':''}<br><small style=\"color:#666;\">${u.nombreCompleto || u.nombre || ''}</small>`;
+          if (inactivo) { item.style.opacity = '0.7'; }
           const right = document.createElement('div');
           const link = document.createElement('a');
           link.href = 'javascript:void(0)';
@@ -1221,7 +1262,8 @@ async function renderizarUsuariosAdminPanel() {
   lista.style.display = 'flex';
   lista.style.flexDirection = 'column';
   lista.style.gap = '6px';
-  usuariosLocales.forEach(u => {
+  const verInactivosLoc = (document.getElementById('adminVerInactivos')?.checked) || false;
+  usuariosLocales.filter(u => verInactivosLoc ? true : (u.activo !== false)).forEach(u => {
     const item = document.createElement('div');
     item.style.display = 'flex';
     item.style.justifyContent = 'space-between';
@@ -1231,7 +1273,9 @@ async function renderizarUsuariosAdminPanel() {
     item.style.border = '1px solid #e0e0e0';
     item.style.borderRadius = '6px';
     const left = document.createElement('div');
-    left.innerHTML = `<strong>${u.username}</strong> — <span style=\"color:#555;\">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style=\"color:#666;\">${u.nombreCompleto || u.nombre || ''}</small>`;
+    const inactivo = (u.activo === false);
+    left.innerHTML = `<strong>${u.username}</strong> — <span style=\"color:#555;\">${(u.rol==='admin'?'Administrador':'Usuario')}</span> ${inactivo?'<span style=\"margin-left:6px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:1px 6px;border-radius:999px;font-size:11px;\">Inactivo</span>':''}<br><small style=\"color:#666;\">${u.nombreCompleto || u.nombre || ''}</small>`;
+    if (inactivo) { item.style.opacity = '0.7'; }
     const right = document.createElement('div');
     const link = document.createElement('a');
     link.href = 'javascript:void(0)';
