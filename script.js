@@ -1709,8 +1709,8 @@ window.agregarFilaTipificacion = function agregarFilaTipificacion() {
     window.agregarFilaProductoSoloVisual();
 };
 
-// Elimina la fila actual
-window.eliminarFila = function eliminarFila(btn) {
+// Elimina la fila actual (no sobreescribir si otra implementación ya existe)
+window.eliminarFila = window.eliminarFila || function eliminarFila(btn) {
     try {
         const tr = btn && btn.closest ? btn.closest('tr') : null;
         if (tr && tr.parentNode) {
@@ -1724,10 +1724,30 @@ window.eliminarFila = function eliminarFila(btn) {
     }
 };
 
-// Handler mínimo para cambio de observaciones (por ahora solo asegura string limpio)
+// Handler para cambio de observaciones: agrega al Top 20 si hay datos válidos
 window.onObservacionCambio = function onObservacionCambio(input) {
     if (!input) return;
     input.value = (input.value || '').toString().trim();
+
+    const fila = input.closest && input.closest('tr');
+    if (!fila) return;
+
+    const productoInput = fila.querySelector('input[name="producto[]"]');
+    const cantidadInput = fila.querySelector('input[name="cantidad[]"]');
+    const cuantiaInput = fila.querySelector('input[name="cuantia[]"]');
+
+    const producto = productoInput ? (productoInput.value || '').trim() : '';
+    const cantidad = cantidadInput ? (parseInt(cantidadInput.value, 10) || 0) : 0;
+    const cuantia = cuantiaInput ? (parseFloat((cuantiaInput.value || '').replace(/[^\d.-]/g, '')) || 0) : 0;
+
+    if (!producto || cantidad <= 0) return;
+    if (typeof window.agregarProductoRobado === 'function') {
+        try {
+            window.agregarProductoRobado(producto, cantidad, cuantia);
+        } catch (e) {
+            console.warn('No se pudo agregar producto al Top 20:', e);
+        }
+    }
 };
 
 // Ejemplo: si 'script_casos.js' no define estas globalmente
