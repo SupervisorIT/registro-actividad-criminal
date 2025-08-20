@@ -662,45 +662,57 @@
         log('Hoja Productos no encontrada, se omitirá');
       }
 
-      // 2) Importar Delincuentes (historial)
-      const shDel = getSheet('Delincuentes');
+      // 2) Importar Delincuentes (historial) desde múltiples posibles hojas
+      const hojasDelincuentesCandidatas = ['Delincuentes','Delincuente Capturado','Delincuentes Capturados','Historial Delincuentes','Historial'];
+      const hojasEncontradas = hojasDelincuentesCandidatas
+        .map(n => ({ n, sh: getSheet(n) }))
+        .filter(x => !!x.sh);
       let delincuentesPersistentes = [];
-      if (shDel) {
-        const rows = XLSX.utils.sheet_to_json(shDel, { defval: '' });
+      if (hojasEncontradas.length) {
         const mapa = new Map(); // clave: cédula
-        for (const r of rows) {
-          const ced = (r['Cédula'] || r['Cedula'] || '').toString().trim();
-          if (!ced) continue;
-          const obj = {
-            nombreCompleto: r['Nombre y Apellido'] || r['Nombre'] || '',
-            nombre: r['Nombre y Apellido'] || r['Nombre'] || '',
-            cedula: ced,
-            edad: r['Edad'] || '',
-            direccion: r['Dirección'] || r['Direccion'] || '',
-            vehiculo: r['Vehículo'] || r['Vehiculo'] || '',
-            placa: r['Placa'] || '',
-            color: r['Color'] || '',
-            fechaCaptura: r['Fecha Captura'] || r['Fecha'] || '',
-            delito: r['Delito'] || '',
-            productos: r['Productos'] || r['Mercancias'] || '',
-            cuantia: r['Cuantía (B/.)'] || r['Cuantia'] || '',
-            denuncia: r['N° Denuncia'] || r['N Denuncia'] || r['Denuncia'] || ''
-          };
-          // fusionar si ya existe
-          const prev = mapa.get(ced) || {};
-          const claves = ['nombreCompleto','nombre','cedula','edad','direccion','vehiculo','placa','color','fechaCaptura','delito','productos','cuantia','denuncia'];
-          const res = { ...prev };
-          claves.forEach(k => {
-            const nuevo = obj[k];
-            const anterior = prev[k];
-            res[k] = (nuevo !== undefined && String(nuevo).trim() !== '') ? nuevo : (anterior !== undefined ? anterior : '');
-          });
-          mapa.set(ced, res);
+        let procesadas = 0, omitidas = 0;
+        for (const { n, sh } of hojasEncontradas) {
+          const rows = XLSX.utils.sheet_to_json(sh, { defval: '' });
+          log(`Leyendo hoja de historial: ${n} (filas: ${rows.length})`);
+          for (const r of rows) {
+            const nombreCampo = (r['Nombre y Apellido'] ?? r['Nombre'] ?? r['Delincuente'] ?? r['Delincuente Capturado'] ?? '').toString();
+            const ced = (r['Cédula'] ?? r['Cedula'] ?? r['ID'] ?? '').toString().trim();
+            // Si no tiene cédula ni nombre, omitir
+            if (!ced && !nombreCampo.trim()) { omitidas++; continue; }
+            const obj = {
+              nombreCompleto: nombreCampo.trim(),
+              nombre: nombreCampo.trim(),
+              cedula: ced,
+              edad: r['Edad'] ?? '',
+              direccion: r['Dirección'] ?? r['Direccion'] ?? '',
+              vehiculo: r['Vehículo'] ?? r['Vehiculo'] ?? '',
+              placa: r['Placa'] ?? '',
+              color: r['Color'] ?? '',
+              fechaCaptura: r['Fecha Captura'] ?? r['Fecha'] ?? '',
+              delito: r['Delito'] ?? r['Delito/Observación'] ?? '',
+              productos: r['Productos'] ?? r['Mercancias'] ?? r['Producto'] ?? '',
+              cuantia: r['Cuantía (B/.)'] ?? r['Cuantia'] ?? r['Monto'] ?? r['Cuantía'] ?? '',
+              denuncia: r['N° Denuncia'] ?? r['N Denuncia'] ?? r['Denuncia'] ?? r['No Denuncia'] ?? ''
+            };
+            // Clave de fusión: preferir cédula, si no hay usar nombre normalizado
+            const clave = ced || _normTxt(obj.nombre || '');
+            if (!clave) { omitidas++; continue; }
+            const prev = mapa.get(clave) || {};
+            const claves = ['nombreCompleto','nombre','cedula','edad','direccion','vehiculo','placa','color','fechaCaptura','delito','productos','cuantia','denuncia'];
+            const res = { ...prev };
+            claves.forEach(k => {
+              const nuevo = obj[k];
+              const anterior = prev[k];
+              res[k] = (nuevo !== undefined && String(nuevo).trim() !== '') ? nuevo : (anterior !== undefined ? anterior : '');
+            });
+            mapa.set(clave, res);
+            procesadas++;
+          }
         }
         delincuentesPersistentes = Array.from(mapa.values());
-        log(`Delincuentes importados (historial): ${delincuentesPersistentes.length}`);
+        log(`Delincuentes importados (historial): ${delincuentesPersistentes.length}. Filas procesadas: ${procesadas}, omitidas: ${omitidas}`);
       } else {
-        log('Hoja Delincuentes no encontrada, se omitirá');
+        log('No se encontró ninguna hoja de historial de delincuentes (Intentado: ' + hojasDelincuentesCandidatas.join(', ') + ')');
       }
 
       // 3) Persistir en localStorage y refrescar UI
