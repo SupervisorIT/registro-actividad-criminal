@@ -25,13 +25,19 @@ function abrirModalCrearUsuario() {
     const modal = document.getElementById('adminCrearUsuarioModal');
     if (!modal) { alert('No se encontró el modal de creación de usuario.'); return; }
     // Limpiar campos
+    const nc = document.getElementById('nuevoNombreCompleto');
     const u = document.getElementById('nuevoUsuario');
-    const n = document.getElementById('nuevoNombre');
     const p = document.getElementById('nuevaContrasena');
+    const co = document.getElementById('nuevoCorreo');
+    const em = document.getElementById('nuevaEmpresa');
+    const ce = document.getElementById('nuevoCelular');
     const r = document.getElementById('nuevoRol');
+    if (nc) nc.value = '';
     if (u) u.value = '';
-    if (n) n.value = '';
     if (p) p.value = '';
+    if (co) co.value = '';
+    if (em) em.value = '';
+    if (ce) ce.value = '';
     if (r) r.value = 'usuario';
     modal.style.display = 'block';
 }
@@ -251,12 +257,15 @@ async function cargarUsuarios() {
 
 function agregarUsuario() {
     const username = document.getElementById('nuevoUsuario').value.trim();
-    const nombre = document.getElementById('nuevoNombre').value.trim();
+    const nombreCompleto = document.getElementById('nuevoNombreCompleto').value.trim();
+    const correo = document.getElementById('nuevoCorreo').value.trim();
+    const empresa = document.getElementById('nuevaEmpresa').value.trim();
+    const celular = document.getElementById('nuevoCelular').value.trim();
     const password = document.getElementById('nuevaContrasena').value.trim();
     const rol = document.getElementById('nuevoRol').value;
     
     // Validar campos
-    if (!username || !nombre || !password) {
+    if (!username || !password) {
         alert('Por favor complete todos los campos');
         return;
     }
@@ -299,7 +308,17 @@ function agregarUsuario() {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + token
                 },
-                body: JSON.stringify({ username, password, rol, nombre })
+                body: JSON.stringify({
+                    username,
+                    password,
+                    rol,
+                    // Derivar nombre corto del nombre completo (opcional)
+                    nombre: nombreCompleto || undefined,
+                    nombreCompleto: nombreCompleto || undefined,
+                    correo: correo || undefined,
+                    empresa: empresa || undefined,
+                    celular: celular || undefined
+                })
             });
             if (!resp.ok) {
                 const t = await resp.text().catch(() => '');
@@ -307,9 +326,12 @@ function agregarUsuario() {
                 return;
             }
             // Limpiar campos
+            document.getElementById('nuevoNombreCompleto').value = '';
             document.getElementById('nuevoUsuario').value = '';
-            document.getElementById('nuevoNombre').value = '';
             document.getElementById('nuevaContrasena').value = '';
+            document.getElementById('nuevoCorreo').value = '';
+            document.getElementById('nuevaEmpresa').value = '';
+            document.getElementById('nuevoCelular').value = '';
             document.getElementById('nuevoRol').value = 'usuario';
             // Cerrar modal si existe
             const modal = document.getElementById('adminCrearUsuarioModal');
