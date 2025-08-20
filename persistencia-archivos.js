@@ -210,6 +210,15 @@
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delAOA), 'Delincuentes');
 
+    // Hoja compacta de Historial de Delincuentes (tal como se ve en la UI)
+    const delHistAOA = [ ['#','Nombre y Apellido','Cédula','Edad','Delito Cometido','Cuantía','N° Denuncia/Resolución'] ];
+    let idx = 1;
+    for (const d of (delincuentesPersistentes || [])) {
+      const cuantia = (d.cuantia != null ? d.cuantia : d.monto != null ? d.monto : '');
+      delHistAOA.push([ idx++, d.nombreCompleto||d.nombre||'', d.cedula||'', d.edad||'', d.delito||'', cuantia||'', d.denuncia||'' ]);
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delHistAOA), 'DelincuentesHist');
+
     // Productos robados
     const prodAOA = [ ['Producto/Mercancía','Cantidad Total'] ];
     for (const p of (productosRobados || [])) {
@@ -508,12 +517,12 @@
       };
       for (const r of (perdOld || [])) addPerd(r['Mes']||'', r['Casos']||0, r['Pérdidas (B/.)']||r['Perdidas (B/.)']||r['Perdidas']||0, r['Rango de Fechas']||r['Rango']||'');
       for (const r of (perdidas || [])) addPerd(r.mes||'', r.casos||0, r.monto||0, r.rango||'');
-      // salida ordenada por meses calendario
+      // salida ordenada por meses calendario - SIEMPRE los 12 meses
       const mesesOrden = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
       const perdAOA = [ ['Mes','Casos','Pérdidas (B/.)','Rango de Fechas'] ];
       for (const mes of mesesOrden) {
-        const v = mapaMes.get(_normTxt(mes));
-        if (v) perdAOA.push([ mes, v.casos, v.monto, v.rango || '' ]);
+        const v = mapaMes.get(_normTxt(mes)) || { casos: 0, monto: 0, rango: '' };
+        perdAOA.push([ mes, v.casos || 0, v.monto || 0, v.rango || '' ]);
       }
 
       // 9) Construir nuevo libro y descargar
@@ -522,6 +531,14 @@
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(casosAOA), 'Casos');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delAOA), 'Delincuentes');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(prodAOA), 'Productos');
+      // Añadir también hoja compacta de historial si existe en esta actualización
+      const delHistAOA2 = [ ['#','Nombre y Apellido','Cédula','Edad','Delito Cometido','Cuantía','N° Denuncia/Resolución'] ];
+      let _i = 1;
+      for (const d of (delFuenteNew || [])) {
+        const cuantia2 = (d.cuantia != null ? d.cuantia : d.monto != null ? d.monto : '');
+        delHistAOA2.push([ _i++, d.nombreCompleto||d.nombre||'', d.cedula||'', d.edad||'', d.delito||'', cuantia2||'', d.denuncia||'' ]);
+      }
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delHistAOA2), 'DelincuentesHist');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perdAOA), 'Perdidas');
 
       const nombre = (file.name || 'registro-actividad-criminal.xlsx').replace(/(.xlsx)?$/i,'_actualizado.xlsx');

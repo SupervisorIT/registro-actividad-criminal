@@ -1075,6 +1075,16 @@ function reiniciarFormulario() {
     const totalPerdidasMonto = document.getElementById('totalPerdidasMonto');
     if (totalPerdidasMonto) totalPerdidasMonto.textContent = 'B/. 0.00';
 
+    // Regenerar estructura de meses del trimestre y recalcular
+    try {
+        if (typeof actualizarTablaPerdidasTrimestre === 'function') {
+            actualizarTablaPerdidasTrimestre();
+        }
+        if (typeof actualizarReportePerdidas === 'function') {
+            actualizarReportePerdidas();
+        }
+    } catch (e) { console.warn('No se pudo regenerar el reporte de pérdidas tras reiniciar:', e); }
+
     // 4) Delincuentes capturados (tabla temporal de la sesión)
     try {
         if (Array.isArray(window.delincuentes)) {
