@@ -8,11 +8,98 @@ document.addEventListener('DOMContentLoaded', function() {
     if (usuario.rol !== 'admin') return;
 });
 
+// Abrir Panel de Administración (modal en index.html con id "adminPanelModal")
+function abrirModalAdminPanel() {
+    const modal = document.getElementById('adminPanelModal');
+    if (!modal) {
+        alert('No se encontró el Panel de Administración en el HTML.');
+        return;
+    }
+    modal.style.display = 'block';
+    // Cargar lista de usuarios para este panel
+    cargarUsuariosAdminPanel();
+}
+
 // Funciones para mostrar los modales
 function mostrarGestionUsuarios() {
     const modal = document.getElementById('usuariosModal');
     modal.style.display = 'block';
     cargarUsuarios();
+}
+
+// Cargar usuarios y renderizarlos dentro del Panel de Administración (sin botón Perfil)
+async function cargarUsuariosAdminPanel() {
+    const cont = document.getElementById('adminUsuariosLista');
+    const origenBadge = document.getElementById('adminOrigenBadge');
+    const totalSpan = document.getElementById('adminTotalUsuarios');
+    if (!cont) return;
+    cont.innerHTML = '';
+
+    const base = localStorage.getItem('AUTH_API_BASE');
+    const token = sessionStorage.getItem('authToken');
+    let origen = 'Local';
+    let lista = [];
+
+    if (base && token) {
+        try {
+            const resp = await fetch(base.replace(/\/$/, '') + '/users', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/json'
+                }
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                if (Array.isArray(data)) {
+                    lista = data;
+                    origen = 'Remoto';
+                }
+            }
+        } catch(e) { /* fallback abajo */ }
+    }
+
+    if (!lista.length) {
+        // Fallback local
+        const predef = [
+            { username: 'admin', nombre: 'Administrador', rol: 'admin', nombreCompleto: 'Administrador del Sistema' },
+            { username: 'usuario', nombre: 'Usuario Estándar', rol: 'usuario', nombreCompleto: 'Usuario Estándar' }
+        ];
+        lista = [...predef];
+        const guardados = localStorage.getItem('usuariosRegistrados');
+        if (guardados) {
+            try { lista = [...lista, ...JSON.parse(guardados)]; } catch(_){}
+        }
+    }
+
+    // Render
+    if (origenBadge) origenBadge.textContent = `Origen: ${origen}`;
+    if (totalSpan) totalSpan.textContent = String(lista.length);
+
+    const frag = document.createDocumentFragment();
+    lista.forEach(u => {
+        const item = document.createElement('div');
+        item.className = 'admin-user-item';
+        item.style.cssText = 'background:#fff;border:1px solid #e6eaf0;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;';
+
+        const info = document.createElement('div');
+        info.innerHTML = `<div style="font-weight:700;">${(u.username||'')} — ${((u.rol||'usuario')==='admin'?'Administrador':'Usuario')}</div>
+                          <div style="color:#666;">${(u.nombreCompleto||u.nombre||'')}</div>`;
+
+        const acciones = document.createElement('div');
+        const btnPwd = document.createElement('button');
+        btnPwd.className = 'btn btn-sm';
+        btnPwd.style.cssText = 'background:#f4a11a;color:#fff;border:none;padding:6px 10px;border-radius:6px;';
+        btnPwd.textContent = 'Cambiar contraseña';
+        btnPwd.onclick = () => cambiarContrasenaDe(String(u.username||''));
+        acciones.appendChild(btnPwd);
+
+        item.appendChild(info);
+        item.appendChild(acciones);
+        frag.appendChild(item);
+    });
+
+    cont.appendChild(frag);
 }
 
 function mostrarCambioContrasena() {
