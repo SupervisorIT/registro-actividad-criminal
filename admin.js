@@ -57,20 +57,37 @@ async function cargarUsuariosAdminPanel() {
     if (!cont) return;
     cont.innerHTML = '';
 
-    const base = localStorage.getItem('AUTH_API_BASE');
+    // Asegurar base remota como en login.js
+    let base = localStorage.getItem('AUTH_API_BASE') || '';
+    try {
+        if (!base) {
+            const host = (location && location.hostname) ? location.hostname : '';
+            if (host.includes('onrender.com') || host === 'localhost' || host === '127.0.0.1') {
+                base = 'https://rac-auth-api.onrender.com';
+                try { localStorage.setItem('AUTH_API_BASE', base); } catch {}
+            }
+        }
+    } catch(_) {}
+
     const token = sessionStorage.getItem('authToken');
     let origen = 'Local';
     let lista = [];
 
     if (base && token) {
+        const baseURL = base.replace(/\/$/, '');
+        const headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
         try {
-            const resp = await fetch(base.replace(/\/$/, '') + '/users', {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Accept': 'application/json'
-                }
-            });
+            let resp = await fetch(baseURL + '/users', { method: 'GET', headers });
+            if (!resp.ok) {
+                // Intento alternativo con prefijo /api
+                resp = await fetch(baseURL + '/api/users', { method: 'GET', headers });
+            }
+            if (resp.status === 401) {
+                cont.innerHTML = '<div style="color:#b91c1c;">No autenticado. Inicie sesión nuevamente.</div>';
+            }
+            if (resp.status === 403) {
+                cont.innerHTML = '<div style="color:#b45309;">Acceso restringido. Se requiere rol administrador para listar usuarios.</div>';
+            }
             if (resp.ok) {
                 const data = await resp.json();
                 if (Array.isArray(data)) {
@@ -78,7 +95,10 @@ async function cargarUsuariosAdminPanel() {
                     origen = 'Remoto';
                 }
             }
-        } catch(e) { /* fallback abajo */ }
+        } catch(e) {
+            // continuar a fallback local
+            console.warn('Listado remoto de usuarios falló, usando fallback local:', e);
+        }
     }
 
     if (!lista.length) {
