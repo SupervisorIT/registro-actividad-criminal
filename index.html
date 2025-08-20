@@ -553,7 +553,8 @@
                         
             <div class="actions-container" style="display:flex; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-primary" onclick="guardarExcelPdfYReiniciar()">Guardar documento</button>
-                <button type="button" class="btn btn-secondary" onclick="actualizarExcelExistente()">Actualizar Excel existente</button>
+                <button type="button" class="btn btn-secondary" onclick="abrirSoloLogs()">Log</button>
+                <button type="button" class="btn btn-info" onclick="importarDatosDesdeExcelConLogs()">Subir datos (Excel)</button>
             </div>
 
             <div class="modal fade" id="vistaPreviaModal" tabindex="-1" role="dialog" aria-labelledby="vistaPreviaModalLabel" aria-hidden="true">
@@ -581,6 +582,39 @@
     </div>
 
     <!-- Modal para seleccionar tipificación - Diseño moderno -->
+
+    <!-- Modal de Logs de Exportación/Actualización -->
+    <div id="modalLogs" class="modal-admin" style="display:none;position:fixed;z-index:2500;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.45);">
+      <div class="modal-content" style="background:#fff; margin:6% auto; width:850px; max-width:95vw; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.25);display:flex;flex-direction:column;">
+        <div style="padding:12px 16px; background:#0d6efd; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="margin:0;">Logs de actualización</h4>
+          <span class="close" onclick="document.getElementById('modalLogs').style.display='none'" style="cursor:pointer; font-size:22px;">&times;</span>
+        </div>
+        <div style="padding:0; display:flex; flex-direction:column; height:70vh;">
+          <pre id="logsContenido" style="margin:0; padding:14px; white-space:pre-wrap; overflow:auto; flex:1; background:#f8f9fa;">(sin logs aún)</pre>
+        </div>
+        <div style="padding:10px 14px; text-align:right; border-top:1px solid #e6eaf0; display:flex; gap:8px; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="document.getElementById('modalLogs').style.display='none'">Cerrar</button>
+          <button class="btn btn-light" onclick="(function(){try{if(window.clearLogsPersist) window.clearLogsPersist(); const pre = document.getElementById('logsContenido'); if(pre) pre.textContent='';}catch(e){}})()">Limpiar</button>
+          <button class="btn btn-primary" onclick="(function(){try{const pre=document.getElementById('logsContenido'); const t=pre?pre.textContent:''; navigator.clipboard.writeText(t);}catch(e){}})()">Copiar</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // API para abrir el modal de logs desde persistencia-archivos.js
+      window.abrirModalLogs = function(texto){
+        try {
+          var pre = document.getElementById('logsContenido');
+          if (pre) pre.textContent = texto || '';
+          var modal = document.getElementById('modalLogs');
+          if (modal) modal.style.display = 'block';
+        } catch (e) {
+          console.error('No se pudo abrir el modal de logs', e);
+          alert('No se pudo abrir el modal de logs');
+        }
+      };
+    </script>
     <div class="modal fade" id="modalTipificacion" tabindex="-1" role="dialog" aria-labelledby="modalTipificacionLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content" style="border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">

@@ -74,13 +74,20 @@
             console.error('Error al cargar historial:', e);
         }
         
-        // Crear objeto para el historial con los campos reducidos
+        // Crear objeto para el historial con todos los campos relevantes
         const delincuenteHistorial = {
-            nombre: delincuente.nombreCompleto || '',
+            nombreCompleto: delincuente.nombreCompleto || delincuente.nombre || '',
+            nombre: delincuente.nombreCompleto || delincuente.nombre || '',
             cedula: delincuente.cedula || '',
             edad: delincuente.edad || '',
+            direccion: delincuente.direccion || '',
+            vehiculo: delincuente.vehiculo || '',
+            placa: delincuente.placa || '',
+            color: delincuente.color || delincuente.colorVehiculo || '',
+            fechaCaptura: delincuente.fechaCaptura || delincuente.fecha || '',
             delito: delincuente.delito || '',
-            cuantia: delincuente.monto || '',
+            productos: delincuente.productos || delincuente.mercancias || '',
+            cuantia: (delincuente.cuantia != null ? delincuente.cuantia : (delincuente.monto != null ? delincuente.monto : '')),
             denuncia: delincuente.denuncia || ''
         };
         
@@ -88,8 +95,15 @@
         const existeEnHistorial = historial.findIndex(d => d.cedula === delincuente.cedula);
         
         if (existeEnHistorial !== -1) {
-            // Actualizar el existente
-            historial[existeEnHistorial] = delincuenteHistorial;
+            // Fusionar: mantener el valor nuevo si no está vacío; conservar el anterior en caso contrario
+            const prev = historial[existeEnHistorial] || {};
+            const mergeCampo = (k) => {
+                const nuevo = delincuenteHistorial[k];
+                const anterior = prev[k];
+                historial[existeEnHistorial][k] = (nuevo !== undefined && String(nuevo).trim() !== '') ? nuevo : (anterior !== undefined ? anterior : '');
+            };
+            const claves = ['nombreCompleto','nombre','cedula','edad','direccion','vehiculo','placa','color','fechaCaptura','delito','productos','cuantia','denuncia'];
+            claves.forEach(mergeCampo);
         } else {
             // Agregar el nuevo
             historial.push(delincuenteHistorial);

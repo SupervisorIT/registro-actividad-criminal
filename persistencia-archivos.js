@@ -21,6 +21,25 @@
     window.FORZAR_DESCARGA_EXCEL = true;
   }
 
+  // --- Logger simple para modal de auditoría ---
+  const _logs = [];
+  function _ts() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2,'0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function log(msg) {
+    try {
+      const line = `[${_ts()}] ${msg}`;
+      _logs.push(line);
+      console.log(line);
+    } catch {}
+  }
+  function getLogs() { return _logs.slice(); }
+  function clearLogs() { _logs.length = 0; }
+  window.getLogsPersist = getLogs;
+  window.clearLogsPersist = clearLogs;
+
   // --- Snapshots en localStorage para exportación confiable ---
   function snapshotEncabezadoToStorage() {
     try {
@@ -210,14 +229,7 @@
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delAOA), 'Delincuentes');
 
-    // Hoja compacta de Historial de Delincuentes (tal como se ve en la UI)
-    const delHistAOA = [ ['#','Nombre y Apellido','Cédula','Edad','Delito Cometido','Cuantía','N° Denuncia/Resolución'] ];
-    let idx = 1;
-    for (const d of (delincuentesPersistentes || [])) {
-      const cuantia = (d.cuantia != null ? d.cuantia : d.monto != null ? d.monto : '');
-      delHistAOA.push([ idx++, d.nombreCompleto||d.nombre||'', d.cedula||'', d.edad||'', d.delito||'', cuantia||'', d.denuncia||'' ]);
-    }
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delHistAOA), 'DelincuentesHist');
+    // (Eliminado) Hoja compacta 'DelincuentesHist' a petición: solo mantener 'Delincuentes'
 
     // Productos robados
     const prodAOA = [ ['Producto/Mercancía','Cantidad Total'] ];
@@ -431,6 +443,7 @@
 
   async function actualizarExcelExistente() {
     try {
+      log('Inicio actualización de Excel maestro');
       // 1) Seleccionar archivo maestro existente
       const input = document.createElement('input');
       input.type = 'file';
@@ -445,6 +458,7 @@
       // 2) Datos nuevos desde la app
       const datos = getDatosParaExportar();
       const { encabezado = {}, casos = [], delincuentes = [], delincuentesPersistentes = [], productosRobados = [], perdidas = [] } = datos || {};
+      log(`Datos nuevos: encabezado OK, casos=${casos.length}, delTemp=${delincuentes.length}, delHist=${delincuentesPersistentes.length}, productos=${productosRobados.length}`);
 
       // 3) Reconstruir arrays desde el maestro existente
       const encOld = XLSX.utils.sheet_to_json(getSheet('Encabezado') || {}, { defval: '' });
@@ -452,6 +466,7 @@
       const delOld = XLSX.utils.sheet_to_json(getSheet('Delincuentes') || {}, { defval: '' });
       const prodOld = XLSX.utils.sheet_to_json(getSheet('Productos') || {}, { defval: '' });
       const perdOld = XLSX.utils.sheet_to_json(getSheet('Perdidas') || {}, { defval: '' });
+      log(`Maestro: encabezados=${encOld.length}, casos=${casosOld.length}, delincuentes=${delOld.length}, productos=${prodOld.length}, perdidas=${perdOld.length}`);
 
       // 4) Fusionar: Encabezado -> mantener históricos y agregar uno nuevo (no sobrescribir)
       const encAOA = [[ 'Empresa','Fecha','Responsable','Trimestre','Cédula' ]];
@@ -460,17 +475,44 @@
       }
       encAOA.push([ encabezado.Empresa||'', encabezado.Fecha||'', encabezado.Responsable||'', encabezado.Trimestre||'', encabezado.Cedula||'' ]);
 
-      // 5) Casos -> append
+      // 5) Casos -> consolidar por (Tipificación + Fecha + Producto)
       const casosAOA = [ ['Tipificación','Fecha','Cantidad','Cuantía (B/.)','Denuncias','Producto/Mercancía','Observaciones'] ];
+      const keyCasos = (t, f, p) => `${_normTxt(t)}|${(f||'').toString().trim()}|${_normTxt(p)}`;
+      const mapaCasos = new Map();
+      const addCaso = (tipi, fecha, cant, cuantia, denuncias, producto, obs) => {
+        const k = keyCasos(tipi, fecha, producto);
+        const prev = mapaCasos.get(k) || { tipificacion: tipi||'', fecha: fecha||'', cantidad: 0, cuantia: 0, denuncias: 0, producto: producto||'', observaciones: '' };
+        prev.cantidad = (prev.cantidad||0) + _toNumber(cant);
+        prev.cuantia = (prev.cuantia||0) + _toNumber(cuantia);
+        prev.denuncias = (prev.denuncias||0) + _toNumber(denuncias);
+        // conservar primer texto de observaciones y producto legible
+        if (!prev.observaciones && obs) prev.observaciones = obs;
+        if (!prev.producto && producto) prev.producto = producto;
+        if (!prev.tipificacion && tipi) prev.tipificacion = tipi;
+        if (!prev.fecha && fecha) prev.fecha = fecha;
+        mapaCasos.set(k, prev);
+      };
+      let consolOld = 0, consolNew = 0;
       for (const c of (casosOld || [])) {
-        casosAOA.push([
-          c['Tipificación']||c['Tipificacion']||'', c['Fecha']||'', c['Cantidad']||'', c['Cuantía (B/.)']||c['Cuantia (B/.)']||c['Cuantia']||'',
-          c['Denuncias']||'', c['Producto/Mercancía']||c['Producto']||'', c['Observaciones']||''
-        ]);
+        addCaso(
+          c['Tipificación']||c['Tipificacion']||'',
+          c['Fecha']||'',
+          c['Cantidad']||0,
+          c['Cuantía (B/.)']||c['Cuantia (B/.)']||c['Cuantia']||0,
+          c['Denuncias']||0,
+          c['Producto/Mercancía']||c['Producto']||'',
+          c['Observaciones']||''
+        );
+        consolOld++;
       }
       for (const c of (casos || [])) {
-        casosAOA.push([ c.tipificacion||'', c.fecha||'', c.cantidad||'', c.cuantia||'', c.denuncias||'', c.producto||'', c.observaciones||'' ]);
+        addCaso(c.tipificacion||'', c.fecha||'', c.cantidad||0, c.cuantia||0, c.denuncias||0, c.producto||'', c.observaciones||'');
+        consolNew++;
       }
+      for (const v of mapaCasos.values()) {
+        casosAOA.push([ v.tipificacion||'', v.fecha||'', v.cantidad||0, v.cuantia||0, v.denuncias||0, v.producto||'', v.observaciones||'' ]);
+      }
+      log(`Casos consolidados: origen=${consolOld} + nuevos=${consolNew} -> salida=${mapaCasos.size}`);
 
       // 6) Delincuentes -> append (priorizar historial si existe)
       const delFuenteNew = Array.isArray(delincuentesPersistentes) && delincuentesPersistentes.length ? delincuentesPersistentes : delincuentes;
@@ -501,6 +543,7 @@
       for (const p of (productosRobados || [])) addProd(p.nombre||p.producto||'', p.cantidad||0);
       const prodAOA = [ ['Producto/Mercancía','Cantidad Total'] ];
       for (const v of mapaProd.values()) prodAOA.push([ v.nombre||'', v.cantidad||0 ]);
+      log(`Productos consolidados: salida=${mapaProd.size}`);
 
       // 8) Perdidas -> sumar por mes
       const mapaMes = new Map();
@@ -531,26 +574,166 @@
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(casosAOA), 'Casos');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delAOA), 'Delincuentes');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(prodAOA), 'Productos');
-      // Añadir también hoja compacta de historial si existe en esta actualización
-      const delHistAOA2 = [ ['#','Nombre y Apellido','Cédula','Edad','Delito Cometido','Cuantía','N° Denuncia/Resolución'] ];
-      let _i = 1;
-      for (const d of (delFuenteNew || [])) {
-        const cuantia2 = (d.cuantia != null ? d.cuantia : d.monto != null ? d.monto : '');
-        delHistAOA2.push([ _i++, d.nombreCompleto||d.nombre||'', d.cedula||'', d.edad||'', d.delito||'', cuantia2||'', d.denuncia||'' ]);
-      }
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(delHistAOA2), 'DelincuentesHist');
+      // (Eliminado) No generar 'DelincuentesHist' en actualización
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(perdAOA), 'Perdidas');
 
       const nombre = (file.name || 'registro-actividad-criminal.xlsx').replace(/(.xlsx)?$/i,'_actualizado.xlsx');
       XLSX.writeFile(wb, nombre);
       noti('Excel maestro actualizado y descargado.');
+      log('Actualización completada y archivo descargado');
     } catch (e) {
       console.error('Error al actualizar Excel existente', e);
       alert('No se pudo actualizar el Excel existente: ' + (e?.message || e));
     }
   }
 
+  // Versión que además abre el modal de logs
+  window.actualizarExcelExistenteConLogs = async function() {
+    try {
+      clearLogs();
+      log('Preparando actualización con logs visibles...');
+      await actualizarExcelExistente();
+    } finally {
+      try {
+        if (typeof window.abrirModalLogs === 'function') {
+          window.abrirModalLogs(getLogs().join('\n'));
+        } else {
+          // Fallback: modal dinámico minimalista
+          let wrap = document.getElementById('modalLogs');
+          if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.id = 'modalLogs';
+            wrap.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:2000;';
+            wrap.innerHTML = '<div style="background:#fff;max-width:90vw;width:800px;max-height:80vh;border-radius:8px;display:flex;flex-direction:column;overflow:hidden;">\
+              <div style="padding:10px 14px;background:#0d6efd;color:#fff;display:flex;justify-content:space-between;align-items:center;">\
+                <strong>Logs de actualización</strong>\
+                <button id="cerrarLogsBtn" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;">&times;</button>\
+              </div>\
+              <pre id="logsContenido" style="margin:0;padding:12px;white-space:pre-wrap;overflow:auto;flex:1;background:#f8f9fa;"></pre>\
+            </div>';
+            document.body.appendChild(wrap);
+            wrap.querySelector('#cerrarLogsBtn').onclick = () => wrap.style.display='none';
+          }
+          const pre = document.getElementById('logsContenido');
+          if (pre) pre.textContent = getLogs().join('\n');
+          wrap.style.display = 'flex';
+        }
+      } catch {}
+    }
+  };
+
   window.actualizarExcelExistente = actualizarExcelExistente;
+
+  // --- Importar datos desde un Excel para poblar Top 20 e Historial ---
+  window.importarDatosDesdeExcelConLogs = async function() {
+    try {
+      clearLogs();
+      log('Iniciando importación de datos desde Excel');
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.xlsx,.xls';
+      const file = await new Promise(res => { input.onchange = () => res(input.files[0]); input.click(); });
+      if (!file) { log('Importación cancelada por el usuario'); return; }
+
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const getSheet = name => wb.Sheets[name] || wb.Sheets[wb.SheetNames.find(n => n.toLowerCase() === name.toLowerCase())];
+      log(`Hojas detectadas: ${wb.SheetNames.join(', ')}`);
+
+      // 1) Importar Productos
+      const shProd = getSheet('Productos');
+      let productos = [];
+      if (shProd) {
+        const rows = XLSX.utils.sheet_to_json(shProd, { defval: '' });
+        const mapa = new Map();
+        for (const r of rows) {
+          const nombre = (r['Producto/Mercancía'] || r['Producto'] || r['Nombre'] || '').toString().trim();
+          const cant = _toNumber(r['Cantidad Total'] ?? r['Cantidad'] ?? r['Total'] ?? 0);
+          if (!nombre) continue;
+          const k = _normTxt(nombre);
+          const prev = mapa.get(k) || { nombre: nombre, cantidad: 0, valor: 0 };
+          prev.cantidad += cant;
+          if (!prev.nombre) prev.nombre = nombre;
+          mapa.set(k, prev);
+        }
+        productos = Array.from(mapa.values());
+        log(`Productos importados: ${productos.length}`);
+      } else {
+        log('Hoja Productos no encontrada, se omitirá');
+      }
+
+      // 2) Importar Delincuentes (historial)
+      const shDel = getSheet('Delincuentes');
+      let delincuentesPersistentes = [];
+      if (shDel) {
+        const rows = XLSX.utils.sheet_to_json(shDel, { defval: '' });
+        const mapa = new Map(); // clave: cédula
+        for (const r of rows) {
+          const ced = (r['Cédula'] || r['Cedula'] || '').toString().trim();
+          if (!ced) continue;
+          const obj = {
+            nombreCompleto: r['Nombre y Apellido'] || r['Nombre'] || '',
+            nombre: r['Nombre y Apellido'] || r['Nombre'] || '',
+            cedula: ced,
+            edad: r['Edad'] || '',
+            direccion: r['Dirección'] || r['Direccion'] || '',
+            vehiculo: r['Vehículo'] || r['Vehiculo'] || '',
+            placa: r['Placa'] || '',
+            color: r['Color'] || '',
+            fechaCaptura: r['Fecha Captura'] || r['Fecha'] || '',
+            delito: r['Delito'] || '',
+            productos: r['Productos'] || r['Mercancias'] || '',
+            cuantia: r['Cuantía (B/.)'] || r['Cuantia'] || '',
+            denuncia: r['N° Denuncia'] || r['N Denuncia'] || r['Denuncia'] || ''
+          };
+          // fusionar si ya existe
+          const prev = mapa.get(ced) || {};
+          const claves = ['nombreCompleto','nombre','cedula','edad','direccion','vehiculo','placa','color','fechaCaptura','delito','productos','cuantia','denuncia'];
+          const res = { ...prev };
+          claves.forEach(k => {
+            const nuevo = obj[k];
+            const anterior = prev[k];
+            res[k] = (nuevo !== undefined && String(nuevo).trim() !== '') ? nuevo : (anterior !== undefined ? anterior : '');
+          });
+          mapa.set(ced, res);
+        }
+        delincuentesPersistentes = Array.from(mapa.values());
+        log(`Delincuentes importados (historial): ${delincuentesPersistentes.length}`);
+      } else {
+        log('Hoja Delincuentes no encontrada, se omitirá');
+      }
+
+      // 3) Persistir en localStorage y refrescar UI
+      try {
+        if (productos && Array.isArray(productos)) {
+          localStorage.setItem('productosRobados', JSON.stringify(productos));
+          window.productosRobados = productos;
+          if (typeof actualizarTablaProductos === 'function') actualizarTablaProductos();
+          document.dispatchEvent(new Event('productosActualizados'));
+        }
+        if (delincuentesPersistentes && Array.isArray(delincuentesPersistentes)) {
+          localStorage.setItem('delincuentesPersistentes', JSON.stringify(delincuentesPersistentes));
+          if (typeof renderizarTablaHistorialDelincuentes === 'function') renderizarTablaHistorialDelincuentes();
+          if (typeof window.actualizarTablaHistorialDesdeTabla === 'function') window.actualizarTablaHistorialDesdeTabla();
+        }
+      } catch (e) {
+        log('Error guardando en localStorage: ' + (e?.message || e));
+      }
+
+      noti('Importación finalizada. Datos cargados en Top 20 e Historial.');
+      log('Importación completada y UI actualizada.');
+    } catch (e) {
+      console.error('Error en importación', e);
+      alert('Error al importar: ' + (e?.message || e));
+    } finally {
+      try { if (typeof window.abrirModalLogs === 'function') window.abrirModalLogs(getLogs().join('\n')); } catch {}
+    }
+  };
+
+  // Utilidad para abrir modal de logs sin acción
+  window.abrirSoloLogs = function(){
+    try { if (typeof window.abrirModalLogs === 'function') window.abrirModalLogs(getLogs().join('\n')); } catch(e) { console.error(e); }
+  };
 
   // Inicialización: listeners para auto-snapshot
   function initPersistenciaListeners() {
