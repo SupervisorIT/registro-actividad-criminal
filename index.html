@@ -10,9 +10,12 @@
     <link rel="stylesheet" href="paginacion.css">
     <link rel="stylesheet" href="modal-delincuentes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Slim Select (Autocomplete para selects) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.css">
     <!-- Librería SheetJS para exportación/importación Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/session-check.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.js"></script>
     
     <script>
         window.jspdf = window.jspdf || {};
@@ -1470,7 +1473,26 @@ function cerrarModalPerfilUsuario() {
           </div>
           <div>
             <label>Vehículo</label>
-            <input id="nuevoVehiculo" type="text" class="form-control">
+            <select id="nuevoVehiculo" class="form-control">
+              <option value="">Seleccione...</option>
+              <option value="Sin vehículo">Sin vehículo</option>
+              <option value="Toyota Corolla">Toyota Corolla</option>
+              <option value="Toyota Hilux">Toyota Hilux</option>
+              <option value="Hyundai Accent">Hyundai Accent</option>
+              <option value="Kia Rio">Kia Rio</option>
+              <option value="Nissan Versa">Nissan Versa</option>
+              <option value="Nissan Frontier">Nissan Frontier</option>
+              <option value="Honda Civic">Honda Civic</option>
+              <option value="Honda CR-V">Honda CR-V</option>
+              <option value="Ford Ranger">Ford Ranger</option>
+              <option value="Chevrolet Spark">Chevrolet Spark</option>
+              <option value="Suzuki Swift">Suzuki Swift</option>
+              <option value="Yamaha FZ (moto)">Yamaha FZ (moto)</option>
+              <option value="Bajaj Pulsar (moto)">Bajaj Pulsar (moto)</option>
+              <option value="Honda Wave (moto)">Honda Wave (moto)</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <input id="nuevoVehiculoOtro" type="text" class="form-control" placeholder="Especifique vehículo" style="display:none; margin-top:6px;">
           </div>
           <div>
             <label>Placa</label>
@@ -1486,7 +1508,20 @@ function cerrarModalPerfilUsuario() {
           </div>
           <div>
             <label>Delito cometido</label>
-            <input id="nuevoDelito" type="text" class="form-control">
+            <select id="nuevoDelito" class="form-control">
+              <option value="">Seleccione...</option>
+              <option value="Hurto">Hurto</option>
+              <option value="Robo">Robo</option>
+              <option value="Fraude">Fraude</option>
+              <option value="Estafa">Estafa</option>
+              <option value="Daños a la propiedad">Daños a la propiedad</option>
+              <option value="Vandalismo">Vandalismo</option>
+              <option value="Allanamiento">Allanamiento</option>
+              <option value="Amenazas">Amenazas</option>
+              <option value="Lesiones personales">Lesiones personales</option>
+              <option value="Otros">Otros</option>
+            </select>
+            <input id="nuevoDelitoOtro" type="text" class="form-control" placeholder="Especifique delito" style="display:none; margin-top:6px;">
           </div>
           <div>
             <label>Productos</label>
@@ -1521,6 +1556,23 @@ function cerrarModalPerfilUsuario() {
       }
       if (typeof renderizarTablaHistorialDelincuentes === 'function') {
         renderizarTablaHistorialDelincuentes();
+      }
+      // Inicializar Slim Select para selects del modal nuevo delincuente (si existe la librería)
+      if (window.SlimSelect) {
+        try {
+          if (!window.slimVehiculo && document.getElementById('nuevoVehiculo')) {
+            window.slimVehiculo = new SlimSelect({
+              select: '#nuevoVehiculo',
+              settings: { allowDeselect: true }
+            });
+          }
+          if (!window.slimDelito && document.getElementById('nuevoDelito')) {
+            window.slimDelito = new SlimSelect({
+              select: '#nuevoDelito',
+              settings: { allowDeselect: true }
+            });
+          }
+        } catch(e) { console.warn('SlimSelect init:', e); }
       }
     } catch (e) { console.warn(e); }
   });

@@ -62,19 +62,36 @@ function abrirModalNuevoDelincuente() {
         modal.removeAttribute('aria-hidden');
         modal.classList.add('show');
         modal.style.display = 'block';
-        // Limpiar el formulario
+        // Limpiar el formulario (compatibilidad con dos posibles IDs)
         var form = document.getElementById('formDelincuente');
         if (form) form.reset();
+        var formNuevo = document.getElementById('formNuevoDelincuente');
+        if (formNuevo) formNuevo.reset();
         // Quitar clases de validación
         var camposInvalidos = modal.querySelectorAll('.is-invalid');
         camposInvalidos.forEach(campo => campo.classList.remove('is-invalid'));
         // Establecer la fecha actual
         var fechaInput = document.getElementById('fechaDelincuente');
-        if (fechaInput) {
+        var fechaNuevoInput = document.getElementById('nuevoFecha');
+        if (fechaInput || fechaNuevoInput) {
             var hoy = new Date();
             var fechaFormateada = hoy.toISOString().split('T')[0];
-            fechaInput.value = fechaFormateada;
+            if (fechaInput) fechaInput.value = fechaFormateada;
+            if (fechaNuevoInput) fechaNuevoInput.value = fechaFormateada;
         }
+        // Sincronizar UI de Slim Select con el reset del formulario
+        try {
+            if (window.slimVehiculo && typeof window.slimVehiculo.setSelected === 'function') {
+                window.slimVehiculo.setSelected('');
+            }
+        } catch(e) { /* noop */ }
+        try {
+            if (window.slimDelito && typeof window.slimDelito.setSelected === 'function') {
+                window.slimDelito.setSelected('');
+            }
+        } catch(e) { /* noop */ }
+        // Inicializar campos "Otro" del modal nuevo y listeners
+        try { inicializarCamposOtroNuevoModal(); } catch(e) { /* noop */ }
         // Enfocar el primer campo
         var primerCampo = modal.querySelector('input, select, textarea');
         if (primerCampo) primerCampo.focus();
@@ -105,17 +122,32 @@ function guardarNuevoDelincuente(actualizando = false) {
     }
 
     // Recoger los datos del formulario
+    // Resolver valores para 'Otro/Otros'
+    var vehiculoSelect = document.getElementById('nuevoVehiculo');
+    var vehiculoOtro = document.getElementById('nuevoVehiculoOtro');
+    var vehiculoVal = '';
+    if (vehiculoSelect) {
+        vehiculoVal = vehiculoSelect.value === 'Otro' && vehiculoOtro ? (vehiculoOtro.value || '').trim() : (vehiculoSelect.value || '').trim();
+    }
+    var delitoSelect = document.getElementById('nuevoDelito');
+    var delitoOtro = document.getElementById('nuevoDelitoOtro');
+    var delitoVal = '';
+    if (delitoSelect) {
+        var esOtro = (delitoSelect.value === 'Otro' || delitoSelect.value === 'Otros');
+        delitoVal = esOtro && delitoOtro ? (delitoOtro.value || '').trim() : (delitoSelect.value || '').trim();
+    }
+
     var delincuente = {
         // En index.html el input se llama 'nuevoNombreCompletoModal'. Mantenemos compatibilidad
         nombreCompleto: (document.getElementById('nuevoNombreCompletoModal') || document.getElementById('nuevoNombreCompleto') || { value: '' }).value.trim(),
         cedula: document.getElementById('nuevoCedula').value.trim(),
         edad: document.getElementById('nuevoEdad').value.trim(),
         direccion: document.getElementById('nuevoDireccion').value.trim(),
-        vehiculo: document.getElementById('nuevoVehiculo').value.trim(),
+        vehiculo: vehiculoVal,
         placa: document.getElementById('nuevoPlaca').value.trim(),
         color: document.getElementById('nuevoColor').value.trim(),
         fechaCaptura: document.getElementById('nuevoFecha').value.trim(),
-        delito: document.getElementById('nuevoDelito').value.trim(),
+        delito: delitoVal,
         productos: document.getElementById('nuevoProductos').value.trim(),
         cuantia: document.getElementById('nuevoCuantia').value.trim(),
         denuncia: document.getElementById('nuevoDenuncia').value.trim()
@@ -474,6 +506,61 @@ function mostrarNotificacion(mensaje, tipo = 'info') {
     }, 5000);
 }
 
+// Inicialización de campos "Otro" para el modal NUEVO delincuente
+function inicializarCamposOtroNuevoModal() {
+    var selVehiculo = document.getElementById('nuevoVehiculo');
+    var inpVehiculoOtro = document.getElementById('nuevoVehiculoOtro');
+    var selDelito = document.getElementById('nuevoDelito');
+    var inpDelitoOtro = document.getElementById('nuevoDelitoOtro');
+
+    if (selVehiculo && inpVehiculoOtro) {
+        // Estado inicial
+        if (selVehiculo.value === 'Otro') {
+            inpVehiculoOtro.style.display = 'block';
+            inpVehiculoOtro.required = true;
+        } else {
+            inpVehiculoOtro.style.display = 'none';
+            inpVehiculoOtro.required = false;
+            inpVehiculoOtro.value = '';
+        }
+        selVehiculo.addEventListener('change', function() {
+            if (this.value === 'Otro') {
+                inpVehiculoOtro.style.display = 'block';
+                inpVehiculoOtro.required = true;
+                setTimeout(() => inpVehiculoOtro.focus(), 0);
+            } else {
+                inpVehiculoOtro.style.display = 'none';
+                inpVehiculoOtro.required = false;
+                inpVehiculoOtro.value = '';
+            }
+        });
+    }
+
+    if (selDelito && inpDelitoOtro) {
+        var esOtro = (selDelito.value === 'Otro' || selDelito.value === 'Otros');
+        if (esOtro) {
+            inpDelitoOtro.style.display = 'block';
+            inpDelitoOtro.required = true;
+        } else {
+            inpDelitoOtro.style.display = 'none';
+            inpDelitoOtro.required = false;
+            inpDelitoOtro.value = '';
+        }
+        selDelito.addEventListener('change', function() {
+            var otro = (this.value === 'Otro' || this.value === 'Otros');
+            if (otro) {
+                inpDelitoOtro.style.display = 'block';
+                inpDelitoOtro.required = true;
+                setTimeout(() => inpDelitoOtro.focus(), 0);
+            } else {
+                inpDelitoOtro.style.display = 'none';
+                inpDelitoOtro.required = false;
+                inpDelitoOtro.value = '';
+            }
+        });
+    }
+}
+
 // Función para abrir el modal de delincuente para un nuevo registro
 function abrirModalDelincuente() {
     const modal = document.getElementById('delincuenteModal');
@@ -731,7 +818,9 @@ if (!window.delincuentes) {
 }
 document.addEventListener('DOMContentLoaded', function() {
     inicializarDelincuentes();
-    
+    // Inicializar listeners de 'Otro' para el modal nuevo si existe
+    try { inicializarCamposOtroNuevoModal(); } catch(e) { /* noop */ }
+
     // Agregar evento para el delito "Otro"
     const delitoSelect = document.getElementById('delitoDelincuente');
     if (delitoSelect) {
