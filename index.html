@@ -126,29 +126,7 @@
       </div>
     </div>
 
-    <!-- Modal: Cambiar contraseña (administrador actual) -->
-    <div id="contrasenaModal" class="modal-admin" style="display:none;position:fixed;z-index:2100;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
-      <div class="modal-content" style="background:#fff; margin:8% auto; width:420px; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.25);">
-        <div style="padding:12px 16px; background:#1565C0; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-          <h4 style="margin:0;">Cambiar contraseña</h4>
-          <span class="close" onclick="cerrarModal('contrasenaModal')" style="cursor:pointer; font-size:22px;">&times;</span>
-        </div>
-        <div style="padding:14px 16px; display:grid; grid-template-columns:150px 1fr; gap:10px; align-items:center;">
-          <label>Contraseña actual</label>
-          <input id="contrasenaActual" class="form-control" type="password">
-          <label>Nueva contraseña</label>
-          <input id="nuevaContrasenaUsuario" class="form-control" type="password">
-          <label>Confirmar</label>
-          <input id="confirmarContrasena" class="form-control" type="password">
-          <div></div>
-          <div id="mensajeContrasena" style="color:#d32f2f;font-size:13px;"></div>
-        </div>
-        <div style="padding:12px 16px; text-align:right; border-top:1px solid #e6eaf0; display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btn btn-primary" style="background:#1565C0;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="cambiarContrasena()">Guardar</button>
-          <button class="btn btn-secondary" style="background:#6c757d;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="cerrarModal('contrasenaModal')">Cerrar</button>
-        </div>
-      </div>
-    </div>
+    <!-- Modal de "Cambiar contraseña" eliminado: ahora el cambio se gestiona desde el Perfil de Usuario -->
 
     <!-- Modal: Completar Perfil (bloquea uso hasta completar) -->
     <div id="modalCompletarPerfil" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">

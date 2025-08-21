@@ -139,13 +139,6 @@ async function cargarUsuariosAdminPanel() {
         if (inactivo) { item.style.opacity = '0.7'; }
 
         const acciones = document.createElement('div');
-        const btnPwd = document.createElement('button');
-        btnPwd.className = 'btn btn-sm';
-        btnPwd.style.cssText = 'background:#f4a11a;color:#fff;border:none;padding:6px 10px;border-radius:6px;';
-        btnPwd.textContent = 'Cambiar contraseña';
-        btnPwd.onclick = () => cambiarContrasenaDe(String(u.username||''));
-        acciones.appendChild(btnPwd);
-
         // Switch rápido activar/desactivar
         const wrapSwitch = document.createElement('label');
         wrapSwitch.style.cssText = 'margin-left:10px; display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#334155;';
@@ -223,16 +216,7 @@ async function cambiarEstadoUsuario(username, activo) {
     } catch(_){ /* ignore */ }
 }
 
-function mostrarCambioContrasena() {
-    const modal = document.getElementById('contrasenaModal');
-    modal.style.display = 'block';
-    
-    // Limpiar campos
-    document.getElementById('contrasenaActual').value = '';
-    document.getElementById('nuevaContrasenaUsuario').value = '';
-    document.getElementById('confirmarContrasena').value = '';
-    document.getElementById('mensajeContrasena').textContent = '';
-}
+// Función mostrarCambioContrasena eliminada: cambio de contraseña se realiza desde el Perfil de Usuario
 
 function mostrarHistorialReportes() {
     const modal = document.getElementById('reportesModal');
@@ -479,106 +463,7 @@ function eliminarUsuario(username) {
 }
 
 // Funciones para cambio de contraseña
-function cambiarContrasena() {
-    const contrasenaActual = document.getElementById('contrasenaActual').value;
-    const nuevaContrasena = document.getElementById('nuevaContrasenaUsuario').value;
-    const confirmarContrasena = document.getElementById('confirmarContrasena').value;
-    const mensajeContrasena = document.getElementById('mensajeContrasena');
-    
-    // Validar campos
-    if (!contrasenaActual || !nuevaContrasena || !confirmarContrasena) {
-        mensajeContrasena.textContent = 'Por favor complete todos los campos';
-        return;
-    }
-    
-    // Verificar que las contraseñas coincidan
-    if (nuevaContrasena !== confirmarContrasena) {
-        mensajeContrasena.textContent = 'Las contraseñas no coinciden';
-        return;
-    }
-    
-    // Obtener usuario activo
-    const usuarioActivo = JSON.parse(sessionStorage.getItem('usuarioActivo'));
-    
-    // Verificar contraseña actual
-    let usuarioEncontrado = null;
-    
-    // Verificar en usuarios predefinidos
-    const usuariosPredefinidos = [
-        { username: "admin", password: "admin123", nombre: "Administrador", rol: "admin" },
-        { username: "usuario", password: "usuario123", nombre: "Usuario Estándar", rol: "usuario" }
-    ];
-    
-    usuarioEncontrado = usuariosPredefinidos.find(u => u.username === usuarioActivo.username && u.password === contrasenaActual);
-    
-    // Si no se encontró en predefinidos, buscar en localStorage
-    if (!usuarioEncontrado) {
-        const usuariosGuardados = localStorage.getItem('usuariosRegistrados');
-        if (usuariosGuardados) {
-            const usuariosRegistrados = JSON.parse(usuariosGuardados);
-            usuarioEncontrado = usuariosRegistrados.find(u => u.username === usuarioActivo.username && u.password === contrasenaActual);
-        }
-    }
-    
-    if (!usuarioEncontrado) {
-        mensajeContrasena.textContent = 'La contraseña actual es incorrecta';
-        return;
-    }
-    
-    // Cambiar contraseña
-    if (usuarioActivo.username === 'admin' || usuarioActivo.username === 'usuario') {
-        // Para usuarios predefinidos, guardar en localStorage
-        let usuariosPredefinidosModificados = localStorage.getItem('usuariosPredefinidosModificados');
-        let usuariosModificados = usuariosPredefinidosModificados ? JSON.parse(usuariosPredefinidosModificados) : [];
-        
-        // Verificar si ya existe una modificación para este usuario
-        const index = usuariosModificados.findIndex(u => u.username === usuarioActivo.username);
-        
-        if (index !== -1) {
-            usuariosModificados[index].password = nuevaContrasena;
-        } else {
-            usuariosModificados.push({
-                username: usuarioActivo.username,
-                password: nuevaContrasena
-            });
-        }
-        
-        localStorage.setItem('usuariosPredefinidosModificados', JSON.stringify(usuariosModificados));
-    } else {
-        // Para usuarios normales, actualizar en localStorage
-        const usuariosGuardados = localStorage.getItem('usuariosRegistrados');
-        if (usuariosGuardados) {
-            let usuariosRegistrados = JSON.parse(usuariosGuardados);
-            
-            const index = usuariosRegistrados.findIndex(u => u.username === usuarioActivo.username);
-            
-            if (index !== -1) {
-                usuariosRegistrados[index].password = nuevaContrasena;
-                localStorage.setItem('usuariosRegistrados', JSON.stringify(usuariosRegistrados));
-            }
-        }
-    }
-    
-    // Actualizar sesión
-    usuarioActivo.timestamp = new Date().getTime();
-    sessionStorage.setItem('usuarioActivo', JSON.stringify(usuarioActivo));
-    
-    // Mostrar mensaje de éxito
-    mensajeContrasena.style.color = 'green';
-    mensajeContrasena.textContent = 'Contraseña cambiada correctamente';
-    
-    // Limpiar campos
-    document.getElementById('contrasenaActual').value = '';
-    document.getElementById('nuevaContrasenaUsuario').value = '';
-    document.getElementById('confirmarContrasena').value = '';
-    
-    // Cerrar modal después de 2 segundos
-    setTimeout(() => {
-        cerrarModal('contrasenaModal');
-        mensajeContrasena.textContent = '';
-        mensajeContrasena.style.color = 'red';
-    }, 2000);
-}
+// Función cambiarContrasena eliminada: cambio de contraseña se realiza desde el Perfil de Usuario
 
 // Funciones para historial de reportes
 function cargarHistorialReportes() {
