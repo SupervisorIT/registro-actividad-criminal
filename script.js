@@ -741,7 +741,7 @@ function actualizarTablaDelincuentes() {
             <td>${index + 1}</td>
             <td><input type="text" class="form-control" value="${delincuente.nombreCompleto || ''}" onchange="actualizarDelincuente(${index}, 'nombreCompleto', this.value)"></td>
             <td><input type="text" class="form-control" value="${delincuente.cedula || ''}" onchange="actualizarDelincuente(${index}, 'cedula', this.value)"></td>
-            <td><input type="number" class="form-control" value="${delincuente.edad || ''}" onchange="actualizarDelincuente(${index}, 'edad', this.value)"></td>
+            <td><input type="number" class="form-control" min="12" max="99" value="${delincuente.edad || ''}" onchange="actualizarDelincuente(${index}, 'edad', this.value)"></td>
             <td><input type="text" class="form-control" value="${delincuente.direccion || ''}" onchange="actualizarDelincuente(${index}, 'direccion', this.value)"></td>
             <td><input type="text" class="form-control" value="${delincuente.vehiculo || ''}" onchange="actualizarDelincuente(${index}, 'vehiculo', this.value)"></td>
             <td><input type="text" class="form-control" value="${delincuente.placa || ''}" onchange="actualizarDelincuente(${index}, 'placa', this.value)"></td>
@@ -764,7 +764,7 @@ function actualizarTablaDelincuentes() {
         <td></td>
         <td><input type="text" class="form-control" id="nuevoNombreCompleto" placeholder="Nombre y Apellido"></td>
         <td><input type="text" class="form-control" id="nuevoCedula" placeholder="Cédula"></td>
-        <td><input type="number" class="form-control" id="nuevoEdad" placeholder="Edad"></td>
+        <td><input type="number" class="form-control" id="nuevoEdad" placeholder="Edad" min="12" max="99"></td>
         <td><input type="text" class="form-control" id="nuevoDireccion" placeholder="Dirección"></td>
         <td><input type="text" class="form-control" id="nuevoVehiculo" placeholder="Vehículo"></td>
         <td><input type="text" class="form-control" id="nuevoPlaca" placeholder="Placa"></td>
