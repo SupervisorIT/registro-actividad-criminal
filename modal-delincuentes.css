@@ -205,3 +205,119 @@
         max-width: 100%;
     }
 }
+
+/* =============================
+   Mejora visual: Modal Nuevo Delincuente
+   (Sin modificar funcionamiento)
+   ============================= */
+
+#nuevoDelincuenteModal {
+  background: rgba(0, 0, 0, 0.50);
+}
+
+#nuevoDelincuenteModal .modal-content {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+  overflow: hidden;
+}
+
+#nuevoDelincuenteModal .modal-header {
+  background: #1565C0; /* mantiene la identidad visual */
+  color: #fff;
+  padding: 14px 18px;
+}
+
+#nuevoDelincuenteModal .modal-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+#nuevoDelincuenteModal .close {
+  color: #fff;
+  opacity: .9;
+  transition: transform .15s ease, opacity .15s ease, color .15s ease;
+}
+
+#nuevoDelincuenteModal .close:hover {
+  opacity: 1;
+  color: #ffeb3b;
+  transform: scale(1.05);
+}
+
+#nuevoDelincuenteModal .modal-body {
+  padding: 18px;
+  background: #f9fafb;
+}
+
+/* Campos del formulario más cómodos y legibles */
+#nuevoDelincuenteModal label {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+#nuevoDelincuenteModal .form-control {
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+
+#nuevoDelincuenteModal .form-control:hover {
+  border-color: #94a3b8;
+}
+
+#nuevoDelincuenteModal .form-control:focus {
+  border-color: #1565C0;
+  box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.15);
+  outline: none;
+}
+
+#nuevoDelincuenteModal .modal-footer {
+  padding: 12px 16px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Botones primarios/secundarios más modernos (sin romper clases existentes) */
+#nuevoDelincuenteModal .btn {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+#nuevoDelincuenteModal .btn-primary {
+  background: #1565C0;
+  border-color: #1565C0;
+}
+
+#nuevoDelincuenteModal .btn-primary:hover {
+  background: #0b59b5;
+  border-color: #0b59b5;
+}
+
+#nuevoDelincuenteModal .btn-secondary {
+  background: #6b7280;
+  border-color: #6b7280;
+}
+
+#nuevoDelincuenteModal .btn-secondary:hover {
+  background: #575e6a;
+  border-color: #575e6a;
+}
+
+/* Ajuste del grid interno para mejor respiración */
+#nuevoDelincuenteModal .modal-body form > div {
+  gap: 14px;
+}
+
+/* Mobile: una sola columna para fácil captura */
+@media (max-width: 720px) {
+  #nuevoDelincuenteModal .modal-body form > div {
+    grid-template-columns: 1fr !important;
+  }
+}
