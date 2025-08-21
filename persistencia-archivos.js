@@ -107,7 +107,8 @@
       .filter(tr => !tr.classList.contains('total-row') && tr.id !== 'placeholder-casos');
     for (const tr of rows) {
       const tds = tr.querySelectorAll('td');
-      if (tds.length < 8) continue;
+      // Estructura esperada: 0 Tipificación,1 Fecha,2 Cantidad,3 Cuantía,4 Denuncias,5 Producto,6 Tipo,7 Observaciones,8 Acción
+      if (tds.length < 9) continue;
       const tipificacion = tr.querySelector('.tipificacion-input')?.value || tds[0].innerText.trim();
       const fecha = tr.querySelector('.fecha-input')?.value
                   || tr.querySelector("input[name='fecha[]']")?.value
@@ -129,12 +130,16 @@
                       || tr.querySelector("input[name='producto[]']")?.value
                       || tds[5].querySelector('input')?.value
                       || tds[5].innerText.trim();
-      const observaciones = tr.querySelector("input[name='observaciones[]']")?.value
+      const tipoProducto = tr.querySelector('.tipo-producto-input')?.value
+                          || tr.querySelector("input[name='tipoProducto[]']")?.value
                           || tds[6].querySelector('input')?.value
                           || tds[6].innerText.trim();
+      const observaciones = tr.querySelector("input[name='observaciones[]']")?.value
+                          || tds[7].querySelector('input')?.value
+                          || tds[7].innerText.trim();
       // evitar fila vacía completamente
-      if ([tipificacion, fecha, cantidad, cuantia, denuncias, producto, observaciones].some(v => (v ?? '').toString().trim() !== '')) {
-        casos.push({ tipificacion, fecha, cantidad, cuantia, denuncias, producto, observaciones });
+      if ([tipificacion, fecha, cantidad, cuantia, denuncias, producto, tipoProducto, observaciones].some(v => (v ?? '').toString().trim() !== '')) {
+        casos.push({ tipificacion, fecha, cantidad, cuantia, denuncias, producto, tipoProducto, observaciones });
       }
     }
     return casos;
@@ -228,10 +233,10 @@
     XLSX.utils.book_append_sheet(wb, wsEnc, 'Encabezado');
 
     // Casos (con títulos capitalizados)
-    const casosAOA = [ ['Tipificación','Fecha','Cantidad','Cuantía (B/.)','Denuncias','Producto/Mercancía','Observaciones'] ];
+    const casosAOA = [ ['Tipificación','Fecha','Cantidad','Cuantía (B/.)','Denuncias','Producto/Mercancía','Tipo de producto','Observaciones'] ];
     for (const c of casos) {
       casosAOA.push([
-        c.tipificacion ?? '', c.fecha ?? '', c.cantidad ?? '', c.cuantia ?? '', c.denuncias ?? '', c.producto ?? '', c.observaciones ?? ''
+        c.tipificacion ?? '', c.fecha ?? '', c.cantidad ?? '', c.cuantia ?? '', c.denuncias ?? '', c.producto ?? '', c.tipoProducto ?? '', c.observaciones ?? ''
       ]);
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(casosAOA), 'Casos');
@@ -270,9 +275,9 @@
     // (Eliminado) Hoja compacta 'DelincuentesHist' a petición: solo mantener 'Delincuentes'
 
     // Productos robados
-    const prodAOA = [ ['Producto/Mercancía','Cantidad Total'] ];
+    const prodAOA = [ ['Producto/Mercancía','Tipo de producto','Cantidad Total'] ];
     for (const p of (productosRobados || [])) {
-      prodAOA.push([ p.nombre || p.producto || '', p.cantidad || 0 ]);
+      prodAOA.push([ p.nombre || p.producto || '', p.tipo || '', p.cantidad || 0 ]);
     }
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(prodAOA), 'Productos');
 
@@ -378,6 +383,7 @@
         <td><input type="number" min="0" step="0.01" name="cuantia[]" class="form-control cuantia-input" value="${(c.cuantia||'')}"></td>
         <td><input type="number" min="0" name="denuncias[]" class="form-control denuncias-input" value="${(c.denuncias||'')}"></td>
         <td><input type="text" name="producto[]" class="form-control producto-input" value="${(c.producto||'')}"></td>
+        <td><input type="text" name="tipoProducto[]" class="form-control tipo-producto-input" value="${(c.tipoProducto||c['Tipo de producto']||'')}"></td>
         <td><input type="text" name="observaciones[]" class="form-control" value="${(c.observaciones||'')}"></td>
         <td style="text-align:center;"><div style="display:flex;justify-content:center;gap:5px;"><button type="button" class="btn btn-success btn-sm" onclick="agregarFilaProductoSoloVisual()">+</button><button type="button" class="btn btn-danger btn-sm" onclick="eliminarFila(this)">X</button></div></td>`;
       tbody.insertBefore(tr, insertBeforeNode);

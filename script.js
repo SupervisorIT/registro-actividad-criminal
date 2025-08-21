@@ -1485,7 +1485,7 @@ async function generarPDFPrincipal() {
 
 function obtenerDatosCasosParaPDF() {
     const datos = [];
-    datos.push(['Tipificación', 'Fecha', 'Cantidad', 'Cuantía (B/.)', 'Denuncias', 'Producto/Mercancía', 'Observaciones']);
+    datos.push(['Tipificación', 'Fecha', 'Cantidad', 'Cuantía (B/.)', 'Denuncias', 'Producto/Mercancía', 'Tipo de producto', 'Observaciones']);
     const filas = document.querySelectorAll('#tablaCasosDelictivos tbody tr:not(.total-row):not(#placeholder-casos)');
     filas.forEach(fila => {
         // Tipificación puede estar en input oculto .tipificacion-input o como texto en .tipificacion-texto
@@ -1499,24 +1499,27 @@ function obtenerDatosCasosParaPDF() {
         const cuantia = fila.querySelector('.cuantia-input')?.value.replace('B/. ', '') || ''; // Limpiar posible formato
         const denuncias = fila.querySelector('.denuncias-input')?.value || '';
         const producto = fila.querySelector('.producto-input')?.value || '';
-        // Observaciones: en el HTML actual es input[type="text"]. Agregamos fallback por columna 7
+        const tipoProducto = fila.querySelector('.tipo-producto-input')?.value
+            || fila.querySelector("input[name='tipoProducto[]']")?.value
+            || '';
+        // Observaciones: en el HTML actual es input[type="text"]. Agregamos fallback por columna 8 (se añadió 'Tipo de producto')
         let observacionesInput = fila.querySelector('input[name="observaciones[]"], input.observaciones, input[type="text"][placeholder="Observaciones"], textarea');
         if (!observacionesInput) {
-            // Fallback: 7ma columna de la fila
-            const celdaObs = fila.querySelector('td:nth-child(7) input, td:nth-child(7) textarea');
+            // Fallback: 8va columna de la fila
+            const celdaObs = fila.querySelector('td:nth-child(8) input, td:nth-child(8) textarea');
             if (celdaObs) observacionesInput = celdaObs;
         }
         const observaciones = observacionesInput?.value || '';
         // Añadir fila solo si tiene algún dato relevante (ej. tipificación o fecha)
         if (tipificacion || fecha) {
-            datos.push([ tipificacion, formatearFecha(fecha), cantidad, cuantia, denuncias, producto, observaciones ]);
+            datos.push([ tipificacion, formatearFecha(fecha), cantidad, cuantia, denuncias, producto, tipoProducto, observaciones ]);
         }
     });
     // Fila Total
     datos.push([
-        'TOTAL', '', document.getElementById('totalCasos')?.textContent || '0',
+        'TOTAL', '', document.getElementById('totalCantidad')?.textContent || '0',
         document.getElementById('totalCuantia')?.textContent.replace('B/. ', '') || '0.00',
-        document.getElementById('totalDenuncias')?.textContent || '0', '', ''
+        document.getElementById('totalDenuncias')?.textContent || '0', '', '', ''
     ]);
     return datos;
 }
@@ -1684,6 +1687,9 @@ function crearFilaCasoHTML() {
         </td>
         <td style="width: 150px;">
             <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
+        </td>
+        <td style=\"width: 140px;\">
+            <input type=\"text\" name=\"tipoProducto[]\" class=\"form-control tipo-producto-input\" style=\"width: 100%;\" placeholder=\"Tipo (p. ej., Electrónicos)\">
         </td>
         <td style="width: 200px;">
             <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required onchange="onObservacionCambio(this)">

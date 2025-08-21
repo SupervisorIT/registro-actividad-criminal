@@ -41,7 +41,7 @@ function guardarProductosRobados() {
 }
 
 // Función para agregar o actualizar un producto en la lista
-window.agregarProductoRobado = function(nombre, cantidad, valor) {
+window.agregarProductoRobado = function(nombre, cantidad, valor, tipo) {
     // Siempre trabajar sobre window.productosRobados
     productosRobados = window.productosRobados;
 
@@ -64,7 +64,7 @@ window.agregarProductoRobado = function(nombre, cantidad, valor) {
     // Normalizar el nombre del producto (quitar espacios extras)
     const nombreNormalizado = nombre.trim();
     
-    console.log(`Agregando producto: "${nombreNormalizado}", cantidad: ${cantidad}, valor: ${valor}`);
+    console.log(`Agregando producto: "${nombreNormalizado}", cantidad: ${cantidad}, valor: ${valor}, tipo: ${tipo || ''}`);
     
     // Buscar si el producto ya existe
     let productoExistente = null;
@@ -91,13 +91,18 @@ window.agregarProductoRobado = function(nombre, cantidad, valor) {
     if (productoExistente) {
         // Actualizar producto existente
         productoExistente.cantidad += cantidad;
+        // Si llega un tipo y el existente no lo tiene, o está vacío, actualizarlo
+        if (tipo && (!productoExistente.tipo || productoExistente.tipo.trim() === '')) {
+            productoExistente.tipo = tipo;
+        }
         console.log(`Producto existente actualizado: ${productoExistente.nombre}, nueva cantidad total: ${productoExistente.cantidad}`);
     } else {
         // Agregar nuevo producto
         productosRobados.push({
             nombre: nombreNormalizado,
             cantidad: cantidad,
-            valor: valor
+            valor: valor,
+            tipo: tipo || ''
         });
         console.log(`Nuevo producto agregado: ${nombreNormalizado}, cantidad: ${cantidad}`);
     }
@@ -317,9 +322,11 @@ function actualizarTablaProductos() {
     // Limpiar todas las filas primero
     for (let i = 1; i <= 20; i++) {
         const nombreProducto = document.getElementById(`nombre-${i}`);
+        const tipoProducto = document.getElementById(`tipo-${i}`);
         const cantidadProducto = document.getElementById(`cantidad-${i}`);
         
         if (nombreProducto) nombreProducto.textContent = '';
+        if (tipoProducto) tipoProducto.textContent = '';
         if (cantidadProducto) cantidadProducto.textContent = '';
     }
     
@@ -329,9 +336,11 @@ function actualizarTablaProductos() {
         const filaIndex = i + 1; // Las filas empiezan en 1
         
         const nombreProducto = document.getElementById(`nombre-${filaIndex}`);
+        const tipoProducto = document.getElementById(`tipo-${filaIndex}`);
         const cantidadProducto = document.getElementById(`cantidad-${filaIndex}`);
         
         if (nombreProducto) nombreProducto.textContent = producto.nombre || '';
+        if (tipoProducto) tipoProducto.textContent = producto.tipo || '';
         if (cantidadProducto) cantidadProducto.textContent = producto.cantidad || '';
     }
     
@@ -364,15 +373,16 @@ function procesarNuevoCasoDelictivo(fila) {
         const celdas = fila.querySelectorAll('td');
         // Verificar si hay suficientes celdas, pero no mostrar error si no las hay
         // ya que podría ser una fila vacía o de otro tipo
-        if (celdas.length < 6) {
+        if (celdas.length < 7) {
             return false; // Simplemente salimos sin procesar esta fila
         }
         
         // Basado en la estructura de la tabla:
-        // 0: Tipificación, 1: Fecha, 2: Cantidad, 3: Cuantía, 4: Denuncias, 5: Producto/Mercancía
+        // 0: Tipificación, 1: Fecha, 2: Cantidad, 3: Cuantía, 4: Denuncias, 5: Producto/Mercancía, 6: Tipo
         const cantidadInput = celdas[2].querySelector('input');
         const cuantiaInput = celdas[3].querySelector('input');
         const productoInput = celdas[5].querySelector('input');
+        const tipoInput = celdas[6].querySelector('input');
         
         if (!cantidadInput || !cuantiaInput || !productoInput) {
             console.error('Error: No se encontraron todos los inputs necesarios');
@@ -383,6 +393,7 @@ function procesarNuevoCasoDelictivo(fila) {
         const cantidadValor = cantidadInput.value.trim();
         const cuantiaValor = cuantiaInput.value.trim();
         const productoValor = productoInput.value.trim();
+        const tipoValor = tipoInput ? tipoInput.value.trim() : '';
         
         // Validar que tengamos datos válidos
         if (!productoValor) {
@@ -414,7 +425,7 @@ function procesarNuevoCasoDelictivo(fila) {
         fila.dataset.tiempoProcesado = Date.now().toString();
         
         // Agregar producto a la lista
-        window.agregarProductoRobado(productoValor, cantidad, cuantia);
+        window.agregarProductoRobado(productoValor, cantidad, cuantia, tipoValor);
         
         // Actualizar la tabla de productos
         actualizarTablaProductos();

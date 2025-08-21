@@ -271,6 +271,7 @@
                         <th style="width: 120px;">Cuantía (B/.)</th>
                         <th style="width: 100px;">Denuncias</th>
                         <th style="width: 150px;">Producto/Mercancía</th>
+                        <th style="width: 140px;">Tipo de producto</th>
                         <th style="width: 200px;">Observaciones</th>
                         <th style="width: 80px;">Acción</th>
                     </tr>
@@ -299,6 +300,9 @@
                         <td style="width: 150px;">
                             <input type="text" name="producto[]" class="form-control producto-input" style="width: 100%;" placeholder="Producto/Mercancía" required>
                         </td>
+                        <td style="width: 140px;">
+                            <input type="text" name="tipoProducto[]" class="form-control tipo-producto-input" style="width: 100%;" placeholder="Tipo (p. ej., Electrónicos)">
+                        </td>
                         <td style="width: 200px;">
                             <input type="text" name="observaciones[]" class="form-control" style="width: 100%;" placeholder="Observaciones" required onchange="onObservacionCambio(this)"> <!-- input simple, sin desplegable -->
                         </td>
@@ -309,13 +313,14 @@
                             </div>
                         </td>
                     </tr>
-                    <tr id="placeholder-casos" style="display:none;"> <td colspan="8" class="text-center-content placeholder-text">Agregue un caso delictivo usando el botón +</td> </tr>
+                    <tr id="placeholder-casos" style="display:none;"> <td colspan="9" class="text-center-content placeholder-text">Agregue un caso delictivo usando el botón +</td> </tr>
                     <tr class="total-row">
                         <td><strong>TOTAL</strong></td>
                         <td></td>
                         <td id="totalCantidad" class="text-center-content">0</td>
                         <td id="totalCuantia" class="text-center-content">B/. 0.00</td>
                         <td id="totalDenuncias" class="text-center-content">0</td>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -436,6 +441,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>Producto/Mercancía</th>
+                                <th>Tipo de producto</th>
                                 <th>Cantidad Total</th>
                             </tr>
                         </thead>
@@ -444,107 +450,127 @@
                             <tr id="producto-row-1">
                                 <td>1</td>
                                 <td id="nombre-1"></td>
+                                <td id="tipo-1"></td>
                                 <td id="cantidad-1"></td>
                             </tr>
                             <tr id="producto-row-2">
                                 <td>2</td>
                                 <td id="nombre-2"></td>
+                                <td id="tipo-2"></td>
                                 <td id="cantidad-2"></td>
                             </tr>
                             <tr id="producto-row-3">
                                 <td>3</td>
                                 <td id="nombre-3"></td>
+                                <td id="tipo-3"></td>
                                 <td id="cantidad-3"></td>
                             </tr>
                             <tr id="producto-row-4">
                                 <td>4</td>
                                 <td id="nombre-4"></td>
+                                <td id="tipo-4"></td>
                                 <td id="cantidad-4"></td>
                             </tr>
                             <tr id="producto-row-5">
                                 <td>5</td>
                                 <td id="nombre-5"></td>
+                                <td id="tipo-5"></td>
                                 <td id="cantidad-5"></td>
                             </tr>
                             <tr id="producto-row-6">
                                 <td>6</td>
                                 <td id="nombre-6"></td>
+                                <td id="tipo-6"></td>
                                 <td id="cantidad-6"></td>
                             </tr>
                             <tr id="producto-row-7">
                                 <td>7</td>
                                 <td id="nombre-7"></td>
+                                <td id="tipo-7"></td>
                                 <td id="cantidad-7"></td>
                             </tr>
                             <tr id="producto-row-8">
                                 <td>8</td>
                                 <td id="nombre-8"></td>
+                                <td id="tipo-8"></td>
                                 <td id="cantidad-8"></td>
                             </tr>
                             <tr id="producto-row-9">
                                 <td>9</td>
                                 <td id="nombre-9"></td>
+                                <td id="tipo-9"></td>
                                 <td id="cantidad-9"></td>
                             </tr>
                             <tr id="producto-row-10">
                                 <td>10</td>
                                 <td id="nombre-10"></td>
+                                <td id="tipo-10"></td>
                                 <td id="cantidad-10"></td>
                             </tr>
                             <tr id="producto-row-11">
                                 <td>11</td>
                                 <td id="nombre-11"></td>
+                                <td id="tipo-11"></td>
                                 <td id="cantidad-11"></td>
                             </tr>
                             <tr id="producto-row-12">
                                 <td>12</td>
                                 <td id="nombre-12"></td>
+                                <td id="tipo-12"></td>
                                 <td id="cantidad-12"></td>
                             </tr>
                             <tr id="producto-row-13">
                                 <td>13</td>
                                 <td id="nombre-13"></td>
+                                <td id="tipo-13"></td>
                                 <td id="cantidad-13"></td>
                             </tr>
                             <tr id="producto-row-14">
                                 <td>14</td>
                                 <td id="nombre-14"></td>
+                                <td id="tipo-14"></td>
                                 <td id="cantidad-14"></td>
                             </tr>
                             <tr id="producto-row-15">
                                 <td>15</td>
                                 <td id="nombre-15"></td>
+                                <td id="tipo-15"></td>
                                 <td id="cantidad-15"></td>
                             </tr>
                             <tr id="producto-row-16">
                                 <td>16</td>
                                 <td id="nombre-16"></td>
+                                <td id="tipo-16"></td>
                                 <td id="cantidad-16"></td>
                             </tr>
                             <tr id="producto-row-17">
                                 <td>17</td>
                                 <td id="nombre-17"></td>
+                                <td id="tipo-17"></td>
                                 <td id="cantidad-17"></td>
                             </tr>
                             <tr id="producto-row-18">
                                 <td>18</td>
                                 <td id="nombre-18"></td>
+                                <td id="tipo-18"></td>
                                 <td id="cantidad-18"></td>
                             </tr>
                             <tr id="producto-row-19">
                                 <td>19</td>
                                 <td id="nombre-19"></td>
+                                <td id="tipo-19"></td>
                                 <td id="cantidad-19"></td>
                             </tr>
                             <tr id="producto-row-20">
                                 <td>20</td>
                                 <td id="nombre-20"></td>
+                                <td id="tipo-20"></td>
                                 <td id="cantidad-20"></td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr class="total-row">
-                                <td colspan="2">TOTAL</td>
+                                <td colspan="3">TOTAL</td>
                                 <td id="totalCantidadProductos">0</td>
                             </tr>
                         </tfoot>
