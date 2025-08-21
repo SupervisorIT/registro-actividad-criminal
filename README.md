@@ -49,6 +49,8 @@ O simplemente abre el archivo `index.html` en tu navegador.
 1. **Iniciar sesión:**
    - Usuario: `admin`
    - Contraseña: `SupervisorIT2025`
+   - Usuario estándar (ejemplo): `usuario`
+   - Contraseña estándar: `usuario123`
 
 2. **Registrar un caso:**
    - Completa los datos de empresa, responsable, fecha y trimestre
@@ -68,9 +70,13 @@ O simplemente abre el archivo `index.html` en tu navegador.
    - También puedes usar el botón `Actualizar Excel existente` en la interfaz.
    - Se descargará `<nombre>_actualizado.xlsx` con los datos acumulados.
 
-5. **Panel de administración:**
-   - Accede al panel de administración para cambiar la contraseña
-   - Gestiona la configuración del sistema
+5. **Perfil de Usuario (cambio de contraseña):**
+   - Haz clic en tu nombre en la parte superior y abre **Perfil de Usuario**.
+   - Cambia tu contraseña desde el modal del perfil.
+
+6. **Panel de administración:**
+   - Accede si tu rol es **admin**.
+   - Gestiona usuarios y utiliza la **carga masiva**.
 
 ## Flujo de guardado y exportación
 
@@ -108,6 +114,35 @@ Cómo usar la fusión:
 4. Se descargará el archivo `<nombre>_actualizado.xlsx`. Puedes reemplazar tu maestro con este archivo.
 
 También puedes presionar el botón `Actualizar Excel existente` en la interfaz en cualquier momento.
+
+## Carga masiva de usuarios (Admin)
+
+- Disponible en el **Panel de Administración**.
+- Opciones:
+  - **Descargar plantilla CSV** con headers correctos.
+  - **Subir CSV** o pegar **CSV/JSON** en el textarea y presionar `Cargar usuarios`.
+- **Campos soportados**:
+  - Obligatorios: `username`, `password`
+  - Opcionales: `rol`, `nombre`, `nombreCompleto`, `correo`, `empresa`, `celular`, `activo`
+  - Por defecto: `rol = usuario`, `activo = true`
+- **CSV**:
+  - Encabezado esperado: `username,password,rol,nombreCompleto,correo,empresa,celular,activo`
+  - Delimitadores aceptados: **coma ( , )** o **punto y coma ( ; )**. El sistema autodetecta el separador.
+  - Se limpian comillas envolventes.
+- **Ejemplo CSV**:
+  ```csv
+  username,password,rol,nombreCompleto,correo,empresa,celular,activo
+  juan,clave123,usuario,Juan Pérez,juan@acme.com,ACME,6000-0000,true
+  ana,pass456,admin,Ana López,ana@acme.com,ACME,6111-1111,true
+  ```
+- **Ejemplo JSON**:
+  ```json
+  [
+    {"username":"juan","password":"clave123","rol":"usuario","nombreCompleto":"Juan Pérez","correo":"juan@acme.com","empresa":"ACME","celular":"6000-0000","activo":true},
+    {"username":"ana","password":"pass456","rol":"admin","nombreCompleto":"Ana López","correo":"ana@acme.com","empresa":"ACME","celular":"6111-1111","activo":true}
+  ]
+  ```
+- **Backend**: endpoint `POST /users/bulk` (protegidopor rol admin). Inserta en lote, omite duplicados y devuelve `{ inserted, skipped }`.
 
 ## Notas importantes
 

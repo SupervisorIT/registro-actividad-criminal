@@ -126,6 +126,53 @@
                 <li><i class="fas fa-check-circle"></i> Actualización de Excel maestro (fusión de datos)</li>
             </ul>
         </div>
+
+        <div class="section">
+            <h2><i class="fas fa-users-cog"></i> Panel de Administración y Carga Masiva de Usuarios</h2>
+            <h3>Acceso al Panel de Administración</h3>
+            <ol class="step-list">
+                <li>Disponible solo para el rol <strong>admin</strong>.</li>
+                <li>Haga clic en el botón <strong>Panel de Administración</strong> en la parte superior.</li>
+            </ol>
+            <div class="warning">
+                <p><strong>Importante:</strong> Solo usuarios con <strong>rol administrador</strong> pueden acceder a este panel y ejecutar la <strong>carga masiva de usuarios</strong>.</p>
+            </div>
+
+            <h3>Crear usuarios en lote (CSV o JSON)</h3>
+            <ol class="step-list">
+                <li>En el bloque <strong>Carga masiva de usuarios</strong>:
+                    <ul>
+                        <li>Use <strong>Descargar plantilla CSV</strong> para obtener el formato correcto.</li>
+                        <li>Complete la plantilla y guárdela como CSV.</li>
+                        <li>Puede <strong>Subir CSV</strong> o pegar contenido CSV/JSON en el área de texto.</li>
+                        <li>Presione <strong>Cargar usuarios</strong> para registrar en lote.</li>
+                    </ul>
+                </li>
+                <li>El sistema mostrará el resultado: <em>Insertados</em> y <em>Omitidos (duplicados)</em>.</li>
+            </ol>
+            <div class="warning">
+                <p><strong>Restricción:</strong> La creación en lote está <strong>exclusivamente</strong> habilitada para el <strong>administrador</strong>.</p>
+            </div>
+
+            <h3>Campos soportados</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-key"></i> <strong>Obligatorios:</strong> username, password</li>
+                <li><i class="fas fa-list"></i> <strong>Opcionales:</strong> rol, nombre, nombreCompleto, correo, empresa, celular, activo</li>
+                <li><i class="fas fa-user-shield"></i> <strong>Rol por defecto:</strong> usuario</li>
+                <li><i class="fas fa-toggle-on"></i> <strong>Activo por defecto:</strong> true</li>
+            </ul>
+
+            <h3>Sobre el CSV</h3>
+            <ul class="feature-list">
+                <li><i class="fas fa-file-csv"></i> Encabezado esperado: <code>username,password,rol,nombreCompleto,correo,empresa,celular,activo</code></li>
+                <li><i class="fas fa-exchange-alt"></i> <strong>Delimitadores aceptados:</strong> coma (,) o punto y coma (;). El sistema autodetecta el separador.</li>
+                <li><i class="fas fa-quote-right"></i> Soporta valores entrecomillados y remoción de comillas envolventes simples o dobles.</li>
+            </ul>
+
+            <div class="note">
+                <p><strong>Seguridad:</strong> La creación masiva requiere autenticación y permisos de administrador. Las contraseñas se almacenan con hash.</p>
+            </div>
+        </div>
         
         <div class="section">
             <h2><i class="fas fa-sign-in-alt"></i> Acceso al Sistema</h2>
@@ -137,6 +184,8 @@
                     <ul>
                         <li><strong>Usuario Administrador:</strong> admin</li>
                         <li><strong>Contraseña predeterminada:</strong> SupervisorIT2025</li>
+                        <li><strong>Usuario estándar (ejemplo):</strong> usuario</li>
+                        <li><strong>Contraseña estándar:</strong> usuario123</li>
                     </ul>
                 </li>
                 <li>Haga clic en "Iniciar Sesión"</li>
@@ -146,15 +195,12 @@
                 <p><strong>Nota:</strong> Si es la primera vez que accede al sistema, use la contraseña predeterminada. Se recomienda cambiarla inmediatamente por motivos de seguridad.</p>
             </div>
             
-            <h3>Cambiar contraseña de administrador:</h3>
+            <h3>Cambiar contraseña (Perfil de Usuario):</h3>
             <ol class="step-list">
-                <li>Una vez iniciada la sesión, haga clic en el botón "Panel de Administración" en la parte superior izquierda</li>
-                <li>Se abrirá un modal para cambiar la contraseña</li>
-                <li>Ingrese su contraseña actual (SupervisorIT2025 si nunca la ha cambiado)</li>
-                <li>Ingrese y confirme su nueva contraseña (mínimo 6 caracteres)</li>
-                <li>Haga clic en "Guardar Cambios"</li>
-                <li>Se mostrará un mensaje de confirmación "Contraseña actualizada correctamente"</li>
-                <li>El modal se cerrará automáticamente después de 2 segundos</li>
+                <li>Una vez iniciada la sesión, haga clic sobre su nombre (parte superior) y abra <strong>Perfil de Usuario</strong>.</li>
+                <li>En el modal de perfil, vaya a la sección de <strong>Cambio de contraseña</strong>.</li>
+                <li>Ingrese su contraseña actual y la nueva contraseña (mínimo 6 caracteres).</li>
+                <li>Guarde los cambios. Verá un mensaje de confirmación.</li>
             </ol>
             
             <div class="warning">
@@ -394,7 +440,7 @@
             
             <div class="note">
                 <p><strong>Versión del sistema:</strong> 1.4.0 (Agosto 2025)</p>
-                <p><strong>Última actualización del manual:</strong> 15 de agosto de 2025</p>
+                <p><strong>Última actualización del manual:</strong> 21 de agosto de 2025</p>
             </div>
         </div>
         
