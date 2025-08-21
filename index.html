@@ -131,6 +131,9 @@
                 <div style="display:flex; gap:8px; justify-content:flex-end;">
                   <button class="btn btn-primary" style="background:#1565C0;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="crearUsuariosEnLote()">Cargar usuarios</button>
                 </div>
+                <div style="background:#fff8e1;border:1px solid #ffe0b2;color:#8d6e63;padding:8px;border-radius:6px;">
+                  <strong>Importante:</strong> esta función está <strong>disponible solo para administradores</strong>.
+                </div>
                 <div id="adminBulkMsg" style="display:none; font-size:13px;"></div>
               </div>
             </div>
@@ -1041,6 +1044,16 @@
           } catch(_) { selActivo.disabled = true; }
           // Limpiar password opcional
           document.getElementById('pu_password').value = '';
+          // Deshabilitar cambio de contraseña para no administradores
+          try {
+            const esAdmin = (activo && activo.rol === 'admin');
+            const pwd = document.getElementById('pu_password');
+            if (pwd) {
+              pwd.disabled = !esAdmin;
+              pwd.placeholder = esAdmin ? '(opcional)' : '(solo administradores)';
+              if (!esAdmin) pwd.title = 'Solo administradores pueden cambiar contraseñas';
+            }
+          } catch(_) { /* noop */ }
           // Botones visibles para guardar propios datos
           const btnGuardar = document.getElementById('pu_btn_guardar');
           if (btnGuardar) btnGuardar.style.display = 'inline-block';
@@ -1116,7 +1129,8 @@
             body.rol = rol;
             if (selActivo) body.activo = (selActivo.value === 'activo');
           }
-          if (password) body.password = password;
+          // Solo admin puede cambiar contraseñas
+          if (esAdmin && password) body.password = password;
           const resp = await fetch(base.replace(/\/$/, '') + '/users/' + encodeURIComponent(username), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -1160,7 +1174,8 @@
             guardados[idx].rol = rol;
             if (selActivo) guardados[idx].activo = (selActivo.value === 'activo');
           }
-          if (password) guardados[idx].password = password;
+          // Solo admin puede cambiar contraseñas en almacenamiento local
+          if (esAdmin && password) guardados[idx].password = password;
           localStorage.setItem('usuariosRegistrados', JSON.stringify(guardados));
         }
         const activoRaw = sessionStorage.getItem('usuarioActivo');
