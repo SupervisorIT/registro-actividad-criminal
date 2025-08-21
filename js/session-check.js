@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (usuarioInfo) {
             const nombreMostrar = usuario.nombreCompleto || usuario.nombre || usuario.username;
             const cedulaMostrar = usuario.cedula ? ` — ${usuario.cedula}` : '';
-            usuarioInfo.textContent = `${nombreMostrar}${cedulaMostrar}`;
+            const empresaMostrar = (usuario.empresa && String(usuario.empresa).trim()) ? usuario.empresa : 'Sin empresa';
+            usuarioInfo.innerHTML = `${nombreMostrar}${cedulaMostrar}<br><span style="color:#666; font-weight: normal;">${empresaMostrar}</span>`;
         }
 
         // Guardar username para uso en otras páginas (no afecta autenticación)

@@ -131,6 +131,11 @@ async function cargarUsuariosAdminPanel() {
         const badge = inactivo ? ' <span style="margin-left:6px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:1px 6px;border-radius:999px;font-size:11px;">Inactivo</span>' : '';
         info.innerHTML = `<div style="font-weight:700;">${(u.username||'')} — ${((u.rol||'usuario')==='admin'?'Administrador':'Usuario')}${badge}</div>
                           <div style="color:#666;">${(u.nombreCompleto||u.nombre||'')}</div>`;
+        // Empresa debajo del nombre, mismo estilo gris (mostrar aunque esté vacía)
+        const divEmpresa = document.createElement('div');
+        divEmpresa.style.cssText = 'color:#666;';
+        divEmpresa.textContent = (u.empresa && u.empresa.trim()) ? u.empresa : 'Sin empresa';
+        info.appendChild(divEmpresa);
         if (inactivo) { item.style.opacity = '0.7'; }
 
         const acciones = document.createElement('div');
