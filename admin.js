@@ -20,6 +20,64 @@ function abrirModalAdminPanel() {
     cargarUsuariosAdminPanel();
 }
 
+// Descargar plantilla CSV para carga masiva
+function descargarPlantillaCSV() {
+    const headers = 'username,password,rol,nombreCompleto,correo,empresa,celular,activo\n';
+    const ejemplo = [
+        'juan,clave123,usuario,Juan Pérez,juan@acme.com,ACME,6000-0000,true',
+        'ana,pass456,admin,Ana López,ana@acme.com,ACME,6111-1111,true'
+    ].join('\n');
+    const contenido = headers + ejemplo + '\n';
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'plantilla-usuarios.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Cargar un archivo CSV y volcar su contenido al textarea
+function cargarCSVDesdeArchivo(input) {
+    try {
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        if (!/\.csv$/i.test(file.name)) {
+            if (!confirm('El archivo no tiene extensión .csv. ¿Desea continuar de todas formas?')) return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = (e.target && e.target.result) ? String(e.target.result) : '';
+            const ta = document.getElementById('adminBulkText');
+            if (ta) {
+                ta.value = text.replace(/\r\n/g, '\n');
+            }
+            const msg = document.getElementById('adminBulkMsg');
+            if (msg) {
+                msg.style.display = 'block';
+                msg.style.padding = '8px';
+                msg.style.borderRadius = '6px';
+                msg.style.marginTop = '4px';
+                msg.style.background = '#fff8e1';
+                msg.style.color = '#8d6e63';
+                msg.style.border = '1px solid #ffe0b2';
+                msg.textContent = 'Archivo CSV cargado en el área de texto. Revise y presione "Cargar usuarios".';
+            }
+        };
+        reader.onerror = function() {
+            alert('No se pudo leer el archivo CSV.');
+        };
+        reader.readAsText(file, 'utf-8');
+        // Limpiar el input para permitir volver a cargar el mismo archivo si se desea
+        input.value = '';
+    } catch (e) {
+        console.warn('Error cargando CSV:', e);
+        alert('Error cargando CSV: ' + (e && e.message || e));
+    }
+}
+
 // Abrir modal independiente para crear usuario
 function abrirModalCrearUsuario() {
     const modal = document.getElementById('adminCrearUsuarioModal');
@@ -571,4 +629,130 @@ function registrarReporte(datosReporte) {
     
     // Guardar en localStorage
     localStorage.setItem('historialReportes', JSON.stringify(reportes));
+}
+
+// Crear usuarios en lote desde el Panel de Administración
+async function crearUsuariosEnLote() {
+    const ta = document.getElementById('adminBulkText');
+    const msg = document.getElementById('adminBulkMsg');
+    if (!ta) { alert('Área de texto de carga masiva no encontrada'); return; }
+    const raw = (ta.value || '').trim();
+    if (!raw) { alert('Pegue usuarios en CSV o JSON antes de continuar'); return; }
+
+    const base = localStorage.getItem('AUTH_API_BASE');
+    const token = sessionStorage.getItem('authToken');
+    if (!(base && token)) {
+        alert('Requiere backend remoto y sesión válida. Inicie sesión e intente de nuevo.');
+        return;
+    }
+
+    const showMsg = (text, ok = false) => {
+        if (!msg) return;
+        msg.style.display = 'block';
+        msg.style.padding = '8px';
+        msg.style.borderRadius = '6px';
+        msg.style.marginTop = '4px';
+        msg.style.background = ok ? '#e8f5e9' : '#fdecea';
+        msg.style.color = ok ? '#1b5e20' : '#b71c1c';
+        msg.style.border = ok ? '1px solid #c8e6c9' : '1px solid #f5c6cb';
+        msg.textContent = text;
+    };
+
+    // Intentar parsear JSON primero
+    let users = [];
+    let asJson = false;
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            users = parsed;
+            asJson = true;
+        }
+    } catch (_) { /* no es JSON, intentar CSV */ }
+
+    // Si no fue JSON, intentar CSV (simple, separado por comas)
+    if (!asJson) {
+        const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length >= 2) {
+            const header = lines[0].split(',').map(h => h.trim());
+            const mapName = (n) => n.toLowerCase().replace(/\s+/g,'');
+            const idx = {};
+            header.forEach((h, i) => { idx[mapName(h)] = i; });
+
+            const getVal = (parts, key) => {
+                const i = idx[mapName(key)];
+                return (i !== undefined && parts[i] !== undefined) ? parts[i].trim() : '';
+            };
+
+            for (let li = 1; li < lines.length; li++) {
+                const parts = lines[li].split(',');
+                if (parts.length === 1 && parts[0].trim() === '') continue;
+                const u = {
+                    username: getVal(parts, 'username'),
+                    password: getVal(parts, 'password'),
+                    rol: getVal(parts, 'rol') || 'usuario',
+                    nombre: getVal(parts, 'nombre') || undefined,
+                    nombreCompleto: getVal(parts, 'nombreCompleto') || undefined,
+                    correo: getVal(parts, 'correo') || undefined,
+                    empresa: getVal(parts, 'empresa') || undefined,
+                    celular: getVal(parts, 'celular') || undefined,
+                    activo: (function(v){
+                        v = (v || '').toString().toLowerCase();
+                        if (v === 'true' || v === '1' || v === 'si' || v === 'sí') return true;
+                        if (v === 'false' || v === '0' || v === 'no') return false;
+                        return true; // por defecto
+                    })(getVal(parts, 'activo'))
+                };
+                if (u.username || u.password) users.push(u);
+            }
+        }
+    }
+
+    // Validaciones
+    if (!users.length) { showMsg('No se encontraron usuarios válidos para cargar'); return; }
+    const invalid = users.filter(u => !(u && u.username && u.password));
+    if (invalid.length) { showMsg('Todos los usuarios deben incluir username y password'); return; }
+
+    // Normalizar pequeños detalles
+    users = users.map(u => ({
+        username: String(u.username||'').trim().toLowerCase(),
+        password: String(u.password||''),
+        rol: (u.rol || 'usuario'),
+        nombre: u.nombre || undefined,
+        nombreCompleto: u.nombreCompleto || u.nombre || undefined,
+        correo: u.correo || undefined,
+        empresa: u.empresa || undefined,
+        celular: u.celular || undefined,
+        activo: (u.activo === undefined ? true : !!u.activo)
+    }));
+
+    // Enviar al backend
+    const baseURL = base.replace(/\/$/, '');
+    const payload = { users };
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+    try {
+        let resp = await fetch(baseURL + '/users/bulk', { method: 'POST', headers, body: JSON.stringify(payload) });
+        if (!resp.ok) {
+            // Intentar con prefijo /api si la primera falla
+            const alt = await fetch(baseURL + '/api/users/bulk', { method: 'POST', headers, body: JSON.stringify(payload) });
+            resp = alt;
+        }
+        if (!resp.ok) {
+            const t = await resp.text().catch(()=> '');
+            showMsg('Error cargando usuarios: ' + (t || ('HTTP ' + resp.status)), false);
+            return;
+        }
+        const data = await resp.json().catch(()=> ({}));
+        const inserted = Number(data.inserted || 0);
+        const skipped = Number(data.skipped || 0);
+        showMsg(`Carga completada. Insertados: ${inserted}. Omitidos (duplicados): ${skipped}.`, true);
+        // Opcional: limpiar textarea si hubo inserciones
+        if (inserted > 0) { ta.value = ''; }
+        if (typeof cargarUsuariosAdminPanel === 'function') {
+            await cargarUsuariosAdminPanel();
+        }
+    } catch (e) {
+        console.warn('Fallo en carga masiva:', e);
+        showMsg('Fallo de red o servidor durante la carga masiva: ' + (e && e.message || e));
+    }
 }

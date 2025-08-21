@@ -113,6 +113,30 @@
           </div>
         </div>
 
+        <!-- Bloque: Carga masiva de usuarios -->
+        <div style="padding:12px 16px; border-bottom:1px solid #e6eaf0; background:#fff;">
+          <details>
+            <summary style="cursor:pointer; font-weight:600; color:#334155;">Carga masiva de usuarios</summary>
+            <div style="margin-top:10px; font-size:13px; color:#555;">
+              Pegue usuarios en formato CSV o JSON. Campos soportados: username, password, rol, nombreCompleto, correo, empresa, celular, activo.
+              <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-top:8px;">
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                  <button class="btn btn-secondary" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="descargarPlantillaCSV()">Descargar plantilla CSV</button>
+                  <label style="display:inline-flex; align-items:center; gap:8px; font-size:13px;">
+                    <input type="file" accept=".csv,text/csv" onchange="cargarCSVDesdeArchivo(this)">
+                    Subir CSV
+                  </label>
+                </div>
+                <textarea id="adminBulkText" class="form-control" rows="6" placeholder="CSV ejemplo:\nusername,password,rol,nombreCompleto,correo,empresa,celular,activo\njuan,clave123,usuario,Juan Pérez,juan@acme.com,ACME,6000-0000,true\nana,pass456,admin,Ana López,ana@acme.com,ACME,6111-1111,true\n\nJSON ejemplo:\n[{\"username\":\"juan\",\"password\":\"clave123\",\"rol\":\"usuario\",\"nombreCompleto\":\"Juan Pérez\",\"correo\":\"juan@acme.com\",\"empresa\":\"ACME\",\"celular\":\"6000-0000\",\"activo\":true}]" style="width:100%;"></textarea>
+                <div style="display:flex; gap:8px; justify-content:flex-end;">
+                  <button class="btn btn-primary" style="background:#1565C0;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="crearUsuariosEnLote()">Cargar usuarios</button>
+                </div>
+                <div id="adminBulkMsg" style="display:none; font-size:13px;"></div>
+              </div>
+            </div>
+          </details>
+        </div>
+
 
         <!-- Lista de usuarios -->
         <div style="padding:12px 16px;">

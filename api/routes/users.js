@@ -37,6 +37,58 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /users/bulk - crear usuarios en lote
+router.post('/bulk', requireAdmin, async (req, res) => {
+  try {
+    const { users } = req.body || {};
+    if (!Array.isArray(users) || users.length === 0) {
+      return res.status(400).json({ error: 'Se requiere un arreglo "users" con al menos un elemento' });
+    }
+
+    // Normalizar entradas y validar requeridos
+    const normalized = users.map(u => ({
+      username: String(u?.username || '').toLowerCase().trim(),
+      password: String(u?.password || ''),
+      rol: u?.rol ?? 'usuario',
+      nombre: u?.nombre ?? null,
+      nombreCompleto: u?.nombreCompleto ?? null,
+      cedula: u?.cedula ?? null,
+      area: u?.area ?? null,
+      empresa: u?.empresa ?? null,
+      correo: u?.correo ?? null,
+      celular: u?.celular ?? null,
+      activo: u?.activo === undefined ? true : !!u?.activo
+    }));
+
+    const invalid = normalized.filter(u => !u.username || !u.password);
+    if (invalid.length) {
+      return res.status(400).json({ error: 'Cada usuario debe tener username y password' });
+    }
+
+    // Hashear passwords en paralelo
+    const hashes = await Promise.all(normalized.map(u => bcrypt.hash(u.password, 10)));
+
+    // Construir inserción multi-valor con ON CONFLICT DO NOTHING
+    const cols = '(username, password_hash, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo)';
+    const values = [];
+    const params = [];
+    let i = 1;
+    for (let idx = 0; idx < normalized.length; idx++) {
+      const u = normalized[idx];
+      values.push(`($${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++})`);
+      params.push(u.username, hashes[idx], u.rol, u.nombre, u.nombreCompleto, u.cedula, u.area, u.empresa, u.correo, u.celular, u.activo);
+    }
+
+    const sql = `INSERT INTO users ${cols} VALUES ${values.join(', ')} ON CONFLICT (username) DO NOTHING`;
+    const { rowCount } = await query(sql, params);
+
+    return res.status(201).json({ ok: true, inserted: rowCount, skipped: normalized.length - rowCount });
+  } catch (err) {
+    console.error('POST /users/bulk error', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // POST /users - crear usuario
 router.post('/', requireAdmin, async (req, res) => {
   try {
