@@ -947,7 +947,7 @@
                         item.style.border = '1px solid #e0e0e0';
                         item.style.borderRadius = '6px';
                         const left = document.createElement('div');
-                        left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+                        left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small><br><small style="color:#666;">${(u.empresa && String(u.empresa).trim()) ? u.empresa : 'Sin empresa'}</small>`;
                         const right = document.createElement('div');
                         const link = document.createElement('a');
                         link.href = 'javascript:void(0)';
@@ -991,7 +991,7 @@
             item.style.border = '1px solid #e0e0e0';
             item.style.borderRadius = '6px';
             const left = document.createElement('div');
-            left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small>`;
+            left.innerHTML = `<strong>${u.username}</strong> — <span style="color:#555;">${(u.rol==='admin'?'Administrador':'Usuario')}</span><br><small style="color:#666;">${u.nombreCompleto || u.nombre || ''}</small><br><small style="color:#666;">${(u.empresa && String(u.empresa).trim()) ? u.empresa : 'Sin empresa'}</small>`;
             const right = document.createElement('div');
             const link = document.createElement('a');
             link.href = 'javascript:void(0)';
