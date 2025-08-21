@@ -669,22 +669,34 @@ async function crearUsuariosEnLote() {
         }
     } catch (_) { /* no es JSON, intentar CSV */ }
 
-    // Si no fue JSON, intentar CSV (simple, separado por comas)
+    // Si no fue JSON, intentar CSV (simple, autodetectando delimitador , o ;)
     if (!asJson) {
         const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
         if (lines.length >= 2) {
-            const header = lines[0].split(',').map(h => h.trim());
+            // Autodetectar delimitador según el header
+            const headerLine = lines[0];
+            const countComa = (headerLine.match(/,/g) || []).length;
+            const countPuntoYComa = (headerLine.match(/;/g) || []).length;
+            const delim = countPuntoYComa > countComa ? ';' : ',';
+
+            const header = headerLine.split(delim).map(h => h.trim().replace(/^\uFEFF/, ''));
             const mapName = (n) => n.toLowerCase().replace(/\s+/g,'');
             const idx = {};
             header.forEach((h, i) => { idx[mapName(h)] = i; });
 
             const getVal = (parts, key) => {
                 const i = idx[mapName(key)];
-                return (i !== undefined && parts[i] !== undefined) ? parts[i].trim() : '';
+                let v = (i !== undefined && parts[i] !== undefined) ? String(parts[i]) : '';
+                v = v.trim();
+                // Quitar comillas envolventes si existen
+                if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                    v = v.slice(1, -1);
+                }
+                return v;
             };
 
             for (let li = 1; li < lines.length; li++) {
-                const parts = lines[li].split(',');
+                const parts = lines[li].split(delim);
                 if (parts.length === 1 && parts[0].trim() === '') continue;
                 const u = {
                     username: getVal(parts, 'username'),
