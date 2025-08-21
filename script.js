@@ -18,6 +18,22 @@ function formatearFecha(fechaStr) {
             const fecha = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
             const opciones = { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: 'UTC' };
 
+// Actualizar el Tipo de producto en el Top 20 cuando cambia el input correspondiente
+document.addEventListener('input', function(e) {
+    const target = e.target;
+    if (!target) return;
+    if (target.matches('input[name="tipoProducto[]"], .tipo-producto-input')) {
+        const fila = target.closest('tr');
+        if (!fila) return;
+        const productoInput = fila.querySelector('input[name="producto[]"]');
+        const nombre = productoInput ? (productoInput.value || '').trim() : '';
+        const tipo = (target.value || '').trim();
+        if (nombre && typeof window.actualizarTipoProducto === 'function') {
+            try { window.actualizarTipoProducto(nombre, tipo); } catch (_) {}
+        }
+    }
+});
+
             return fecha.toLocaleDateString('es-PA', opciones); // Usar 'es-PA' para formato panameño DD/MM/YYYY
         }
         return fechaStr; // Devolver original si el formato no es esperado
@@ -1751,15 +1767,17 @@ window.onObservacionCambio = function onObservacionCambio(input) {
     const productoInput = fila.querySelector('input[name="producto[]"]');
     const cantidadInput = fila.querySelector('input[name="cantidad[]"]');
     const cuantiaInput = fila.querySelector('input[name="cuantia[]"]');
+    const tipoInput = fila.querySelector('input[name="tipoProducto[]"], .tipo-producto-input');
 
     const producto = productoInput ? (productoInput.value || '').trim() : '';
     const cantidad = cantidadInput ? (parseInt(cantidadInput.value, 10) || 0) : 0;
     const cuantia = cuantiaInput ? (parseFloat((cuantiaInput.value || '').replace(/[^\d.-]/g, '')) || 0) : 0;
+    const tipo = tipoInput ? (tipoInput.value || '').trim() : '';
 
     if (!producto || cantidad <= 0) return;
     if (typeof window.agregarProductoRobado === 'function') {
         try {
-            window.agregarProductoRobado(producto, cantidad, cuantia);
+            window.agregarProductoRobado(producto, cantidad, cuantia, tipo);
         } catch (e) {
             console.warn('No se pudo agregar producto al Top 20:', e);
         }

@@ -177,11 +177,12 @@ function consolidarProductosSimilares() {
                 productosRobados = productosRobados.filter(p => 
                     p.nombre !== producto1.nombre && p.nombre !== producto2.nombre);
                 
-                // Agregar el producto consolidado
+                // Agregar el producto consolidado preservando el tipo si existe
                 productosRobados.push({
                     nombre: nombreFinal,
                     cantidad: cantidadTotal,
-                    valor: valorTotal
+                    valor: valorTotal,
+                    tipo: (producto1.tipo && producto1.tipo.trim()) ? producto1.tipo : ((producto2.tipo && producto2.tipo.trim()) ? producto2.tipo : '')
                 });
                 
                 cambiosRealizados = true;
@@ -348,6 +349,23 @@ function actualizarTablaProductos() {
     const totalElement = document.getElementById('totalCantidadProductos');
     if (totalElement) {
         totalElement.textContent = totalCantidad;
+    }
+}
+
+// Actualiza solo el tipo de un producto existente sin alterar cantidades
+window.actualizarTipoProducto = function(nombre, tipo) {
+    try {
+        productosRobados = window.productosRobados;
+        if (!nombre) return;
+        const nombreLower = nombre.trim().toLowerCase();
+        const producto = productosRobados.find(p => (p.nombre || '').trim().toLowerCase() === nombreLower);
+        if (producto) {
+            producto.tipo = (tipo || '').trim();
+            guardarProductosRobados();
+            actualizarTablaProductos();
+        }
+    } catch (e) {
+        console.warn('No se pudo actualizar el tipo del producto:', e);
     }
 }
 
