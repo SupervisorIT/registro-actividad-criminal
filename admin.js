@@ -113,6 +113,9 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
     const cont = document.getElementById('adminUsuariosLista');
     const origenBadge = document.getElementById('adminOrigenBadge');
     const totalSpan = document.getElementById('adminTotalUsuarios');
+    const diagBase = document.getElementById('adminDiagBase');
+    const diagToken = document.getElementById('adminDiagToken');
+    const diagHttp = document.getElementById('adminDiagHttp');
     if (!cont) return;
     cont.innerHTML = '';
 
@@ -129,6 +132,9 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
     } catch(_) {}
 
     const token = sessionStorage.getItem('authToken');
+    if (diagBase) diagBase.textContent = base || '(sin configurar)';
+    if (diagToken) diagToken.textContent = token ? 'sí' : 'no';
+    if (diagHttp) diagHttp.textContent = '(n/a)';
     let origen = 'Local';
     let lista = [];
 
@@ -137,9 +143,11 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
         const headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
         try {
             let resp = await fetch(baseURL + '/users', { method: 'GET', headers });
+            if (diagHttp) diagHttp.textContent = String(resp.status);
             if (!resp.ok) {
                 // Intento alternativo con prefijo /api
                 resp = await fetch(baseURL + '/api/users', { method: 'GET', headers });
+                if (diagHttp) diagHttp.textContent = String(resp.status);
             }
             if (resp.status === 401) {
                 cont.innerHTML = '<div style="color:#b91c1c;">No autenticado. Inicie sesión nuevamente.</div>';
@@ -171,6 +179,7 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
             if (forceRemote) {
                 cont.innerHTML = '<div style="color:#b91c1c;">Fallo al obtener usuarios desde el servidor remoto. Detalle en consola.</div>';
                 if (origenBadge) origenBadge.textContent = 'Origen: Remoto (error)';
+                if (diagHttp) diagHttp.textContent = 'ERR';
                 return;
             }
         }
@@ -178,6 +187,7 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
         // No hay configuración remota o token cuando se fuerza
         cont.innerHTML = '<div style="color:#b91c1c;">No hay backend remoto configurado o sesión inválida. Configure AUTH_API_BASE e inicie sesión.</div>';
         if (origenBadge) origenBadge.textContent = 'Origen: Remoto (no configurado)';
+        if (diagHttp) diagHttp.textContent = '—';
         return;
     }
 
