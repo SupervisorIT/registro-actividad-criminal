@@ -229,14 +229,17 @@
 
 
     <div class="container">
-        <div class="header">
-            <div style="display:flex; align-items:center; gap:22px;">
-              <img src="img/logo.jpg" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:6px;border:1px solid #e5e7eb;background:#fff;" onerror="this.onerror=null; this.src='img/logo.png';">
-              <h2 style="margin:0; line-height:1.1;">Sistema de Registro Delincuencial Web</h2>
+        <div class="header" style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:26px; justify-content:center;">
+              <img src="img/logo.jpg" alt="Logo" style="width:100px;height:100px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;background:#fff;" onerror="this.onerror=null; this.src='img/logo.png';">
+              <h2 style="margin:0; line-height:1.1; text-align:center;">Sistema de Registro Delincuencial Web</h2>
             </div>
-            <div class="user-info-container"> <div class="user-info">
-                    <span>Usuario: <strong id="usuarioInfo"></strong></span>
-                    <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button> </div>
+            <div style="width:100%; max-width:980px; border-bottom:3px solid #0d6efd;"></div>
+            <div class="user-info-container" style="margin-top:2px; width:100%; display:flex; justify-content:center;"> 
+              <div class="user-info" style="text-align:center; display:flex; align-items:center; gap:12px;">
+                <span>Usuario: <strong id="usuarioInfo"></strong></span>
+                <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button>
+              </div>
             </div>
         </div>
         <form id="actividadCriminalForm">
