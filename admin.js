@@ -150,11 +150,16 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
                 if (diagHttp) diagHttp.textContent = String(resp.status);
             }
             if (resp.status === 401) {
-                cont.innerHTML = '<div style="color:#b91c1c;">No autenticado. Inicie sesión nuevamente.</div>';
+                let body = '';
+                try { body = await resp.text(); } catch(_){}
+                cont.innerHTML = '<div style="color:#b91c1c;">No autenticado (401). ' + (body ? ('<code>' + body.replace(/</g,'&lt;') + '</code>') : '') + '</div>' +
+                                 '<div style="margin-top:8px;"><button class="btn" style="background:#1565C0;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="sessionStorage.clear(); window.location.href=\'login.html\'">Reiniciar sesión</button></div>';
                 if (forceRemote) return; // no continuar a local si se fuerza remoto
             }
             if (resp.status === 403) {
-                cont.innerHTML = '<div style="color:#b45309;">Acceso restringido. Se requiere rol administrador para listar usuarios.</div>';
+                let body = '';
+                try { body = await resp.text(); } catch(_){}
+                cont.innerHTML = '<div style="color:#b45309;">Acceso restringido (403). ' + (body ? ('<code>' + body.replace(/</g,'&lt;') + '</code>') : '') + '</div>';
                 if (forceRemote) return;
             }
             if (resp.ok) {
