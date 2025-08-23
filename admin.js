@@ -148,23 +148,24 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
         try {
             // Verificar token y mostrar usuario/rol
             try {
-                const me = await fetch(baseURL + '/auth/me', { method: 'GET', headers });
+                const me = await fetch(baseURL + '/auth/validate', { method: 'GET', headers });
                 if (diagHttp && me && me.status) diagHttp.textContent = String(me.status);
                 if (me.ok) {
                     const meData = await me.json().catch(()=>null);
                     if (meData) {
-                        if (diagUser) diagUser.textContent = meData.username || meData.user?.username || '(desconocido)';
-                        if (diagRol) diagRol.textContent = meData.rol || meData.role || '(?)';
+                        const decoded = meData.decoded || {};
+                        if (diagUser) diagUser.textContent = decoded.username || '(desconocido)';
+                        if (diagRol) diagRol.textContent = decoded.rol || decoded.role || '(?)';
                     }
                 } else if (me.status === 401) {
                     const body = await me.text().catch(()=> '');
-                    cont.innerHTML = '<div style="color:#b91c1c;">Token inválido al consultar /auth/me. ' + (body ? ('<code>'+ body.replace(/</g,'&lt;') +'</code>') : '') + '</div>' +
+                    cont.innerHTML = '<div style="color:#b91c1c;">Token inválido al consultar /auth/validate. ' + (body ? ('<code>'+ body.replace(/</g,'&lt;') +'</code>') : '') + '</div>' +
                                      '<div style="margin-top:8px;"><button class="btn" style="background:#1565C0;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="sessionStorage.clear(); window.location.href=\'login.html\'">Reiniciar sesión</button></div>';
                     if (forceRemote) return;
                 }
             } catch (e) {
                 if (forceRemote) {
-                    cont.innerHTML = '<div style="color:#b91c1c;">Fallo consultando /auth/me. Detalle en consola.</div>';
+                    cont.innerHTML = '<div style="color:#b91c1c;">Fallo consultando /auth/validate. Detalle en consola.</div>';
                     return;
                 }
             }
