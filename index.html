@@ -107,6 +107,7 @@
               <input type="checkbox" id="adminVerInactivos" onchange="if(window.renderizarUsuariosAdminPanel) renderizarUsuariosAdminPanel(); if(window.cargarUsuariosAdminPanel) cargarUsuariosAdminPanel();">
               Ver inactivos
             </label>
+            <button id="btnForzarRender" class="btn" title="Obtener usuarios desde el servidor (Render)" style="background:#0d9488;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="if(window.cargarUsuariosAdminPanel) cargarUsuariosAdminPanel(true);">Tomar datos de Render</button>
             <button class="btn" style="background:#2e7d32;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="abrirModalCrearUsuario()">
               👤 Crear usuario (rol usuario)
             </button>

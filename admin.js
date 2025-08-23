@@ -108,7 +108,8 @@ function mostrarGestionUsuarios() {
 }
 
 // Cargar usuarios y renderizarlos dentro del Panel de Administración (sin botón Perfil)
-async function cargarUsuariosAdminPanel() {
+// Si forceRemote=true, intenta exclusivamente el backend remoto (Render) y no hace fallback silencioso.
+async function cargarUsuariosAdminPanel(forceRemote = false) {
     const cont = document.getElementById('adminUsuariosLista');
     const origenBadge = document.getElementById('adminOrigenBadge');
     const totalSpan = document.getElementById('adminTotalUsuarios');
@@ -142,9 +143,11 @@ async function cargarUsuariosAdminPanel() {
             }
             if (resp.status === 401) {
                 cont.innerHTML = '<div style="color:#b91c1c;">No autenticado. Inicie sesión nuevamente.</div>';
+                if (forceRemote) return; // no continuar a local si se fuerza remoto
             }
             if (resp.status === 403) {
                 cont.innerHTML = '<div style="color:#b45309;">Acceso restringido. Se requiere rol administrador para listar usuarios.</div>';
+                if (forceRemote) return;
             }
             if (resp.ok) {
                 const data = await resp.json();
@@ -152,11 +155,30 @@ async function cargarUsuariosAdminPanel() {
                     lista = data;
                     origen = 'Remoto';
                 }
+                if (forceRemote) {
+                    // Si se forzó, no usar fallback aunque la lista esté vacía
+                    if (!lista.length) {
+                        cont.innerHTML = '<div style="color:#b45309;">Sin usuarios desde el servidor remoto.</div>';
+                        if (origenBadge) origenBadge.textContent = 'Origen: Remoto';
+                        if (totalSpan) totalSpan.textContent = '0';
+                        return;
+                    }
+                }
             }
         } catch(e) {
             // continuar a fallback local
             console.warn('Listado remoto de usuarios falló, usando fallback local:', e);
+            if (forceRemote) {
+                cont.innerHTML = '<div style="color:#b91c1c;">Fallo al obtener usuarios desde el servidor remoto. Detalle en consola.</div>';
+                if (origenBadge) origenBadge.textContent = 'Origen: Remoto (error)';
+                return;
+            }
         }
+    } else if (forceRemote) {
+        // No hay configuración remota o token cuando se fuerza
+        cont.innerHTML = '<div style="color:#b91c1c;">No hay backend remoto configurado o sesión inválida. Configure AUTH_API_BASE e inicie sesión.</div>';
+        if (origenBadge) origenBadge.textContent = 'Origen: Remoto (no configurado)';
+        return;
     }
 
     if (!lista.length) {
