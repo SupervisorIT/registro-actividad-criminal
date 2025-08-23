@@ -4,10 +4,12 @@ html, body {
     width: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden; /* Evita scroll: página estática */
 }
 
 body {
     background: linear-gradient(135deg, #1a237e, #283593, #3949ab);
+    background-attachment: fixed; /* Fondo fijo */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -16,11 +18,13 @@ body {
 }
 
 .login-container {
+    position: fixed; /* Ocupa toda la pantalla y permanece estático */
+    inset: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    min-height: 100vh;
+    height: 100vh;
     padding: 0 20px;
     box-sizing: border-box;
 }
