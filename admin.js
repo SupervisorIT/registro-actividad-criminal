@@ -135,6 +135,10 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
     if (diagBase) diagBase.textContent = base || '(sin configurar)';
     if (diagToken) diagToken.textContent = token ? 'sí' : 'no';
     if (diagHttp) diagHttp.textContent = '(n/a)';
+    const diagUser = document.getElementById('adminDiagUser');
+    const diagRol = document.getElementById('adminDiagRol');
+    if (diagUser) diagUser.textContent = '(n/a)';
+    if (diagRol) diagRol.textContent = '(n/a)';
     let origen = 'Local';
     let lista = [];
 
@@ -142,6 +146,29 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
         const baseURL = base.replace(/\/$/, '');
         const headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
         try {
+            // Verificar token y mostrar usuario/rol
+            try {
+                const me = await fetch(baseURL + '/auth/me', { method: 'GET', headers });
+                if (diagHttp && me && me.status) diagHttp.textContent = String(me.status);
+                if (me.ok) {
+                    const meData = await me.json().catch(()=>null);
+                    if (meData) {
+                        if (diagUser) diagUser.textContent = meData.username || meData.user?.username || '(desconocido)';
+                        if (diagRol) diagRol.textContent = meData.rol || meData.role || '(?)';
+                    }
+                } else if (me.status === 401) {
+                    const body = await me.text().catch(()=> '');
+                    cont.innerHTML = '<div style="color:#b91c1c;">Token inválido al consultar /auth/me. ' + (body ? ('<code>'+ body.replace(/</g,'&lt;') +'</code>') : '') + '</div>' +
+                                     '<div style="margin-top:8px;"><button class="btn" style="background:#1565C0;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="sessionStorage.clear(); window.location.href=\'login.html\'">Reiniciar sesión</button></div>';
+                    if (forceRemote) return;
+                }
+            } catch (e) {
+                if (forceRemote) {
+                    cont.innerHTML = '<div style="color:#b91c1c;">Fallo consultando /auth/me. Detalle en consola.</div>';
+                    return;
+                }
+            }
+
             let resp = await fetch(baseURL + '/users', { method: 'GET', headers });
             if (diagHttp) diagHttp.textContent = String(resp.status);
             if (!resp.ok) {
