@@ -73,6 +73,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;
                         }
                         if (user) {
+                            // Validar token inmediatamente
+                            const base = (AUTH_API_BASE || '').replace(/\/$/, '');
+                            try {
+                                const v = await fetch(base + '/auth/validate', { method: 'GET', headers: { 'Authorization': 'Bearer ' + data.token, 'Accept': 'application/json' } });
+                                if (!v.ok) {
+                                    const t = await v.text().catch(()=> '');
+                                    console.warn('Validación de token falló:', v.status, t);
+                                    errorMessage.textContent = 'Token inválido devuelto por el servidor. Inicie sesión nuevamente.';
+                                    errorMessage.classList.add('show');
+                                    setTimeout(() => errorMessage.classList.remove('show'), 5000);
+                                    return;
+                                }
+                            } catch (e) {
+                                console.warn('Error validando token:', e);
+                                errorMessage.textContent = 'No se pudo validar el token. Revise conexión e intente nuevamente.';
+                                errorMessage.classList.add('show');
+                                setTimeout(() => errorMessage.classList.remove('show'), 5000);
+                                return;
+                            }
+
                             // Guardar token obligatorio
                             sessionStorage.setItem('authToken', data.token);
                             // Marcar origen remoto

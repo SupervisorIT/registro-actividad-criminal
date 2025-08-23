@@ -16,6 +16,21 @@ function abrirModalAdminPanel() {
         return;
     }
     modal.style.display = 'block';
+    // Sincronizar preferencia del checkbox "Ver inactivos" con localStorage
+    try {
+        const chk = document.getElementById('adminVerInactivos');
+        if (chk) {
+            const saved = localStorage.getItem('adminVerInactivos');
+            if (saved !== null) chk.checked = (saved === '1');
+            if (!chk.dataset.bound) {
+                chk.addEventListener('change', () => {
+                    try { localStorage.setItem('adminVerInactivos', chk.checked ? '1' : '0'); } catch {}
+                    if (typeof cargarUsuariosAdminPanel === 'function') cargarUsuariosAdminPanel();
+                });
+                chk.dataset.bound = '1';
+            }
+        }
+    } catch(_) {}
     // Cargar lista de usuarios para este panel
     cargarUsuariosAdminPanel();
 }
@@ -240,7 +255,8 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
     // Render con filtro de inactivos
     if (origenBadge) origenBadge.textContent = `Origen: ${origen}`;
     const verInactivos = (document.getElementById('adminVerInactivos')?.checked) || false;
-    const listaFiltrada = lista.filter(u => verInactivos ? true : (u.activo !== false));
+    // Si está marcado, mostrar SOLO inactivos; si no, SOLO activos
+    const listaFiltrada = lista.filter(u => verInactivos ? (u.activo === false) : (u.activo !== false));
     if (totalSpan) totalSpan.textContent = String(listaFiltrada.length);
 
     const frag = document.createDocumentFragment();
