@@ -719,3 +719,23 @@ td > .tipificacion-select {
 .total-row td:first-child {
     text-align: left;
 }
+
+/* Botón flotante de WhatsApp */
+.whatsapp-float {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 56px;
+    height: 56px;
+    background: #25D366;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    text-decoration: none;
+    z-index: 4000;
+}
+.whatsapp-float:hover { filter: brightness(0.95); }
+.whatsapp-float i { font-size: 28px; line-height: 1; }
