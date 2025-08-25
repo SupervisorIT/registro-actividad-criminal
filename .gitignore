@@ -34,3 +34,6 @@ tabla_delincuentes_memoria.js
 # login.css
 # login.html
 # login.js
+
+# Archivos de entorno (no subir secretos)
+.env
