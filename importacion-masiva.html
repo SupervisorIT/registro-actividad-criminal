@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Importación Masiva - Registro de Actividad Criminal</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles_ajustado.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="icon" href="img/logo.png" type="image/png">
+  <link rel="icon" href="img/logo.jpg" type="image/jpeg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container" style="padding-top:10px;">
+    <div class="header" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="img/logo.jpg" alt="Logo" style="width:60px;height:60px;object-fit:contain;border-radius:6px;border:1px solid #e5e7eb;background:#fff;" onerror="this.onerror=null; this.src='img/logo.png';">
+        <div>
+          <h2 style="margin:0;">Importación Masiva</h2>
+          <div style="color:#555; font-size:13px;">Historial de delincuentes y Top 20 de productos</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <a class="btn btn-secondary" href="manual-ayuda.html"><i class="fas fa-question-circle"></i> Ayuda</a>
+        <a class="btn btn-primary" href="index.html"><i class="fas fa-home"></i> Inicio</a>
+      </div>
+    </div>
+
+    <div style="margin-top:14px; padding:12px; background:#fff; border:1px solid #cfd6e1; border-radius:6px;">
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+        <button id="btnDescargarPlantilla" class="btn btn-primary"><i class="fas fa-file-excel"></i> Descargar plantilla</button>
+        <button id="btnImportarExcel" class="btn btn-success"><i class="fas fa-upload"></i> Importar Excel</button>
+        <span style="font-size:13px; color:#555;">Formato compatible con las hojas "Delincuentes" y "Productos".</span>
+      </div>
+      <div id="msgImport" style="display:none; margin-top:10px; font-size:13px;"></div>
+    </div>
+
+    <div class="mt-20" style="display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start;">
+      <div class="tabla-delincuentes-persistentes-container" style="flex:1 1 580px; min-width:340px; background:#fff; border:1px solid #cfd6e1; border-radius:6px; padding:12px;">
+        <h3 class="section-title">Historial de Delincuentes</h3>
+        <table class="table table-bordered" id="tablaDelincuentesPersistentes">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nombre y Apellido</th>
+              <th>Cédula</th>
+              <th>Edad</th>
+              <th>Delito Cometido</th>
+              <th>Cuantía</th>
+              <th>N° Denuncia/Resolución</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- filas por JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tabla-productos-container" style="flex:1 1 420px; min-width:320px; background:#fff; border:1px solid #cfd6e1; border-radius:6px; padding:12px;">
+        <h3 class="section-title">Top 20 Productos y Mercancías Robadas</h3>
+        <table id="tablaProductos" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Producto/Mercancía</th>
+              <th>Tipo de producto</th>
+              <th>Cantidad Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 20 filas con IDs que espera actualizarTablaProductos() -->
+            <script>
+              // Generar las 20 filas esperadas por IDs nombre-#, tipo-#, cantidad-#
+              for (let i = 1; i <= 20; i++) {
+                document.write('<tr><td>'+i+'</td><td id="nombre-'+i+'"></td><td id="tipo-'+i+'"></td><td id="cantidad-'+i+'"></td></tr>');
+              }
+            </script>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td><strong>Total</strong></td>
+              <td></td>
+              <td></td>
+              <td id="totalCantidadProductos">0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts compartidos que ya gestionan localStorage y render -->
+  <script src="productos-persistentes.js"></script>
+  <script src="historial-delincuentes.js"></script>
+  <script src="persistencia-archivos.js"></script>
+  <!-- Script de esta página -->
+  <script src="importacion-masiva.js"></script>
+</body>
+</html>
