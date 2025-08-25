@@ -459,9 +459,14 @@
       if (casos.length) aplicarCasosAlDOM(casos);
       // Persistir snapshot importado
       try { localStorage.setItem('casosDelictivos', JSON.stringify(casos)); } catch {}
-      // Priorizar Historial
-      if (delincuentesHist.length) aplicarDelincuentesHist(delincuentesHist);
-      else if (delincuentes.length) aplicarDelincuentes(delincuentes);
+      // Priorizar Historial. Si no viene 'DelincuentesHist' pero sí 'Delincuentes',
+      // también persistirlos como historial para que se reflejen en la UI.
+      if (delincuentesHist.length) {
+        aplicarDelincuentesHist(delincuentesHist);
+      } else if (delincuentes.length) {
+        aplicarDelincuentes(delincuentes);
+        aplicarDelincuentesHist(delincuentes);
+      }
       if (productos.length) aplicarProductos(productos);
       if (perdidas.length) aplicarPerdidas(perdidas);
 

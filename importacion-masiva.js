@@ -42,6 +42,21 @@
     }
   }
 
+  // Si no hay historial, pero sí existen 'delincuentes', copiar a 'delincuentesPersistentes'
+  function syncHistorialSiVacio(){
+    try {
+      const histRaw = localStorage.getItem('delincuentesPersistentes');
+      const delRaw = localStorage.getItem('delincuentes');
+      const hist = histRaw ? JSON.parse(histRaw) : [];
+      const del = delRaw ? JSON.parse(delRaw) : [];
+      if ((!hist || hist.length === 0) && Array.isArray(del) && del.length > 0) {
+        localStorage.setItem('delincuentesPersistentes', JSON.stringify(del));
+        if (typeof window.renderizarTablaHistorialDelincuentes === 'function') window.renderizarTablaHistorialDelincuentes();
+        showMsg('Se sincronizó el historial desde los delincuentes existentes.', 'ok');
+      }
+    } catch (e) { /* noop */ }
+  }
+
   async function importar(){
     try{
       if (typeof window.importarDesdeExcel !== 'function') {
@@ -64,6 +79,8 @@
     const b2 = qs('btnImportarExcel');
     if (b1) b1.addEventListener('click', descargarPlantilla);
     if (b2) b2.addEventListener('click', importar);
+    // Sincronizar historial si está vacío
+    syncHistorialSiVacio();
     // Render inicial desde localStorage
     try { if (typeof window.renderizarTablaHistorialDelincuentes === 'function') window.renderizarTablaHistorialDelincuentes(); } catch{}
     try { if (typeof window.actualizarTablaProductos === 'function') window.actualizarTablaProductos(); } catch{}
