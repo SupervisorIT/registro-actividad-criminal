@@ -459,15 +459,41 @@
       if (casos.length) aplicarCasosAlDOM(casos);
       // Persistir snapshot importado
       try { localStorage.setItem('casosDelictivos', JSON.stringify(casos)); } catch {}
+      // Normalización de estructuras a lo que espera la UI
+      const mapDel = (arr) => (arr||[]).map(d => ({
+        nombreCompleto: d['Nombre y Apellido'] || d['Nombre'] || d['nombreCompleto'] || d['nombre'] || '',
+        nombre: d['Nombre y Apellido'] || d['Nombre'] || d['nombre'] || d['nombreCompleto'] || '',
+        cedula: d['Cédula'] || d['Cedula'] || d['cedula'] || '',
+        edad: d['Edad'] || d['edad'] || '',
+        direccion: d['Dirección'] || d['Direccion'] || d['direccion'] || '',
+        vehiculo: d['Vehículo'] || d['Vehiculo'] || d['vehiculo'] || '',
+        placa: d['Placa'] || d['placa'] || '',
+        color: d['Color'] || d['color'] || d['Color vehículo'] || d['Color Vehículo'] || '',
+        fechaCaptura: d['Fecha Captura'] || d['Fecha'] || d['fecha'] || d['fechaCaptura'] || '',
+        delito: d['Delito'] || d['delito'] || '',
+        productos: d['Productos'] || d['Mercancias'] || d['Producto/Mercancía'] || d['Producto'] || d['producto'] || '',
+        cuantia: d['Cuantía (B/.)'] || d['Cuantia (B/.)'] || d['Cuantia'] || d['monto'] || d['cuantia'] || '',
+        denuncia: d['N° Denuncia'] || d['N Denuncia'] || d['denuncia'] || ''
+      }));
+      const mapProd = (arr) => (arr||[]).map(p => ({
+        nombre: p['Producto/Mercancía'] || p['Producto'] || p['Nombre'] || p['nombre'] || '',
+        tipo: p['Tipo de producto'] || p['tipo'] || '',
+        cantidad: p['Cantidad Total'] || p['Cantidad'] || p['Total'] || p['cantidad'] || 0
+      }));
+
+      const delHistNorm = mapDel(delincuentesHist);
+      const delNorm = mapDel(delincuentes);
+      const prodNorm = mapProd(productos);
+
       // Priorizar Historial. Si no viene 'DelincuentesHist' pero sí 'Delincuentes',
       // también persistirlos como historial para que se reflejen en la UI.
-      if (delincuentesHist.length) {
-        aplicarDelincuentesHist(delincuentesHist);
-      } else if (delincuentes.length) {
-        aplicarDelincuentes(delincuentes);
-        aplicarDelincuentesHist(delincuentes);
+      if (delHistNorm.length) {
+        aplicarDelincuentesHist(delHistNorm);
+      } else if (delNorm.length) {
+        aplicarDelincuentes(delNorm);
+        aplicarDelincuentesHist(delNorm);
       }
-      if (productos.length) aplicarProductos(productos);
+      if (prodNorm.length) aplicarProductos(prodNorm);
       if (perdidas.length) aplicarPerdidas(perdidas);
 
       noti('Datos importados correctamente. Revise las tablas.');
