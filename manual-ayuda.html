@@ -128,6 +128,45 @@
         </div>
 
         <div class="section">
+            <h2><i class="fas fa-upload"></i> Importación Masiva (Excel)</h2>
+            <p>Ahora el sistema cuenta con una página independiente para cargar datos de forma masiva desde Excel, sin afectar la operación de la página principal.</p>
+
+            <h3>Acceso</h3>
+            <ol class="step-list">
+                <li>En la barra superior de la aplicación, haga clic en <strong>Importación masiva</strong>.</li>
+                <li>Se abrirá la página <code>importacion-masiva.html</code>.</li>
+            </ol>
+
+            <h3>Descargar plantilla</h3>
+            <ol class="step-list">
+                <li>Presione <strong>Descargar plantilla</strong> para obtener un Excel con hojas y columnas sugeridas.</li>
+                <li>Hojas soportadas:
+                    <ul>
+                        <li><strong>Delincuentes</strong>: Nombre y Apellido, Cédula, Edad, Dirección, Vehículo, Placa, Color, Fecha Captura, Delito, Productos, Cuantía (B/.), N° Denuncia</li>
+                        <li><strong>Productos</strong>: Producto/Mercancía, Tipo de producto, Cantidad Total</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3>Importar Excel</h3>
+            <ol class="step-list">
+                <li>Presione <strong>Importar Excel</strong> y seleccione el archivo <code>.xlsx</code>.</li>
+                <li>El sistema normaliza los encabezados del archivo y actualiza automáticamente:
+                    <ul>
+                        <li><strong>Historial de Delincuentes</strong> (persistente en el navegador).</li>
+                        <li><strong>Top 20 de Productos</strong> (la UI muestra 20, el maestro conserva todo).</li>
+                    </ul>
+                </li>
+                <li>Si el Excel solo trae la hoja <em>Delincuentes</em>, también se vuelca al historial para que sea visible.</li>
+                <li>Si el historial está vacío pero existen datos en <em>delincuentes</em>, al abrir esta página se sincroniza automáticamente.</li>
+            </ol>
+
+            <div class="note">
+                <p><strong>Nota:</strong> Los datos se guardan en el navegador (localStorage). La UI limita el Top 20 por diseño, pero al exportar o fusionar con el Excel maestro se incluyen todos los productos acumulados.</p>
+            </div>
+        </div>
+
+        <div class="section">
             <h2><i class="fas fa-users-cog"></i> Panel de Administración y Carga Masiva de Usuarios</h2>
             <h3>Acceso al Panel de Administración</h3>
             <ol class="step-list">

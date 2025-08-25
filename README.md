@@ -1,6 +1,6 @@
 # Sistema de Registro de Actividad Criminal
 
-![Versión](https://img.shields.io/badge/Versión-1.4.0-blue)
+![Versión](https://img.shields.io/badge/Versión-1.5.0-blue)
 ![Fecha](https://img.shields.io/badge/Última%20Actualización-Agosto%202025-brightgreen)
 ![Estado](https://img.shields.io/badge/Estado-Producción-success)
 
@@ -25,6 +25,7 @@ Esta aplicación web permite registrar, visualizar y gestionar información sobr
 - **Interfaz responsiva** adaptable para escritorio y dispositivos móviles
 - **Sistema de autenticación** para proteger datos sensibles
 - **Exportación de datos** en formato PDF y Excel
+ - **Importación masiva (Excel)** de historial de delincuentes y productos robados
 
 ## Instalación y uso local
 
@@ -78,6 +79,11 @@ O simplemente abre el archivo `index.html` en tu navegador.
    - Accede si tu rol es **admin**.
    - Gestiona usuarios y utiliza la **carga masiva**.
 
+7. **Importación masiva (Excel):**
+   - En la barra superior, botón **Importación masiva** abre `importacion-masiva.html`.
+   - Descarga la plantilla y carga el Excel con hojas `Delincuentes` y/o `Productos`.
+   - Los datos importados se guardan en localStorage y actualizan el Historial y el Top 20.
+
 ## Flujo de guardado y exportación
 
 - **Guardar documento** ejecuta:
@@ -114,6 +120,44 @@ Cómo usar la fusión:
 4. Se descargará el archivo `<nombre>_actualizado.xlsx`. Puedes reemplazar tu maestro con este archivo.
 
 También puedes presionar el botón `Actualizar Excel existente` en la interfaz en cualquier momento.
+
+## Importación Masiva (Excel) de Historial y Productos
+
+Nueva página dedicada: `importacion-masiva.html`.
+
+### Cómo acceder
+
+- Desde `index.html`, botón superior **Importación masiva**.
+
+### Plantilla soportada
+
+- Hoja `Delincuentes` (columnas sugeridas):
+  - Nombre y Apellido, Cédula, Edad, Dirección, Vehículo, Placa, Color,
+    Fecha Captura, Delito, Productos, Cuantía (B/.), N° Denuncia
+- Hoja `Productos`:
+  - Producto/Mercancía, Tipo de producto, Cantidad Total
+- Se incluye hoja informativa `LeerAntes` al descargar la plantilla.
+
+### Comportamiento al importar
+
+- Se normalizan columnas a la estructura interna esperada por la UI.
+- Si solo existe la hoja `Delincuentes`, también se vuelca al historial (`delincuentesPersistentes`).
+- Se actualizan inmediatamente:
+  - `Historial de Delincuentes` (persistente en `delincuentesPersistentes`).
+  - `Top 20 de productos` (tabla limitada a 20 para la UI, pero el maestro conserva todo).
+- Sincronizador automático: si el historial está vacío pero existe `delincuentes`, al entrar en `importacion-masiva.html` se copia a `delincuentesPersistentes`.
+
+### Límites en UI vs Maestro
+
+- UI muestra solo el Top 20. El Excel maestro conserva todos los productos acumulados.
+- El Historial puede crecer; se recomienda usar scroll/paginación si fuese necesario.
+
+### Pasos rápidos
+
+1. Abrir `Importación masiva`.
+2. Descargar plantilla, completar y guardar como `.xlsx`.
+3. Cargar el archivo con **Importar Excel**.
+4. Verificar que el Historial y el Top 20 se actualizan; queda persistente en el navegador.
 
 ## Carga masiva de usuarios (Admin)
 
@@ -167,3 +211,18 @@ Este proyecto está bajo licencia privada. Todos los derechos reservados.
 ---
 
 **Desarrollado por SupervisorIT © 2025**
+
+## Historial de cambios
+
+### 1.5.0 (Agosto 2025)
+
+- Nueva página `importacion-masiva.html` para carga masiva desde Excel.
+- Descarga de plantilla con hojas `Delincuentes`, `Productos` y `LeerAntes`.
+- Importación que normaliza columnas y actualiza `delincuentesPersistentes` y Top 20.
+- Sincronización automática del historial si está vacío.
+- Actualización de documentación (README y manual de ayuda).
+
+### 1.4.0 (Agosto 2025)
+
+- Mejoras en exportación PDF/Excel y flujo de guardado.
+- Panel de administración con carga masiva de usuarios.
