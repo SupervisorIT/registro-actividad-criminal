@@ -101,6 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Marcar origen remoto
                             sessionStorage.setItem('authOrigin', 'remote');
 
+                            // Guardar flag de cambio obligatorio
+                            const mustChange = !!data.forceChange;
+                            sessionStorage.setItem('forceChange', mustChange ? '1' : '0');
+
                             // No más prompts ni PATCH aquí; el modal en index.html gestionará datos faltantes
                             const payload = {
                                 username: user.username,

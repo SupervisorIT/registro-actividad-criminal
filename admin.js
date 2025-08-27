@@ -19,6 +19,80 @@ async function cerrarSesion() {
             console.error('Error al registrar el cierre de sesión:', err);
             // No bloquear el logout si la API falla, solo registrar el error.
         }
+
+// --- Modal bloqueante: cambio obligatorio de contraseña ---
+function validarForcePwdEnVivo() {
+    const pwd = document.getElementById('forcePwdNueva')?.value || '';
+    const confirm = document.getElementById('forcePwdConfirm')?.value || '';
+
+    const okLen = pwd.length >= 8;
+    const okLetter = /[A-Za-z]/.test(pwd);
+    const okNumber = /\d/.test(pwd);
+    const okSymbol = /[^A-Za-z0-9]/.test(pwd);
+    const okMatch = pwd && confirm && pwd === confirm;
+
+    const setStatus = (id, ok) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.color = ok ? '#16a34a' : '#374151';
+        el.textContent = `${ok ? '✓' : '•'} ${el.textContent.replace(/^([✓•])\s*/, '')}`;
+    };
+
+    setStatus('forceReqLen', okLen);
+    setStatus('forceReqLetter', okLetter);
+    setStatus('forceReqNumber', okNumber);
+    setStatus('forceReqSymbol', okSymbol);
+    setStatus('forceReqMatch', okMatch);
+
+    const btn = document.getElementById('btnForcePwdGuardar');
+    if (btn) btn.disabled = !(okLen && okLetter && okNumber && okSymbol && okMatch);
+}
+
+async function guardarNuevaPwdObligatoria() {
+    const errorBox = document.getElementById('forcePwdError');
+    const hideError = () => { if (errorBox) { errorBox.style.display = 'none'; errorBox.textContent = ''; } };
+    const showError = (msg) => { if (errorBox) { errorBox.style.display = 'block'; errorBox.textContent = msg; } else { alert(msg); } };
+
+    hideError();
+    const pwd = document.getElementById('forcePwdNueva')?.value || '';
+    const confirm = document.getElementById('forcePwdConfirm')?.value || '';
+
+    if (!(pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /\d/.test(pwd) && /[^A-Za-z0-9]/.test(pwd))) {
+        showError('La contraseña no cumple los requisitos mínimos.');
+        return;
+    }
+    if (pwd !== confirm) {
+        showError('Las contraseñas no coinciden.');
+        return;
+    }
+
+    try {
+        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+        const token = sessionStorage.getItem('authToken');
+        if (!base || !token) {
+            showError('No hay sesión o backend configurado.');
+            return;
+        }
+        const res = await fetch(base + '/auth/password/change', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ newPassword: pwd })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Error al cambiar contraseña');
+        }
+
+        // Éxito: limpiar flag local y cerrar modal
+        sessionStorage.setItem('forceChange', '0');
+        const m = document.getElementById('forceChangeModal');
+        if (m) m.style.display = 'none';
+        alert('Contraseña actualizada. ¡Bienvenido!');
+    } catch (e) {
+        console.error(e);
+        showError(e.message || 'Error inesperado');
+    }
+}
     }
 
     // Limpiar sesión y redirigir
@@ -57,6 +131,21 @@ document.addEventListener('DOMContentLoaded', function() {
             cerrarSesion();
         });
     }
+    // Abrir modal de cambio obligatorio si aplica
+    try {
+        const must = sessionStorage.getItem('forceChange') === '1';
+        if (must) {
+            const m = document.getElementById('forceChangeModal');
+            if (m) {
+                m.style.display = 'block';
+                const p1 = document.getElementById('forcePwdNueva');
+                const p2 = document.getElementById('forcePwdConfirm');
+                if (p1) p1.value = '';
+                if (p2) p2.value = '';
+                validarForcePwdEnVivo();
+            }
+        }
+    } catch (e) { /* noop */ }
 });
 
 // Cargar y mostrar el registro de actividad de usuarios
