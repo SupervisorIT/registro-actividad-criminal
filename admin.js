@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Cargar y mostrar el registro de actividad de usuarios
 let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
+let activityInterval = null;
 
 function renderUserActivityChart(activities = []) {
     const ctx = document.getElementById('userActivityChart').getContext('2d');
@@ -158,7 +159,11 @@ async function cargarRegistroActividad() {
 }
 
 // Abrir Panel de Administración (modal en index.html con id "adminPanelModal")
-function abrirModalAdminPanel() {
+async function abrirModalAdminPanel() {
+    // Iniciar la actualización automática de la actividad de usuarios
+    if (activityInterval) clearInterval(activityInterval);
+    activityInterval = setInterval(cargarRegistroActividad, 15000); // Actualizar cada 15 segundos
+
     const modal = document.getElementById('adminPanelModal');
     if (!modal) {
         alert('No se encontró el Panel de Administración en el HTML.');
@@ -514,7 +519,15 @@ function mostrarHistorialReportes() {
 
 function cerrarModal(modalId) {
     const modal = document.getElementById(modalId);
-    modal.style.display = 'none';
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    // Detener la actualización automática si se cierra el panel de admin
+    if (modalId === 'adminPanelModal' && activityInterval) {
+        clearInterval(activityInterval);
+        activityInterval = null;
+    }
 }
 
 // Cerrar modales al hacer clic fuera de ellos
@@ -523,6 +536,11 @@ window.onclick = function(event) {
     for (let i = 0; i < modales.length; i++) {
         if (event.target === modales[i]) {
             modales[i].style.display = 'none';
+            // Detener la actualización automática si se cierra el panel de admin
+            if (modales[i].id === 'adminPanelModal' && activityInterval) {
+                clearInterval(activityInterval);
+                activityInterval = null;
+            }
         }
     }
 };
