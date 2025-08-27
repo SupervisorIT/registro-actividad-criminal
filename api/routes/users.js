@@ -162,6 +162,9 @@ router.patch('/:username', requireAdmin, async (req, res) => {
       const hash = await bcrypt.hash(String(password), 10);
       sets.push(`password_hash = $${i++}`);
       vals.push(hash);
+      // Forzar cambio de contraseña en el siguiente login
+      sets.push(`force_password_change = $${i++}`);
+      vals.push(true);
     }
     if (rol !== undefined) { sets.push(`rol = $${i++}`); vals.push(rol); }
     if (nombre !== undefined) { sets.push(`nombre = $${i++}`); vals.push(nombre); }

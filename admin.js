@@ -59,6 +59,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Al cargar la página, si el backend indicó cambio de contraseña forzado, abrir modal
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const mustChange = sessionStorage.getItem('forceChange') === 'true';
+        if (mustChange) {
+            abrirModalCambioPassword();
+        }
+    } catch {}
+});
+
 // Cargar y mostrar el registro de actividad de usuarios
 let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
 let activityInterval = null;
@@ -555,6 +565,144 @@ window.onclick = function(event) {
         }
     }
 };
+
+// ---- Modal: Cambio de contraseña forzado ----
+function abrirModalCambioPassword() {
+    const modal = document.getElementById('changePasswordModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const newI = document.getElementById('cpw_new');
+    const confI = document.getElementById('cpw_confirm');
+    if (newI) newI.value = '';
+    if (confI) confI.value = '';
+    validarCambioPasswordEnVivo();
+}
+
+function cerrarModalCambioPassword() {
+    const mustChange = sessionStorage.getItem('forceChange') === 'true';
+    // Si es obligatorio, no permitir cerrar hasta que cumpla
+    if (mustChange) {
+        const msg = document.getElementById('cpw_msg');
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.color = 'red';
+            msg.textContent = 'Debes cambiar tu contraseña para continuar.';
+        }
+        return;
+    }
+    const modal = document.getElementById('changePasswordModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function setReqState(el, ok) {
+    if (!el) return;
+    el.style.color = ok ? '#166534' : '#7f1d1d';
+    el.style.fontWeight = ok ? '600' : '400';
+}
+
+function validarCambioPasswordEnVivo() {
+    const newI = document.getElementById('cpw_new');
+    const confI = document.getElementById('cpw_confirm');
+    const btn = document.getElementById('cpw_btn_guardar');
+    const msg = document.getElementById('cpw_msg');
+
+    const pwd = (newI?.value || '');
+    const conf = (confI?.value || '');
+
+    const meetsLen = pwd.length >= 8;
+    const hasLetter = /[A-Za-z]/.test(pwd);
+    const hasDigit = /\d/.test(pwd);
+    const hasSymbol = /[^A-Za-z0-9]/.test(pwd);
+    const matches = pwd && conf && pwd === conf;
+
+    setReqState(document.getElementById('cpw_req_len'), meetsLen);
+    setReqState(document.getElementById('cpw_req_alnum'), hasLetter && hasDigit);
+    setReqState(document.getElementById('cpw_req_sym'), hasSymbol);
+    setReqState(document.getElementById('cpw_req_match'), matches);
+
+    const ok = meetsLen && hasLetter && hasDigit && hasSymbol && matches;
+    if (btn) btn.disabled = !ok;
+    if (msg) msg.style.display = 'none';
+}
+
+async function enviarCambioPassword() {
+    const newI = document.getElementById('cpw_new');
+    const confI = document.getElementById('cpw_confirm');
+    const btn = document.getElementById('cpw_btn_guardar');
+    const msg = document.getElementById('cpw_msg');
+
+    const pwd = (newI?.value || '');
+    const conf = (confI?.value || '');
+    if (pwd !== conf) {
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.color = 'red';
+            msg.textContent = 'Las contraseñas no coinciden.';
+        }
+        return;
+    }
+
+    // Validación final
+    const meetsLen = pwd.length >= 8;
+    const hasLetter = /[A-Za-z]/.test(pwd);
+    const hasDigit = /\d/.test(pwd);
+    const hasSymbol = /[^A-Za-z0-9]/.test(pwd);
+    if (!(meetsLen && hasLetter && hasDigit && hasSymbol)) {
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.color = 'red';
+            msg.textContent = 'La contraseña no cumple los requisitos.';
+        }
+        return;
+    }
+
+    const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+    const token = sessionStorage.getItem('authToken');
+    if (!base || !token) {
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.color = 'red';
+            msg.textContent = 'No hay conexión con el servidor de autenticación.';
+        }
+        return;
+    }
+
+    try {
+        if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+        const resp = await fetch(base + '/auth/password/change', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ newPassword: pwd })
+        });
+        if (!resp.ok) {
+            const t = await resp.text().catch(()=> '');
+            throw new Error('Error al cambiar la contraseña: ' + (t || resp.status));
+        }
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.color = '#166534';
+            msg.textContent = 'Contraseña actualizada correctamente.';
+        }
+        // Quitar el requisito y cerrar modal
+        try { sessionStorage.setItem('forceChange', 'false'); } catch {}
+        setTimeout(() => {
+            const modal = document.getElementById('changePasswordModal');
+            if (modal) modal.style.display = 'none';
+        }, 600);
+    } catch (err) {
+        console.error(err);
+        if (msg) {
+            msg.style.display = 'block';
+            msg.style.color = 'red';
+            msg.textContent = err.message || 'Error inesperado';
+        }
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+    }
+}
 
 // Funciones para gestión de usuarios
 async function cargarUsuarios() {

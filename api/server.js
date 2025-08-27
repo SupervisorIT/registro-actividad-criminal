@@ -83,6 +83,12 @@ async function ensureSchema() {
     );
   `);
 
+  // Asegurar columna para forzar cambio de contraseña en primer login
+  await query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS force_password_change BOOLEAN DEFAULT FALSE
+  `);
+
   await query(`
     CREATE TABLE IF NOT EXISTS user_activity (
       id SERIAL PRIMARY KEY,
