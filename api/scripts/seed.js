@@ -20,6 +20,17 @@ async function ensureSchema() {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS user_activity (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      username VARCHAR(64) NOT NULL,
+      login_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      logout_time TIMESTAMP WITH TIME ZONE,
+      duration_minutes INTEGER
+    );
+  `);
 }
 
 async function upsertUser({ username, password, rol, nombre, nombreCompleto, cedula, area, empresa, correo, celular }) {

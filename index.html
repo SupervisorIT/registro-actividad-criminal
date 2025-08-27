@@ -20,6 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/session-check.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
         window.jspdf = window.jspdf || {};
@@ -163,6 +164,36 @@
           <div id="adminUsuariosLista"></div>
         </div>
 
+        <!-- Registro de Actividad de Usuarios -->
+        <div style="padding:12px 16px; border-top:1px solid #e6eaf0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-weight:600; color:#334155;">Registro de Actividad de Usuarios</div>
+            <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cargarRegistroActividad()">Actualizar</button>
+          </div>
+          <div id="userActivityContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #e6eaf0; border-radius: 6px;">
+            <table class="table table-bordered table-striped" id="userActivityTable" style="margin-bottom:0;">
+              <thead style="position: sticky; top: 0; background: #f8f9fb;">
+                <tr>
+                  <th>Usuario</th>
+                  <th>Inicio de Sesión</th>
+                  <th>Cierre de Sesión</th>
+                  <th>Duración (min)</th>
+                  <th>Dirección IP</th>
+                </tr>
+              </thead>
+              <tbody id="userActivityTableBody">
+                <tr><td colspan="5" style="text-align:center; padding: 20px; color: #6b7280;">Haga clic en 'Actualizar' para cargar los datos.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 16px;">
+            <div style="font-weight:600; color:#334155; margin-bottom:8px;">Visualización de Actividad</div>
+            <div id="userActivityChartContainer" style="width: 100%; height: 250px; background: #f8f9fb; border: 1px solid #e6eaf0; border-radius: 6px; padding: 10px;">
+              <canvas id="userActivityChart"></canvas>
+            </div>
+          </div>
+        </div>
+
         <div style="padding:12px 16px; text-align:right; border-top:1px solid #e6eaf0;">
           <button class="btn btn-secondary" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;" onclick="cerrarModal('adminPanelModal')">Cerrar</button>
         </div>
@@ -245,7 +276,7 @@
             <div class="user-info-container" style="margin-top:2px; width:100%; display:flex; justify-content:center;"> 
               <div class="user-info" style="text-align:center; display:flex; align-items:center; gap:12px;">
                 <span>Usuario: <strong id="usuarioInfo"></strong></span>
-                <button type="button" class="btn btn-sm btn-danger btn-cerrar-sesion" onclick="cerrarSesion()">Cerrar Sesión</button>
+                <button type="button" id="logout-button" class="btn btn-sm btn-danger btn-cerrar-sesion">Cerrar Sesión</button>
               </div>
             </div>
         </div>

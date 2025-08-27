@@ -1,4 +1,31 @@
 // Funcionalidades de administración
+// Cierre de sesión
+async function cerrarSesion() {
+    const activityId = sessionStorage.getItem('activityId');
+    const token = sessionStorage.getItem('authToken');
+    const base = localStorage.getItem('AUTH_API_BASE');
+
+    if (activityId && token && base) {
+        try {
+            await fetch(`${base.replace(/\/$/, '')}/auth/logout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ activityId: Number(activityId) })
+            });
+        } catch (err) {
+            console.error('Error al registrar el cierre de sesión:', err);
+            // No bloquear el logout si la API falla, solo registrar el error.
+        }
+    }
+
+    // Limpiar sesión y redirigir
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar si el usuario es administrador
     const usuarioActivo = sessionStorage.getItem('usuarioActivo');
@@ -6,7 +33,129 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const usuario = JSON.parse(usuarioActivo);
     if (usuario.rol !== 'admin') return;
+
+    // Adjuntar evento de logout al botón correspondiente
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            cerrarSesion();
+        });
+    }
 });
+
+// Cargar y mostrar el registro de actividad de usuarios
+let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
+
+function renderUserActivityChart(activities = []) {
+    const ctx = document.getElementById('userActivityChart').getContext('2d');
+    if (!ctx) return;
+
+    if (userActivityChartInstance) {
+        userActivityChartInstance.destroy(); // Destruir gráfico anterior antes de crear uno nuevo
+    }
+
+    if (activities.length === 0) {
+        return; // No renderizar gráfico si no hay datos
+    }
+
+    // Procesar datos: contar inicios de sesión por día
+    const loginsPerDay = activities.reduce((acc, activity) => {
+        if (activity.login_time) {
+            const date = new Date(activity.login_time).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            acc[date] = (acc[date] || 0) + 1;
+        }
+        return acc;
+    }, {});
+
+    const labels = Object.keys(loginsPerDay).sort((a, b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+    const data = labels.map(label => loginsPerDay[label]);
+
+    userActivityChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Inicios de Sesión por Día',
+                data: data,
+                backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Cargar y mostrar el registro de actividad de usuarios
+async function cargarRegistroActividad() {
+    const token = sessionStorage.getItem('authToken');
+    const base = localStorage.getItem('AUTH_API_BASE');
+    const tableBody = document.getElementById('userActivityTableBody');
+
+    if (!token || !base || !tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="5">Error de configuración o de sistema.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>';
+
+    try {
+        const response = await fetch(`${base.replace(/\/$/, '')}/users/activity`, {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al obtener los datos de actividad.');
+        }
+
+        const activities = await response.json();
+
+        if (activities.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan=\"5\" style=\"text-align:center;\">No hay registros de actividad.</td></tr>';
+            renderUserActivityChart(activities); // Limpiar el gráfico si no hay datos
+            return;
+        }
+
+        tableBody.innerHTML = ''; // Limpiar la tabla
+
+        activities.forEach(activity => {
+            const row = document.createElement('tr');
+            const duration = activity.duration_minutes !== null ? `${activity.duration_minutes.toFixed(2)} min` : 'Sesión activa';
+            const logoutTime = activity.logout_time ? new Date(activity.logout_time).toLocaleString() : 'N/A';
+
+            row.innerHTML = `
+                <td>${activity.username}</td>
+                <td>${new Date(activity.login_time).toLocaleString()}</td>
+                <td>${logoutTime}</td>
+                <td>${duration}</td>
+                <td>${activity.ip_address}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        renderUserActivityChart(activities);
+
+    } catch (error) {
+        console.error('Error al cargar el registro de actividad:', error);
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: red;">${error.message}</td></tr>`;
+        renderUserActivityChart([]); // Limpiar gráfico en caso de error
+    }
+}
 
 // Abrir Panel de Administración (modal en index.html con id "adminPanelModal")
 function abrirModalAdminPanel() {

@@ -47,6 +47,14 @@ router.post('/login', async (req, res) => {
     );
 
     const payload = mapUserRowToPayload(user);
+
+    // Registrar actividad
+    const activityResult = await query(
+      'INSERT INTO user_activity (user_id, username) VALUES ($1, $2) RETURNING id',
+      [user.id, user.username]
+    );
+    const activityId = activityResult.rows[0].id;
+
     // Detectar campos faltantes que queremos exigir completos para operar
     const required = ['nombre', 'nombreCompleto', 'cedula', 'empresa', 'correo', 'celular'];
     const missingFields = [];
@@ -57,7 +65,7 @@ router.post('/login', async (req, res) => {
     if (!payload.correo) missingFields.push('correo');
     if (!payload.celular) missingFields.push('celular');
 
-    return res.json({ token, user: payload, missingFields });
+    return res.json({ token, user: payload, missingFields, activityId });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Error interno' });
@@ -75,6 +83,34 @@ router.get('/validate', async (req, res) => {
     return res.json({ ok: true, decoded });
   } catch (err) {
     return res.status(401).json({ error: 'Token inválido' });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  try {
+    const { activityId } = req.body;
+    if (!activityId) {
+      return res.status(400).json({ error: 'activityId es requerido' });
+    }
+
+    const { rows } = await query('SELECT login_time FROM user_activity WHERE id = $1', [activityId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Actividad no encontrada' });
+    }
+
+    const loginTime = new Date(rows[0].login_time);
+    const logoutTime = new Date();
+    const durationMinutes = Math.round((logoutTime - loginTime) / (1000 * 60));
+
+    await query(
+      'UPDATE user_activity SET logout_time = $1, duration_minutes = $2 WHERE id = $3',
+      [logoutTime, durationMinutes, activityId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 

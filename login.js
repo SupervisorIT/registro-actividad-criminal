@@ -95,6 +95,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                             // Guardar token obligatorio
                             sessionStorage.setItem('authToken', data.token);
+                            if (data.activityId) {
+                                sessionStorage.setItem('activityId', data.activityId);
+                            }
                             // Marcar origen remoto
                             sessionStorage.setItem('authOrigin', 'remote');
 
