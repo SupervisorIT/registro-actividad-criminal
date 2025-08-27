@@ -25,6 +25,102 @@ async function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
+// Cerrar TODAS las sesiones activas (incluida la mía)
+async function cerrarTodasSesionesActivas() {
+    try {
+        const token = sessionStorage.getItem('authToken');
+        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+        if (!token || !base) {
+            alert('No hay sesión válida o backend configurado.');
+            return;
+        }
+
+        const resp = await fetch(base + '/users/activity', { headers: { 'Authorization': 'Bearer ' + token }});
+        if (!resp.ok) {
+            const data = await resp.json().catch(()=>({error:'Error al consultar actividad'}));
+            throw new Error(data.error || 'Error consultando actividad');
+        }
+        const activities = await resp.json();
+        const activos = (Array.isArray(activities) ? activities : []).filter(a => !a.logout_time);
+        const ids = activos.map(a => Number(a.activity_id ?? a.id ?? a.activityId)).filter(n => !Number.isNaN(n));
+
+        if (!ids.length) {
+            alert('No hay sesiones activas para cerrar.');
+            return;
+        }
+
+        if (!confirm(`Se cerrarán TODAS las sesiones activas (${ids.length}), incluida la tuya. ¿Continuar?`)) return;
+
+        let ok = 0, fail = 0;
+        for (const id of ids) {
+            try {
+                const r = await fetch(base + '/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ activityId: Number(id) })
+                });
+                if (r.ok) ok++; else fail++;
+            } catch { fail++; }
+        }
+
+        alert(`Cierre completado. OK: ${ok}, Fallos: ${fail}. Se cerrará tu sesión ahora.`);
+        try { cerrarSesion(); } catch { sessionStorage.clear(); window.location.href = 'login.html'; }
+    } catch (e) {
+        console.error('cerrarTodasSesionesActivas:', e);
+        alert(e.message || 'Error cerrando sesiones.');
+    }
+}
+
+// Cerrar todas las sesiones activas excepto la mía (admin)
+async function cerrarOtrasSesionesActivas() {
+    try {
+        const token = sessionStorage.getItem('authToken');
+        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+        const myActivityId = Number(sessionStorage.getItem('activityId'));
+        if (!token || !base) {
+            alert('No hay sesión válida o backend configurado.');
+            return;
+        }
+
+        const resp = await fetch(base + '/users/activity', { headers: { 'Authorization': 'Bearer ' + token }});
+        if (!resp.ok) {
+            const data = await resp.json().catch(()=>({error:'Error al consultar actividad'}));
+            throw new Error(data.error || 'Error consultando actividad');
+        }
+        const activities = await resp.json();
+        const activos = (Array.isArray(activities) ? activities : []).filter(a => !a.logout_time);
+        const cerrar = activos.filter(a => {
+            const id = a.activity_id ?? a.id ?? a.activityId;
+            return id != null && Number(id) !== myActivityId; // excluir mi sesión actual
+        }).map(a => Number(a.activity_id ?? a.id ?? a.activityId)).filter(n => !Number.isNaN(n));
+
+        if (!cerrar.length) {
+            alert('No hay otras sesiones activas para cerrar.');
+            return;
+        }
+
+        if (!confirm(`Se cerrarán ${cerrar.length} sesión(es) activa(s) de otros usuarios. ¿Continuar?`)) return;
+
+        let ok = 0, fail = 0;
+        for (const id of cerrar) {
+            try {
+                const r = await fetch(base + '/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ activityId: Number(id) })
+                });
+                if (r.ok) ok++; else fail++;
+            } catch { fail++; }
+        }
+
+        alert(`Cierre completado. OK: ${ok}, Fallos: ${fail}.`);
+        try { await cargarRegistroActividad(); } catch {}
+    } catch (e) {
+        console.error('cerrarOtrasSesionesActivas:', e);
+        alert(e.message || 'Error cerrando sesiones.');
+    }
+}
+
 // Exportar a PDF la tabla de actividad y luego limpiar la tabla en pantalla
 function exportarActividadPDFyLimpiar() {
     try {
