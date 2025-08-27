@@ -2,7 +2,6 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
-import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -28,7 +27,7 @@ router.post('/login', async (req, res) => {
     }
 
     const { rows } = await query(
-      `SELECT id, username, password_hash, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo, force_password_change
+      `SELECT id, username, password_hash, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo
        FROM users WHERE username = $1 LIMIT 1`,
       [String(username).toLowerCase()]
     );
@@ -42,7 +41,7 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
     const token = jwt.sign(
-      { sub: user.id, username: user.username, rol: user.rol, force_change: !!user.force_password_change },
+      { sub: user.id, username: user.username, rol: user.rol },
       process.env.JWT_SECRET || 'dev-secret',
       { expiresIn: '8h' }
     );
@@ -66,8 +65,7 @@ router.post('/login', async (req, res) => {
     if (!payload.correo) missingFields.push('correo');
     if (!payload.celular) missingFields.push('celular');
 
-    const forceChange = !!user.force_password_change;
-    return res.json({ token, user: payload, missingFields, activityId, forceChange });
+    return res.json({ token, user: payload, missingFields, activityId });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Error interno' });
@@ -117,33 +115,3 @@ router.post('/logout', async (req, res) => {
 });
 
 export default router;
-
-// Cambio de contraseña cuando es obligatorio o por decisión del usuario
-router.post('/password/change', verifyToken, async (req, res) => {
-  try {
-    const userId = req.user?.sub;
-    if (!userId) return res.status(401).json({ error: 'No autenticado' });
-
-    const { newPassword } = req.body || {};
-    const pwd = String(newPassword || '');
-    if (!pwd) return res.status(400).json({ error: 'newPassword requerido' });
-
-    // Validación mínima de backend (8+, alfanumérico y símbolo)
-    const meetsLen = pwd.length >= 8;
-    const hasLetter = /[A-Za-z]/.test(pwd);
-    const hasDigit = /\d/.test(pwd);
-    const hasSymbol = /[^A-Za-z0-9]/.test(pwd);
-    if (!(meetsLen && hasLetter && hasDigit && hasSymbol)) {
-      return res.status(400).json({ error: 'La contraseña no cumple los requisitos mínimos.' });
-    }
-
-    const hash = await bcrypt.hash(pwd, 10);
-    await query('UPDATE users SET password_hash = $1, force_password_change = FALSE WHERE id = $2', [hash, userId]);
-
-    // Devolver ok; el cliente puede mantener el token actual o pedir re-login
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('POST /auth/password/change error', err);
-    return res.status(500).json({ error: 'Error interno' });
-  }
-});

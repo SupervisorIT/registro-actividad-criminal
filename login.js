@@ -98,8 +98,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (data.activityId) {
                                 sessionStorage.setItem('activityId', data.activityId);
                             }
-                            // Guardar flag para cambio forzado si aplica
-                            try { sessionStorage.setItem('forceChange', data.forceChange ? 'true' : 'false'); } catch {}
                             // Marcar origen remoto
                             sessionStorage.setItem('authOrigin', 'remote');
 
