@@ -161,6 +161,32 @@ document.addEventListener('DOMContentLoaded', function() {
 let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
 let activityInterval = null;
 
+// Forzar cierre de sesión de una actividad específica (solo admin)
+async function forzarCierreSesion(activityId) {
+    try {
+        if (!activityId && activityId !== 0) throw new Error('ID de actividad inválido');
+        const token = sessionStorage.getItem('authToken');
+        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+        if (!token || !base) throw new Error('No hay sesión válida o backend configurado.');
+
+        if (!confirm('¿Cerrar esta sesión activa?')) return;
+
+        const res = await fetch(base + '/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ activityId: Number(activityId) })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'No se pudo cerrar la sesión');
+        }
+        alert('Sesión cerrada.');
+    } catch (e) {
+        console.error('forzarCierreSesion:', e);
+        alert(e.message || 'Error al cerrar la sesión');
+    }
+}
+
 // --- Modal: Asignar contraseña temporal (solo admin) ---
 function abrirModalAsignarPwdTemp() {
     const modal = document.getElementById('asignarPwdTempModal');
@@ -372,16 +398,38 @@ async function cargarRegistroActividad() {
 
         activities.forEach(activity => {
             const row = document.createElement('tr');
-            const duration = activity.duration_minutes !== null ? `${activity.duration_minutes.toFixed(2)} min` : 'Sesión activa';
+            const loginTime = activity.login_time ? new Date(activity.login_time).toLocaleString() : 'N/A';
             const logoutTime = activity.logout_time ? new Date(activity.logout_time).toLocaleString() : 'N/A';
+            const mins = (typeof activity.duration_minutes === 'number') ? activity.duration_minutes : Number(activity.duration_minutes || 0);
+            const duration = activity.logout_time ? `${mins.toFixed(2)} min` : 'Sesión activa';
 
+            // Construir primeras 4 columnas
             row.innerHTML = `
-                <td>${activity.username}</td>
-                <td>${new Date(activity.login_time).toLocaleString()}</td>
+                <td>${activity.username || ''}</td>
+                <td>${loginTime}</td>
                 <td>${logoutTime}</td>
                 <td>${duration}</td>
-                <td>${activity.ip_address || 'N/A'}</td>
+                <td></td>
             `;
+
+            // Columna Acciones: botón para cerrar sesión si está activa por mucho tiempo
+            const actionsTd = row.querySelector('td:last-child');
+            const isActive = !activity.logout_time;
+            const MAX_MIN = 120; // umbral para considerar "mucho tiempo"
+            const isTooLong = isActive && mins >= MAX_MIN;
+            const actId = activity.activity_id ?? activity.id ?? activity.activityId ?? null;
+
+            if (isTooLong && actId) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-danger btn-sm';
+                btn.textContent = 'Cerrar sesión';
+                btn.title = 'Forzar cierre de esta sesión activa';
+                btn.onclick = () => forzarCierreSesion(Number(actId)).then(() => cargarRegistroActividad());
+                actionsTd.appendChild(btn);
+            } else {
+                actionsTd.textContent = isActive ? '—' : '';
+            }
+
             tableBody.appendChild(row);
         });
 
