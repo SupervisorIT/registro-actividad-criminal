@@ -26,6 +26,21 @@ async function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
+// Abrir Modal de Registro de Inicio Usuarios (userActivityModal)
+function abrirModalActividad() {
+    const modal = document.getElementById('userActivityModal');
+    if (!modal) {
+        alert('No se encontró el modal "Registro de Inicio Usuarios" en el HTML.');
+        return;
+    }
+    modal.style.display = 'block';
+
+    // Carga inmediata y auto-actualización cada 5s
+    try { cargarRegistroActividad(); } catch(_) {}
+    if (activityInterval) clearInterval(activityInterval);
+    activityInterval = setInterval(cargarRegistroActividad, 5000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar si el usuario es administrador
     const usuarioActivo = sessionStorage.getItem('usuarioActivo');
@@ -160,10 +175,6 @@ async function cargarRegistroActividad() {
 
 // Abrir Panel de Administración (modal en index.html con id "adminPanelModal")
 async function abrirModalAdminPanel() {
-    // Iniciar la actualización automática de la actividad de usuarios
-    if (activityInterval) clearInterval(activityInterval);
-    activityInterval = setInterval(cargarRegistroActividad, 15000); // Actualizar cada 15 segundos
-
     const modal = document.getElementById('adminPanelModal');
     if (!modal) {
         alert('No se encontró el Panel de Administración en el HTML.');
@@ -523,8 +534,8 @@ function cerrarModal(modalId) {
         modal.style.display = 'none';
     }
 
-    // Detener la actualización automática si se cierra el panel de admin
-    if (modalId === 'adminPanelModal' && activityInterval) {
+    // Detener la actualización automática si se cierra el panel de admin o el modal de actividad
+    if ((modalId === 'adminPanelModal' || modalId === 'userActivityModal') && activityInterval) {
         clearInterval(activityInterval);
         activityInterval = null;
     }
@@ -536,8 +547,8 @@ window.onclick = function(event) {
     for (let i = 0; i < modales.length; i++) {
         if (event.target === modales[i]) {
             modales[i].style.display = 'none';
-            // Detener la actualización automática si se cierra el panel de admin
-            if (modales[i].id === 'adminPanelModal' && activityInterval) {
+            // Detener la actualización automática si se cierra el panel de admin o el modal de actividad
+            if ((modales[i].id === 'adminPanelModal' || modales[i].id === 'userActivityModal') && activityInterval) {
                 clearInterval(activityInterval);
                 activityInterval = null;
             }

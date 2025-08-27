@@ -55,6 +55,9 @@
         <button id="adminButton" class="btn btn-primary admin-only" onclick="abrirModalAdminPanel()" style="margin-right: 10px; display:none;">
             <i class="fas fa-shield-alt"></i> Panel de Administración
         </button>
+        <button id="userActivityButton" class="btn btn-secondary admin-only" onclick="abrirModalActividad()" style="margin-right: 10px; display:none;">
+            <i class="fas fa-user-clock"></i> Registro de Inicio Usuarios
+        </button>
         <button id="helpButton" class="btn btn-info" onclick="window.location.href='manual-ayuda.html'">
             <i class="fas fa-question-circle"></i> Ayuda
         </button>
@@ -94,6 +97,47 @@
         <div style="padding:12px 16px; text-align:right; border-top:1px solid #e6eaf0; display:flex; gap:8px; justify-content:flex-end;">
           <button class="btn btn-primary" style="background:#1565C0;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="agregarUsuario()">Crear</button>
           <button class="btn btn-secondary" style="background:#6c757d;color:#fff;border:none;padding:8px 12px;border-radius:6px;" onclick="cerrarModal('adminCrearUsuarioModal')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Registro de Inicio Usuarios (solo admin) -->
+    <div id="userActivityModal" class="modal-admin" style="display:none;position:fixed;z-index:2050;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+      <div class="modal-content" style="background:#fff; margin:6% auto; width:760px; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.25);">
+        <div style="padding:12px 16px; background:#0d9488; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="margin:0;">Registro de Inicio Usuarios</h4>
+          <span class="close" onclick="cerrarModal('userActivityModal')" style="cursor:pointer; font-size:22px;">&times;</span>
+        </div>
+        <div style="padding:14px 16px; background:#fff;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-weight:600; color:#334155;">Actividad de Usuarios</div>
+            <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cargarRegistroActividad()">Actualizar</button>
+          </div>
+          <div id="userActivityContainer" style="max-height: 340px; overflow-y: auto; border: 1px solid #e6eaf0; border-radius: 6px;">
+            <table class="table table-bordered table-striped" id="userActivityTable" style="margin-bottom:0;">
+              <thead style="position: sticky; top: 0; background: #f8f9fb;">
+                <tr>
+                  <th>Usuario</th>
+                  <th>Inicio de Sesión</th>
+                  <th>Cierre de Sesión</th>
+                  <th>Duración (min)</th>
+                  <th>Dirección IP</th>
+                </tr>
+              </thead>
+              <tbody id="userActivityTableBody">
+                <tr><td colspan="5" style="text-align:center; padding: 20px; color: #6b7280;">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 16px;">
+            <div style="font-weight:600; color:#334155; margin-bottom:8px;">Visualización de Actividad</div>
+            <div id="userActivityChartContainer" style="width: 100%; height: 260px; background: #f8f9fb; border: 1px solid #e6eaf0; border-radius: 6px; padding: 10px;">
+              <canvas id="userActivityChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px 16px; text-align:right; border-top:1px solid #e6eaf0; background:#fff;">
+          <button class="btn btn-secondary" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;" onclick="cerrarModal('userActivityModal')">Cerrar</button>
         </div>
       </div>
     </div>
@@ -164,35 +208,8 @@
           <div id="adminUsuariosLista"></div>
         </div>
 
-        <!-- Registro de Actividad de Usuarios -->
-        <div style="padding:12px 16px; border-top:1px solid #e6eaf0;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-weight:600; color:#334155;">Registro de Actividad de Usuarios</div>
-            <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cargarRegistroActividad()">Actualizar</button>
-          </div>
-          <div id="userActivityContainer" style="max-height: 300px; overflow-y: auto; border: 1px solid #e6eaf0; border-radius: 6px;">
-            <table class="table table-bordered table-striped" id="userActivityTable" style="margin-bottom:0;">
-              <thead style="position: sticky; top: 0; background: #f8f9fb;">
-                <tr>
-                  <th>Usuario</th>
-                  <th>Inicio de Sesión</th>
-                  <th>Cierre de Sesión</th>
-                  <th>Duración (min)</th>
-                  <th>Dirección IP</th>
-                </tr>
-              </thead>
-              <tbody id="userActivityTableBody">
-                <tr><td colspan="5" style="text-align:center; padding: 20px; color: #6b7280;">Haga clic en 'Actualizar' para cargar los datos.</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div style="margin-top: 16px;">
-            <div style="font-weight:600; color:#334155; margin-bottom:8px;">Visualización de Actividad</div>
-            <div id="userActivityChartContainer" style="width: 100%; height: 250px; background: #f8f9fb; border: 1px solid #e6eaf0; border-radius: 6px; padding: 10px;">
-              <canvas id="userActivityChart"></canvas>
-            </div>
-          </div>
-        </div>
+        <!-- Sección de actividad movida a modal independiente -->
+        
 
         <div style="padding:12px 16px; text-align:right; border-top:1px solid #e6eaf0;">
           <button class="btn btn-secondary" style="background:#6c757d; color:#fff; border:none; padding:8px 12px; border-radius:6px;" onclick="cerrarModal('adminPanelModal')">Cerrar</button>
