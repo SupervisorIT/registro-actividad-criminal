@@ -25,6 +25,47 @@ async function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
+// Exportar historial archivado (backup) a CSV
+function exportarActividadArchivadaCSV() {
+    let archive = [];
+    try { archive = JSON.parse(localStorage.getItem('userActivityArchive') || '[]'); } catch { archive = []; }
+    if (!Array.isArray(archive) || archive.length === 0) {
+        alert('No hay historial archivado para exportar.');
+        return;
+    }
+
+    // Armar CSV con columnas fijas
+    const headers = ['id','username','login_time','logout_time','duration_minutes'];
+    const rows = [headers.join(',')];
+
+    const csvEsc = (v) => {
+        if (v === null || v === undefined) return '';
+        const s = String(v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+
+    archive.forEach(a => {
+        const id = a.activity_id ?? a.id ?? a.activityId ?? '';
+        const username = a.username || '';
+        const login = a.login_time ? new Date(a.login_time).toISOString() : '';
+        const logout = a.logout_time ? new Date(a.logout_time).toISOString() : '';
+        const dur = (typeof a.duration_minutes === 'number') ? a.duration_minutes : (a.duration_minutes ? Number(a.duration_minutes) : '');
+        rows.push([id, username, login, logout, dur].map(csvEsc).join(','));
+    });
+
+    const contenido = rows.join('\n') + '\n';
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    a.download = `actividad-usuarios-archivo-${fecha}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 // --- Modal bloqueante: cambio obligatorio de contraseña ---
 function validarForcePwdEnVivo() {
     const pwd = document.getElementById('forcePwdNueva')?.value || '';
@@ -388,15 +429,60 @@ async function cargarRegistroActividad() {
 
         const activities = await response.json();
 
-        if (activities.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan=\"4\" style=\"text-align:center;\">No hay registros de actividad.</td></tr>';
-            renderUserActivityChart(activities); // Limpiar el gráfico si no hay datos
+        // 1) Archivar actividades cerradas con más de 1 hora y evitar duplicados
+        const ahora = Date.now();
+        const HORA_MS = 60 * 60 * 1000;
+        const cutoff = ahora - HORA_MS;
+
+        let archivedIds = [];
+        try { archivedIds = JSON.parse(localStorage.getItem('userActivityArchivedIds') || '[]'); } catch { archivedIds = []; }
+        if (!Array.isArray(archivedIds)) archivedIds = [];
+        const archivedIdSet = new Set(archivedIds);
+
+        let archiveBucket = [];
+        try { archiveBucket = JSON.parse(localStorage.getItem('userActivityArchive') || '[]'); } catch { archiveBucket = []; }
+        if (!Array.isArray(archiveBucket)) archiveBucket = [];
+
+        const toArchive = [];
+        const kept = [];
+        for (const a of activities) {
+            const id = a.activity_id ?? a.id ?? a.activityId ?? null;
+            const logoutTs = a.logout_time ? new Date(a.logout_time).getTime() : null;
+            const isClosable = logoutTs && !Number.isNaN(logoutTs) && logoutTs < cutoff;
+            if (isClosable && id != null && !archivedIdSet.has(String(id))) {
+                toArchive.push(a);
+                archivedIdSet.add(String(id));
+            } else if (!isClosable) {
+                kept.push(a);
+            }
+            // Si es cerrada pero < 1h, también la mantenemos
+            if (!isClosable && logoutTs) {
+                // ya está en kept por else-if
+            }
+            // Si no tiene id, no archivar para evitar duplicados incontrolables
+            if (isClosable && id == null) {
+                // Mantenemos para no perder trazabilidad sin id
+                kept.push(a);
+            }
+        }
+
+        if (toArchive.length > 0) {
+            try {
+                archiveBucket.push(...toArchive);
+                localStorage.setItem('userActivityArchive', JSON.stringify(archiveBucket));
+                localStorage.setItem('userActivityArchivedIds', JSON.stringify(Array.from(archivedIdSet)));
+            } catch (e) { console.warn('No se pudo persistir el archivo de actividad:', e); }
+        }
+
+        if (kept.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay registros de actividad.</td></tr>';
+            renderUserActivityChart([]); // Limpiar el gráfico si no hay datos
             return;
         }
 
         tableBody.innerHTML = ''; // Limpiar la tabla
 
-        activities.forEach(activity => {
+        kept.forEach(activity => {
             const row = document.createElement('tr');
             const loginDateObj = activity.login_time ? new Date(activity.login_time) : null;
             const loginTime = loginDateObj ? loginDateObj.toLocaleString() : 'N/A';
@@ -418,7 +504,7 @@ async function cargarRegistroActividad() {
             tableBody.appendChild(row);
         });
 
-        renderUserActivityChart(activities);
+        renderUserActivityChart(kept);
 
     } catch (error) {
         console.error('Error al cargar el registro de actividad:', error);
