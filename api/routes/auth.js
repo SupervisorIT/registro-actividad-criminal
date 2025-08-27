@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../db.js';
+import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.post('/login', async (req, res) => {
     }
 
     const { rows } = await query(
-      `SELECT id, username, password_hash, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo
+      `SELECT id, username, password_hash, rol, nombre, nombre_completo, cedula, area, empresa, correo, celular, activo, force_password_change
        FROM users WHERE username = $1 LIMIT 1`,
       [String(username).toLowerCase()]
     );
@@ -41,7 +42,7 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
     const token = jwt.sign(
-      { sub: user.id, username: user.username, rol: user.rol },
+      { sub: user.id, username: user.username, rol: user.rol, force_change: !!user.force_password_change },
       process.env.JWT_SECRET || 'dev-secret',
       { expiresIn: '8h' }
     );
@@ -65,7 +66,8 @@ router.post('/login', async (req, res) => {
     if (!payload.correo) missingFields.push('correo');
     if (!payload.celular) missingFields.push('celular');
 
-    return res.json({ token, user: payload, missingFields, activityId });
+    const forceChange = !!user.force_password_change;
+    return res.json({ token, user: payload, missingFields, activityId, forceChange });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Error interno' });
@@ -111,6 +113,29 @@ router.post('/logout', async (req, res) => {
   } catch (err) {
     console.error('Logout error:', err);
     res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// Cambiar contraseña del usuario autenticado y limpiar force_password_change
+router.post('/password/change', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user?.sub;
+    const { newPassword } = req.body || {};
+    if (!userId) return res.status(401).json({ error: 'No autenticado' });
+    if (!newPassword || String(newPassword).length < 8) {
+      return res.status(400).json({ error: 'Nueva contraseña inválida (mínimo 8 caracteres)' });
+    }
+
+    const hash = await bcrypt.hash(String(newPassword), 10);
+    const { rowCount } = await query(
+      'UPDATE users SET password_hash = $1, force_password_change = FALSE WHERE id = $2',
+      [hash, userId]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'Usuario no encontrado' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /auth/password/change error', err);
+    return res.status(500).json({ error: 'Error interno' });
   }
 });
 

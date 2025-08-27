@@ -63,6 +63,129 @@ document.addEventListener('DOMContentLoaded', function() {
 let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
 let activityInterval = null;
 
+// --- Modal: Asignar contraseña temporal (solo admin) ---
+function abrirModalAsignarPwdTemp() {
+    const modal = document.getElementById('asignarPwdTempModal');
+    if (!modal) {
+        alert('No se encontró el modal para asignar contraseña temporal.');
+        return;
+    }
+    modal.style.display = 'block';
+    // Limpiar campos
+    const pwd1 = document.getElementById('pwdTempNueva');
+    const pwd2 = document.getElementById('pwdTempConfirm');
+    if (pwd1) pwd1.value = '';
+    if (pwd2) pwd2.value = '';
+    validarPwdTempEnVivo();
+
+    // Cargar lista de usuarios (solo admin)
+    try {
+        const token = sessionStorage.getItem('authToken');
+        const base = localStorage.getItem('AUTH_API_BASE');
+        if (!base || !token) return;
+        fetch(`${base.replace(/\/$/, '')}/users`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(r => r.json())
+        .then(users => {
+            const sel = document.getElementById('pwdTempUsuario');
+            if (!sel) return;
+            sel.innerHTML = '';
+            if (!Array.isArray(users) || users.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'No hay usuarios';
+                sel.appendChild(opt);
+                return;
+            }
+            users
+              .sort((a,b) => String(a.username).localeCompare(String(b.username)))
+              .forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.username;
+                opt.textContent = `${u.username} (${u.rol})`;
+                sel.appendChild(opt);
+              });
+        })
+        .catch(err => console.error('Error al cargar usuarios:', err));
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function validarPwdTempEnVivo() {
+    const pwd = document.getElementById('pwdTempNueva')?.value || '';
+    const confirm = document.getElementById('pwdTempConfirm')?.value || '';
+
+    const okLen = pwd.length >= 8;
+    const okLetter = /[A-Za-z]/.test(pwd);
+    const okNumber = /\d/.test(pwd);
+    const okSymbol = /[^A-Za-z0-9]/.test(pwd);
+    const okMatch = pwd && confirm && pwd === confirm;
+
+    const setStatus = (id, ok) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.color = ok ? '#16a34a' : '#374151';
+        el.textContent = `${ok ? '✓' : '•'} ${el.textContent.replace(/^([✓•])\s*/, '')}`;
+    };
+
+    setStatus('reqLen', okLen);
+    setStatus('reqLetter', okLetter);
+    setStatus('reqNumber', okNumber);
+    setStatus('reqSymbol', okSymbol);
+    setStatus('reqMatch', okMatch);
+
+    const btn = document.getElementById('btnAsignarPwdTemp');
+    if (btn) btn.disabled = !(okLen && okLetter && okNumber && okSymbol && okMatch);
+}
+
+async function asignarPwdTemp() {
+    try {
+        const sel = document.getElementById('pwdTempUsuario');
+        const username = sel ? sel.value : '';
+        const pwd = document.getElementById('pwdTempNueva')?.value || '';
+
+        if (!username) {
+            alert('Seleccione un usuario');
+            return;
+        }
+
+        // Validación mínima redundante
+        if (!(pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /\d/.test(pwd) && /[^A-Za-z0-9]/.test(pwd))) {
+            alert('La contraseña no cumple los requisitos.');
+            return;
+        }
+
+        const base = localStorage.getItem('AUTH_API_BASE');
+        const token = sessionStorage.getItem('authToken');
+        if (!base || !token) {
+            alert('No hay conexión con el backend de autenticación.');
+            return;
+        }
+
+        const res = await fetch(`${base.replace(/\/$/, '')}/users/${encodeURIComponent(username)}/password-temp`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ password: pwd })
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'Error al asignar contraseña temporal');
+        }
+
+        alert('Contraseña temporal asignada. El usuario deberá cambiarla al ingresar.');
+        cerrarModal('asignarPwdTempModal');
+    } catch (err) {
+        console.error(err);
+        alert(err.message || 'Error inesperado');
+    }
+}
+
 function renderUserActivityChart(activities = []) {
     const ctx = document.getElementById('userActivityChart').getContext('2d');
     if (!ctx) return;

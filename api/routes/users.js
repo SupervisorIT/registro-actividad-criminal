@@ -145,6 +145,26 @@ router.patch('/me', async (req, res) => {
   }
 });
 
+// PATCH /users/:username/password-temp - asignar contraseña temporal y forzar cambio en primer login
+router.patch('/:username/password-temp', requireAdmin, async (req, res) => {
+  try {
+    const username = String(req.params.username || '').toLowerCase();
+    const { password } = req.body || {};
+    if (!username || !password) return res.status(400).json({ error: 'username y password son requeridos' });
+
+    const hash = await bcrypt.hash(String(password), 10);
+    const { rowCount } = await query(
+      `UPDATE users SET password_hash = $1, force_password_change = TRUE WHERE username = $2`,
+      [hash, username]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'Usuario no encontrado' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('PATCH /users/:username/password-temp error', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 // PATCH /users/:username - actualizar datos (y opcionalmente password)
 router.patch('/:username', requireAdmin, async (req, res) => {
   try {
