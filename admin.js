@@ -494,6 +494,15 @@ async function cargarUsuariosAdminPanel(forceRemote = false) {
         };
         acciones.appendChild(linkPerfil);
 
+        // Botón: Asignar contraseña temporal (solo admin panel)
+        const btnTemp = document.createElement('button');
+        btnTemp.type = 'button';
+        btnTemp.textContent = 'Asignar temp';
+        btnTemp.title = 'Asignar contraseña temporal y forzar cambio en el próximo ingreso';
+        btnTemp.style.cssText = 'margin-left:10px;background:#0d6efd;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;';
+        btnTemp.onclick = () => abrirModalAsignarPwdTemp(String(u.username||''));
+        acciones.appendChild(btnTemp);
+
         item.appendChild(info);
         item.appendChild(acciones);
         frag.appendChild(item);
@@ -701,6 +710,71 @@ async function enviarCambioPassword() {
         }
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+    }
+}
+
+// ---- Modal: Asignar Contraseña Temporal (admin) ----
+function abrirModalAsignarPwdTemp(username) {
+    const modal = document.getElementById('modalAsignarPwdTemp');
+    if (!modal) { alert('No se encontró el modal de asignación de contraseña temporal.'); return; }
+    window._apt_username = String(username||'');
+    const lbl = document.getElementById('apt_username_label');
+    const pwd = document.getElementById('apt_pwd');
+    const conf = document.getElementById('apt_confirm');
+    const msg = document.getElementById('apt_msg');
+    if (lbl) lbl.textContent = window._apt_username || '(n/a)';
+    if (pwd) pwd.value = '';
+    if (conf) conf.value = '';
+    if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+    modal.style.display = 'block';
+}
+
+function cerrarModalAsignarPwdTemp() {
+    const modal = document.getElementById('modalAsignarPwdTemp');
+    if (modal) modal.style.display = 'none';
+}
+
+function validarPwdTemp(pwd) {
+    const meetsLen = pwd.length >= 8;
+    const hasLetter = /[A-Za-z]/.test(pwd);
+    const hasDigit = /\d/.test(pwd);
+    const hasSymbol = /[^A-Za-z0-9]/.test(pwd);
+    return meetsLen && hasLetter && hasDigit && hasSymbol;
+}
+
+async function asignarPwdTemporal() {
+    const username = String(window._apt_username || '');
+    const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+    const token = sessionStorage.getItem('authToken');
+    const pwd = document.getElementById('apt_pwd');
+    const conf = document.getElementById('apt_confirm');
+    const msg = document.getElementById('apt_msg');
+    const p = (pwd?.value || '');
+    const c = (conf?.value || '');
+
+    if (!username) { alert('Usuario inválido.'); return; }
+    if (!base || !token) { if (msg){ msg.style.display='block'; msg.style.color='red'; msg.textContent='No hay conexión con el servidor.';} return; }
+    if (p !== c) { if (msg){ msg.style.display='block'; msg.style.color='red'; msg.textContent='Las contraseñas no coinciden.';} return; }
+    if (!validarPwdTemp(p)) { if (msg){ msg.style.display='block'; msg.style.color='red'; msg.textContent='La contraseña no cumple los requisitos (8+, letras, números y símbolo).';} return; }
+
+    try {
+        if (msg){ msg.style.display='block'; msg.style.color='#334155'; msg.textContent='Asignando...'; }
+        const resp = await fetch(base + '/users/' + encodeURIComponent(username), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ password: p })
+        });
+        if (!resp.ok) {
+            const t = await resp.text().catch(()=> '');
+            throw new Error(t || ('HTTP ' + resp.status));
+        }
+        if (msg){ msg.style.display='block'; msg.style.color:'#166534'; msg.textContent='Contraseña temporal asignada. El usuario deberá cambiarla al ingresar.'; }
+        setTimeout(() => { cerrarModalAsignarPwdTemp(); }, 700);
+        // Refrescar listado para mantener consistencia visual
+        try { await cargarUsuariosAdminPanel(); } catch(_){ }
+    } catch (e) {
+        console.error('Asignar pwd temp error', e);
+        if (msg){ msg.style.display='block'; msg.style.color='red'; msg.textContent='Error: ' + (e && e.message || e); }
     }
 }
 
