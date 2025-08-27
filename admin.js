@@ -19,9 +19,10 @@ async function cerrarSesion() {
             console.error('Error al registrar el cierre de sesión:', err);
             // No bloquear el logout si la API falla, solo registrar el error.
         }
-        // Continuar cierre local siempre
-        sessionStorage.clear();
-        window.location.href = 'login.html';
+    }
+    // Continuar cierre local siempre
+    sessionStorage.clear();
+    window.location.href = 'login.html';
 }
 
 // --- Modal bloqueante: cambio obligatorio de contraseña ---
