@@ -1,13 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
-import { verifyToken, requireAdmin, requireNoForceChange } from '../middleware/auth.js';
+import { verifyToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Aplica solo autenticación a todo el router
 router.use(verifyToken);
-router.use(requireNoForceChange);
 
 function mapRow(row) {
   return {

@@ -19,17 +19,3 @@ export function requireAdmin(req, res, next) {
   if (req.user.rol !== 'admin') return res.status(403).json({ error: 'Requiere rol admin' });
   return next();
 }
-
-// Bloquea el acceso a rutas normales si el usuario debe cambiar contraseña.
-// Debe aplicarse DESPUÉS de verifyToken y no en rutas como /auth/login o /auth/password/change
-export function requireNoForceChange(req, res, next) {
-  try {
-    if (!req.user) return res.status(401).json({ error: 'No autenticado' });
-    if (req.user.force_change === true) {
-      return res.status(403).json({ error: 'Debe cambiar su contraseña antes de continuar' });
-    }
-    return next();
-  } catch (_) {
-    return res.status(401).json({ error: 'No autenticado' });
-  }
-}

@@ -24,35 +24,6 @@ async function cerrarSesion() {
         window.location.href = 'login.html';
 }
 
-// Cerrar una sesión específica por activityId (admin)
-async function forzarCerrarSesion(activityId) {
-    try {
-        if (!activityId) return;
-        if (!confirm('¿Cerrar esta sesión ahora?')) return;
-
-        const base = localStorage.getItem('AUTH_API_BASE');
-        const token = sessionStorage.getItem('authToken');
-        if (!(base && token)) {
-            alert('No hay backend remoto configurado o sesión inválida.');
-            return;
-        }
-        const res = await fetch(base.replace(/\/$/, '') + '/auth/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ activityId: Number(activityId) })
-        });
-        if (!res.ok) {
-            const t = await res.text().catch(()=> '');
-            throw new Error(t || ('HTTP ' + res.status));
-        }
-        // Refrescar listado
-        await cargarRegistroActividad();
-    } catch (e) {
-        console.error('forzarCerrarSesion error:', e);
-        alert('No se pudo cerrar la sesión: ' + (e && e.message || e));
-    }
-}
-
 // --- Modal bloqueante: cambio obligatorio de contraseña ---
 function validarForcePwdEnVivo() {
     const pwd = document.getElementById('forcePwdNueva')?.value || '';
@@ -175,7 +146,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Lógica adicional solo para administradores (si aplica)
     if (usuario.rol === 'admin') {
-        // Aquí puede ir lógica específica de admin si se necesita en DOMContentLoaded en el futuro
+        // Mostrar botones admin-only en la barra superior
+        ['adminButton', 'userActivityButton', 'assignTempPwdButton'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+        // Cargar (o refrescar) la lista del panel si ya está abierto
+        try { if (typeof cargarUsuariosAdminPanel === 'function') cargarUsuariosAdminPanel(); } catch(_) {}
     }
 });
 
@@ -395,22 +372,14 @@ async function cargarRegistroActividad() {
         activities.forEach(activity => {
             const row = document.createElement('tr');
             const duration = activity.duration_minutes !== null ? `${activity.duration_minutes.toFixed(2)} min` : 'Sesión activa';
-            const logoutTime = activity.logout_time ? new Date(activity.logout_time).toLocaleString() : '—';
-
-            // Columna de acción: si no tiene logout_time, permitir cerrar sesión
-            let accionHtml = '';
-            if (!activity.logout_time) {
-                accionHtml = `<button class="btn" style="background:#DC2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="forzarCerrarSesion(${Number(activity.id)})">Cerrar sesión</button>`;
-            } else {
-                accionHtml = '<span style="color:#64748b;">Cerrada</span>';
-            }
+            const logoutTime = activity.logout_time ? new Date(activity.logout_time).toLocaleString() : 'N/A';
 
             row.innerHTML = `
                 <td>${activity.username}</td>
                 <td>${new Date(activity.login_time).toLocaleString()}</td>
                 <td>${logoutTime}</td>
                 <td>${duration}</td>
-                <td>${accionHtml}</td>
+                <td>${activity.ip_address || 'N/A'}</td>
             `;
             tableBody.appendChild(row);
         });
