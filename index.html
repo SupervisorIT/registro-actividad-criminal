@@ -21,6 +21,9 @@
     <script src="js/session-check.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/slim-select@2.8.2/dist/slimselect.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF y autoTable para exportar a PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
     
     <script>
         window.jspdf = window.jspdf || {};
@@ -182,6 +185,7 @@
             <div style="display:flex; align-items:center; gap:8px;">
               <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cargarRegistroActividad()">Actualizar</button>
               <button class="btn btn-sm" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadArchivadaCSV()">Exportar historial</button>
+              <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadPDFyLimpiar()">Exportar PDF</button>
             </div>
           </div>
           <div id="userActivityContainer" style="max-height: 340px; overflow-y: auto; border: 1px solid #e6eaf0; border-radius: 6px;">

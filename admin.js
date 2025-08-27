@@ -25,6 +25,71 @@ async function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
+// Exportar a PDF la tabla de actividad y luego limpiar la tabla en pantalla
+function exportarActividadPDFyLimpiar() {
+    try {
+        const body = document.getElementById('userActivityTableBody');
+        if (!body) {
+            alert('No se encontró la tabla de actividad.');
+            return;
+        }
+
+        const rows = Array.from(body.querySelectorAll('tr'))
+          .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim()))
+          .filter(r => r.length);
+
+        if (!rows.length) {
+            alert('No hay datos para exportar.');
+            return;
+        }
+
+        // Requiere jsPDF y autoTable cargados desde CDN
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF || !window.jspdf) {
+            alert('No fue posible cargar jsPDF. Verifique conexión e intente nuevamente.');
+            return;
+        }
+
+        const doc = new jsPDF('p', 'pt');
+        const headers = [[ 'Usuario', 'Inicio de Sesión', 'Cierre de Sesión', 'Duración (min)' ]];
+        const content = {
+            startY: 60,
+            head: headers,
+            body: rows,
+            styles: { fontSize: 9 }
+        };
+        doc.setFontSize(12);
+        doc.text('Actividad de Usuarios', 40, 40);
+        if (typeof doc.autoTable === 'function') {
+            doc.autoTable(content);
+        }
+        const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        doc.save(`actividad-usuarios-${fecha}.pdf`);
+
+        // Luego de exportar, limpiar todo (según solicitud actual)
+        limpiarTablaActividadTodo();
+    } catch (err) {
+        console.error('Error exportando a PDF:', err);
+        alert('Ocurrió un error al exportar a PDF.');
+    }
+}
+
+// Limpia el tbody de la tabla de actividad y reinicia la visualización
+function limpiarTablaActividadTodo() {
+    try {
+        const body = document.getElementById('userActivityTableBody');
+        if (body) {
+            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 18px; color: #6b7280;">Sin registros</td></tr>';
+        }
+        // Limpiar el gráfico
+        if (typeof renderUserActivityChart === 'function') {
+            renderUserActivityChart([]);
+        }
+    } catch (e) {
+        console.warn('No se pudo limpiar la tabla de actividad:', e);
+    }
+}
+
 // Exportar historial archivado (backup) a CSV
 function exportarActividadArchivadaCSV() {
     let archive = [];
