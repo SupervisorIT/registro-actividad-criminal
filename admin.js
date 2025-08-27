@@ -368,11 +368,11 @@ async function cargarRegistroActividad() {
     const tableBody = document.getElementById('userActivityTableBody');
 
     if (!token || !base || !tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="5">Error de configuración o de sistema.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4">Error de configuración o de sistema.</td></tr>';
         return;
     }
 
-    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando...</td></tr>';
 
     try {
         const response = await fetch(`${base.replace(/\/$/, '')}/users/activity`, {
@@ -389,7 +389,7 @@ async function cargarRegistroActividad() {
         const activities = await response.json();
 
         if (activities.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan=\"5\" style=\"text-align:center;\">No hay registros de actividad.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan=\"4\" style=\"text-align:center;\">No hay registros de actividad.</td></tr>';
             renderUserActivityChart(activities); // Limpiar el gráfico si no hay datos
             return;
         }
@@ -398,38 +398,22 @@ async function cargarRegistroActividad() {
 
         activities.forEach(activity => {
             const row = document.createElement('tr');
-            const loginTime = activity.login_time ? new Date(activity.login_time).toLocaleString() : 'N/A';
-            const logoutTime = activity.logout_time ? new Date(activity.logout_time).toLocaleString() : 'N/A';
-            const mins = (typeof activity.duration_minutes === 'number') ? activity.duration_minutes : Number(activity.duration_minutes || 0);
-            const duration = activity.logout_time ? `${mins.toFixed(2)} min` : 'Sesión activa';
+            const loginDateObj = activity.login_time ? new Date(activity.login_time) : null;
+            const loginTime = loginDateObj ? loginDateObj.toLocaleString() : 'N/A';
+            const logoutDateObj = activity.logout_time ? new Date(activity.logout_time) : null;
+            const logoutTime = logoutDateObj ? logoutDateObj.toLocaleString() : 'N/A';
+            const isActive = !logoutDateObj;
+            const mins = isActive
+                ? (loginDateObj ? ((Date.now() - loginDateObj.getTime()) / 60000) : 0)
+                : (typeof activity.duration_minutes === 'number' ? activity.duration_minutes : Number(activity.duration_minutes || 0));
+            const duration = isActive ? 'Sesión activa' : `${mins.toFixed(2)} min`;
 
-            // Construir primeras 4 columnas
             row.innerHTML = `
                 <td>${activity.username || ''}</td>
                 <td>${loginTime}</td>
                 <td>${logoutTime}</td>
                 <td>${duration}</td>
-                <td></td>
             `;
-
-            // Columna Acciones: botón para cerrar sesión si está activa por mucho tiempo
-            const actionsTd = row.querySelector('td:last-child');
-            const isActive = !activity.logout_time;
-            const MAX_MIN = 120; // umbral para considerar "mucho tiempo"
-            const isTooLong = isActive && mins >= MAX_MIN;
-            const actId = activity.activity_id ?? activity.id ?? activity.activityId ?? null;
-
-            if (isTooLong && actId) {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-danger btn-sm';
-                btn.textContent = 'Cerrar sesión';
-                btn.title = 'Forzar cierre de esta sesión activa';
-                btn.onclick = () => forzarCierreSesion(Number(actId)).then(() => cargarRegistroActividad());
-                actionsTd.appendChild(btn);
-            } else {
-                // Dejar vacío cuando no aplica botón
-                actionsTd.textContent = '';
-            }
 
             tableBody.appendChild(row);
         });
@@ -438,7 +422,7 @@ async function cargarRegistroActividad() {
 
     } catch (error) {
         console.error('Error al cargar el registro de actividad:', error);
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: red;">${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: red;">${error.message}</td></tr>`;
         renderUserActivityChart([]); // Limpiar gráfico en caso de error
     }
 }
