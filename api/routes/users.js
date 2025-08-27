@@ -208,7 +208,7 @@ router.patch('/:username/state', requireAdmin, async (req, res) => {
 // GET /users/activity - listar toda la actividad de usuarios (solo admin)
 router.get('/activity', requireAdmin, async (req, res) => {
   try {
-        const { rows } = await query(`
+            const { rows } = await query(`
       SELECT id, user_id, username, login_time, logout_time, duration_minutes
       FROM user_activity 
       ORDER BY login_time DESC
@@ -216,7 +216,11 @@ router.get('/activity', requireAdmin, async (req, res) => {
     return res.json(rows);
   } catch (err) {
     console.error('GET /users/activity error', err);
-    return res.status(500).json({ error: 'Error interno' });
+    // Código de error de PostgreSQL para 'undefined_table'
+    if (err.code === '42P01') {
+      return res.status(500).json({ error: 'La tabla de actividad de usuarios no existe en la base de datos.' });
+    }
+    return res.status(500).json({ error: 'Error interno del servidor al consultar la actividad.' });
   }
 });
 
