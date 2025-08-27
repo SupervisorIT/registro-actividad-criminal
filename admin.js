@@ -19,6 +19,10 @@ async function cerrarSesion() {
             console.error('Error al registrar el cierre de sesión:', err);
             // No bloquear el logout si la API falla, solo registrar el error.
         }
+        // Continuar cierre local siempre
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+}
 
 // --- Modal bloqueante: cambio obligatorio de contraseña ---
 function validarForcePwdEnVivo() {
@@ -93,12 +97,6 @@ async function guardarNuevaPwdObligatoria() {
         showError(e.message || 'Error inesperado');
     }
 }
-    }
-
-    // Limpiar sesión y redirigir
-    sessionStorage.clear();
-    window.location.href = 'login.html';
-}
 
 // Abrir Modal de Registro de Inicio Usuarios (userActivityModal)
 function abrirModalActividad() {
@@ -116,14 +114,12 @@ function abrirModalActividad() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar si el usuario es administrador
+    // Lógica general para cualquier usuario autenticado
     const usuarioActivo = sessionStorage.getItem('usuarioActivo');
     if (!usuarioActivo) return;
-    
     const usuario = JSON.parse(usuarioActivo);
-    if (usuario.rol !== 'admin') return;
 
-    // Adjuntar evento de logout al botón correspondiente
+    // Adjuntar evento de logout al botón correspondiente (todos los roles)
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', (e) => {
@@ -131,7 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
             cerrarSesion();
         });
     }
-    // Abrir modal de cambio obligatorio si aplica
+
+    // Abrir modal de cambio obligatorio si aplica (todos los roles)
     try {
         const must = sessionStorage.getItem('forceChange') === '1';
         if (must) {
@@ -146,6 +143,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     } catch (e) { /* noop */ }
+
+    // Lógica adicional solo para administradores (si aplica)
+    if (usuario.rol === 'admin') {
+        // Aquí puede ir lógica específica de admin si se necesita en DOMContentLoaded en el futuro
+    }
 });
 
 // Cargar y mostrar el registro de actividad de usuarios
