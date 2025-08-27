@@ -427,7 +427,8 @@ async function cargarRegistroActividad() {
                 btn.onclick = () => forzarCierreSesion(Number(actId)).then(() => cargarRegistroActividad());
                 actionsTd.appendChild(btn);
             } else {
-                actionsTd.textContent = isActive ? '—' : '';
+                // Dejar vacío cuando no aplica botón
+                actionsTd.textContent = '';
             }
 
             tableBody.appendChild(row);
