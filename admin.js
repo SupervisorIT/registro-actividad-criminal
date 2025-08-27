@@ -119,8 +119,8 @@ async function cargarRegistroActividad() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al obtener los datos de actividad.');
+            const errorData = await response.json().catch(() => ({ error: 'Error al obtener los datos de actividad.' }));
+            throw new Error(errorData.error || 'Error desconocido del servidor.');
         }
 
         const activities = await response.json();
