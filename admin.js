@@ -143,7 +143,7 @@ async function cargarRegistroActividad() {
                 <td>${new Date(activity.login_time).toLocaleString()}</td>
                 <td>${logoutTime}</td>
                 <td>${duration}</td>
-                <td>${activity.ip_address}</td>
+                <td>${activity.ip_address || 'N/A'}</td>
             `;
             tableBody.appendChild(row);
         });

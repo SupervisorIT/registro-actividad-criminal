@@ -208,7 +208,11 @@ router.patch('/:username/state', requireAdmin, async (req, res) => {
 // GET /users/activity - listar toda la actividad de usuarios (solo admin)
 router.get('/activity', requireAdmin, async (req, res) => {
   try {
-    const { rows } = await query('SELECT * FROM user_activity ORDER BY login_time DESC');
+        const { rows } = await query(`
+      SELECT id, user_id, username, login_time, logout_time, duration_minutes
+      FROM user_activity 
+      ORDER BY login_time DESC
+    `);
     return res.json(rows);
   } catch (err) {
     console.error('GET /users/activity error', err);
