@@ -6,6 +6,11 @@
 // Si script_productos.js no define window.productosRobados, descomentar y adaptar:
 // window.productosRobados = window.productosRobados || []; 
 
+// Stub opcional: evitar aviso si no existe inicializarGraficos
+if (typeof window !== 'undefined' && typeof window.inicializarGraficos !== 'function') {
+    window.inicializarGraficos = function() { /* no-op stub */ };
+}
+
 // --- Funciones de Utilidad ---
 
 function formatearFecha(fechaStr) {

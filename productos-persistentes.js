@@ -107,11 +107,8 @@ window.agregarProductoRobado = function(nombre, cantidad, valor, tipo) {
         console.log(`Nuevo producto agregado: ${nombreNormalizado}, cantidad: ${cantidad}`);
     }
     
-    // Guardar los cambios
-    guardarProductosRobados();
-    
-    // Actualizar la tabla
-    actualizarTablaProductos();
+    // Consolidar y persistir (esto guardará y actualizará la tabla)
+    consolidarProductosSimilares();
 }
 
 // Función para limpiar todos los productos y reiniciar
@@ -140,66 +137,56 @@ actualizarTablaProductos();
 
 // Función para consolidar productos similares
 function consolidarProductosSimilares() {
-    productosRobados = window.productosRobados;
+    // Trabajar SIEMPRE sobre la fuente de verdad
+    let lista = Array.isArray(window.productosRobados) ? [...window.productosRobados] : [];
+    if (lista.length <= 1) return;
 
-    if (productosRobados.length <= 1) return; // No hay nada que consolidar
-    
     console.log('Iniciando consolidación de productos similares...');
-    let cambiosRealizados = false;
-    
-    // Crear una copia del array para iterar
-    const productos = [...productosRobados];
-    
-    // Recorrer cada producto
-    for (let i = 0; i < productos.length; i++) {
-        const producto1 = productos[i];
-        const nombre1 = producto1.nombre.toLowerCase().trim();
-        
-        // Comparar con los demás productos
-        for (let j = i + 1; j < productos.length; j++) {
-            const producto2 = productos[j];
-            const nombre2 = producto2.nombre.toLowerCase().trim();
-            
-            // Verificar si son similares (uno es prefijo del otro o viceversa)
-            if (nombre1.startsWith(nombre2) || nombre2.startsWith(nombre1)) {
-                console.log(`Productos similares encontrados: "${producto1.nombre}" y "${producto2.nombre}"`);
-                
-                // Determinar cuál nombre conservar (el más largo generalmente es el más completo)
-                const nombreFinal = nombre1.length >= nombre2.length ? producto1.nombre : producto2.nombre;
-                
-                // Sumar cantidades y valores
-                const cantidadTotal = producto1.cantidad + producto2.cantidad;
-                const valorTotal = producto1.valor + producto2.valor;
-                
-                console.log(`Consolidando en "${nombreFinal}" con cantidad: ${cantidadTotal}, valor: ${valorTotal}`);
-                
-                // Eliminar ambos productos del array original
-                productosRobados = productosRobados.filter(p => 
-                    p.nombre !== producto1.nombre && p.nombre !== producto2.nombre);
-                
-                // Agregar el producto consolidado preservando el tipo si existe
-                productosRobados.push({
-                    nombre: nombreFinal,
-                    cantidad: cantidadTotal,
-                    valor: valorTotal,
-                    tipo: (producto1.tipo && producto1.tipo.trim()) ? producto1.tipo : ((producto2.tipo && producto2.tipo.trim()) ? producto2.tipo : '')
-                });
-                
-                cambiosRealizados = true;
-                
-                // Como hemos modificado el array, debemos reiniciar la consolidación
-                break;
+
+    let huboCambios = false;
+
+    // Iterar hasta que en un pase completo no se encuentren pares a consolidar
+    let seConsolidoEnEstaVuelta = true;
+    while (seConsolidoEnEstaVuelta) {
+        seConsolidoEnEstaVuelta = false;
+        // Copia de trabajo para comparar índices estables
+        for (let i = 0; i < lista.length; i++) {
+            const p1 = lista[i];
+            if (!p1 || !p1.nombre) continue;
+            const n1 = (p1.nombre || '').toLowerCase().trim();
+            for (let j = i + 1; j < lista.length; j++) {
+                const p2 = lista[j];
+                if (!p2 || !p2.nombre) continue;
+                const n2 = (p2.nombre || '').toLowerCase().trim();
+                // Similitud por prefijo en ambos sentidos
+                if (n1 && n2 && (n1.startsWith(n2) || n2.startsWith(n1))) {
+                    console.log(`Productos similares encontrados: "${p1.nombre}" y "${p2.nombre}"`);
+                    const nombreFinal = n1.length >= n2.length ? p1.nombre : p2.nombre;
+                    const cantidadTotal = (parseInt(p1.cantidad)||0) + (parseInt(p2.cantidad)||0);
+                    const valorTotal = (parseFloat(p1.valor)||0) + (parseFloat(p2.valor)||0);
+                    const tipoFinal = (p1.tipo && p1.tipo.trim()) ? p1.tipo : ((p2.tipo && p2.tipo.trim()) ? p2.tipo : '');
+
+                    console.log(`Consolidando en "${nombreFinal}" con cantidad: ${cantidadTotal}, valor: ${valorTotal}`);
+
+                    // Remover el de índice mayor primero para no desordenar
+                    const indices = [i, j].sort((a,b)=>b-a);
+                    indices.forEach(idx => lista.splice(idx, 1));
+                    // Insertar consolidado
+                    lista.push({ nombre: nombreFinal, cantidad: cantidadTotal, valor: valorTotal, tipo: tipoFinal });
+
+                    huboCambios = true;
+                    seConsolidoEnEstaVuelta = true;
+                    break; // Reiniciar j para el nuevo estado de la lista
+                }
             }
-        }
-        
-        // Si se realizaron cambios, reiniciar el proceso de consolidación
-        if (cambiosRealizados) {
-            return consolidarProductosSimilares(); // Llamada recursiva
+            if (seConsolidoEnEstaVuelta) break; // Reiniciar i luego de una consolidación
         }
     }
-    
-    if (cambiosRealizados) {
+
+    if (huboCambios) {
         console.log('Consolidación completada. Guardando cambios...');
+        // Persistir resultados en la fuente de verdad y notificar
+        window.productosRobados = lista;
         guardarProductosRobados();
         actualizarTablaProductos();
     } else {
@@ -249,11 +236,8 @@ function eliminarProductoRobado(nombre, cantidad, valor) {
             console.log(`Producto reducido: ${productoExistente.nombre}, nueva cantidad: ${productoExistente.cantidad}, nuevo valor: ${productoExistente.valor}`);
         }
         
-        // Guardar cambios
-        guardarProductosRobados();
-        
-        // Actualizar la tabla
-        actualizarTablaProductos();
+        // Consolidar y persistir (esto guardará y actualizará la tabla)
+        consolidarProductosSimilares();
     }
 }
 

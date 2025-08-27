@@ -394,9 +394,36 @@
 
   function aplicarProductos(productos) {
     try {
-      localStorage.setItem('productosRobados', JSON.stringify(Array.isArray(productos) ? productos : []));
-      window.productosRobados = Array.isArray(productos) ? productos : [];
-      if (typeof window.actualizarTablaProductos === 'function') window.actualizarTablaProductos();
+      const arr = Array.isArray(productos) ? productos : [];
+      // Consolidar por nombre normalizado (sumar cantidades)
+      const norm = (s) => (s||'').toString().trim().toLowerCase()
+        .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g,' ');
+      const toNum = (v) => {
+        const n = parseFloat(String(v||0).toString().replace(/[,]/g,'').trim());
+        return isNaN(n) ? 0 : n;
+      };
+      const mapa = new Map();
+      for (const p of arr) {
+        const legNombre = p.nombre || p.producto || '';
+        const key = norm(legNombre);
+        if (!key) continue;
+        const prev = mapa.get(key) || { nombre: legNombre, tipo: p.tipo || '', cantidad: 0 };
+        prev.cantidad = (prev.cantidad || 0) + toNum(p.cantidad);
+        if (!prev.tipo && p.tipo) prev.tipo = p.tipo;
+        if (!prev.nombre && legNombre) prev.nombre = legNombre; // mantener legible
+        mapa.set(key, prev);
+      }
+      const consol = Array.from(mapa.values());
+      // Persistir fuente de verdad
+      localStorage.setItem('productosRobados', JSON.stringify(consol));
+      window.productosRobados = consol;
+      // Si existe consolidación avanzada, úsala para aplicar reglas adicionales (prefijos) y refrescar UI
+      if (typeof window.consolidarProductosSimilares === 'function') {
+        window.consolidarProductosSimilares();
+      } else if (typeof window.actualizarTablaProductos === 'function') {
+        window.actualizarTablaProductos();
+      }
     } catch {}
   }
 

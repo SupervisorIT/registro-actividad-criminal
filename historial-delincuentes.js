@@ -54,6 +54,36 @@
         }
     };
     
+    // Consolida duplicados por cédula o por nombre normalizado (si no hay cédula)
+    function consolidarListaDelincuentes(lista) {
+        if (!Array.isArray(lista) || lista.length <= 1) return Array.isArray(lista) ? lista : [];
+        const map = new Map();
+
+        const norm = (s) => (String(s || '')).toLowerCase().trim().replace(/\s+/g, ' ');
+        const prefer = (nuevo, anterior) => {
+            const v = (nuevo !== undefined && String(nuevo).trim() !== '') ? nuevo : (anterior !== undefined ? anterior : '');
+            return v;
+        };
+
+        for (const d of lista) {
+            const ced = (d && d.cedula) ? String(d.cedula).trim() : '';
+            const name = norm(d && (d.nombreCompleto || d.nombre));
+            const key = ced ? `C:${ced}` : `N:${name}`;
+
+            if (!map.has(key)) {
+                map.set(key, { ...d });
+            } else {
+                const prev = map.get(key);
+                const merged = { ...prev };
+                const campos = ['nombreCompleto','nombre','cedula','edad','direccion','vehiculo','placa','color','fechaCaptura','delito','productos','cuantia','denuncia'];
+                campos.forEach(k => merged[k] = prefer(d[k], prev[k]));
+                map.set(key, merged);
+            }
+        }
+
+        return Array.from(map.values());
+    }
+
     // Función para agregar un delincuente al historial
     function agregarAlHistorial(delincuente) {
         if (!delincuente || !delincuente.cedula) {
@@ -109,7 +139,8 @@
             historial.push(delincuenteHistorial);
         }
         
-        // Guardar el historial actualizado
+        // Consolidar duplicados y guardar
+        historial = consolidarListaDelincuentes(historial);
         localStorage.setItem('delincuentesPersistentes', JSON.stringify(historial));
         console.log('Historial actualizado, ahora tiene', historial.length, 'delincuentes');
         
@@ -145,6 +176,9 @@
             console.error('Error al cargar historial para mostrar:', e);
         }
         
+        // Consolidar antes de mostrar por si hay duplicados residuales
+        historial = consolidarListaDelincuentes(historial);
+
         // Si no hay delincuentes en el historial, mostrar mensaje
         if (!historial || historial.length === 0) {
             const tr = document.createElement('tr');
