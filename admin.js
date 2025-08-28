@@ -25,32 +25,14 @@ async function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
-// Mostrar solo sesiones activas desde el cache (no toca backend)
+// Alternar filtro 'Solo activos' y recargar respetando el estado
 function mostrarSoloActivosFromCache() {
-    const tableBody = document.getElementById('userActivityTableBody');
-    if (!tableBody) return;
-    const activos = (Array.isArray(lastActivities) ? lastActivities : []).filter(a => !a.logout_time);
-    if (activos.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 12px; color: #6b7280;">Sin sesiones activas</td></tr>';
-        renderUserActivityChart([]);
-        return;
-    }
-    tableBody.innerHTML = '';
-    activos.forEach(activity => {
-        const row = document.createElement('tr');
-        const loginDateObj = activity.login_time ? new Date(activity.login_time) : null;
-        const loginTime = loginDateObj ? loginDateObj.toLocaleString() : 'N/A';
-        const actId = activity.activity_id ?? activity.id ?? activity.activityId;
-        row.innerHTML = `
-            <td>${activity.username || ''}</td>
-            <td>${loginTime}</td>
-            <td>N/A</td>
-            <td>Sesión activa</td>
-            <td>${actId != null ? `<button class="btn btn-xs" style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:4px;" onclick="forzarCierreSesion(${Number(actId)})" title="Cerrar esta sesión">Cerrar</button>` : '<span style="color:#6b7280">—</span>'}</td>
-        `;
-        tableBody.appendChild(row);
-    });
-    renderUserActivityChart(activos);
+    userActivityOnlyActive = !userActivityOnlyActive;
+    try {
+        const btn = document.getElementById('btnSoloActivos');
+        if (btn) btn.style.background = userActivityOnlyActive ? '#047857' : '#059669';
+    } catch {}
+    cargarRegistroActividad();
 }
 
 // Exportar tabla visible a Excel y luego mostrar solo activos
@@ -79,228 +61,64 @@ function exportarActividadExcelYFiltrarActivos() {
         XLSX.utils.book_append_sheet(wb, ws, 'Actividad');
         const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
         XLSX.writeFile(wb, `actividad-usuarios-${fecha}.xlsx`);
-        // Después de exportar, mostrar solo activos
-        mostrarSoloActivosFromCache();
+        // Después de exportar, activar filtro 'Solo activos' y recargar
+        userActivityOnlyActive = true;
+        try {
+            const btn = document.getElementById('btnSoloActivos');
+            if (btn) btn.style.background = '#047857';
+        } catch {}
+        cargarRegistroActividad();
     } catch (e) {
         console.error('Exportar Excel:', e);
         alert('No se pudo exportar a Excel.');
     }
 }
 
-// Cerrar TODAS las sesiones activas (incluida la mía)
-async function cerrarTodasSesionesActivas() {
-    try {
-        const token = sessionStorage.getItem('authToken');
-        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
-        if (!token || !base) {
-            alert('No hay sesión válida o backend configurado.');
-            return;
-        }
-
-        const resp = await fetch(base + '/users/activity', { headers: { 'Authorization': 'Bearer ' + token }});
-        if (!resp.ok) {
-            const data = await resp.json().catch(()=>({error:'Error al consultar actividad'}));
-            throw new Error(data.error || 'Error consultando actividad');
-        }
-        const activities = await resp.json();
-        const activos = (Array.isArray(activities) ? activities : []).filter(a => !a.logout_time);
-        const ids = activos.map(a => Number(a.activity_id ?? a.id ?? a.activityId)).filter(n => !Number.isNaN(n));
-
-        if (!ids.length) {
-            alert('No hay sesiones activas para cerrar.');
-            return;
-        }
-
-        // Vista previa de usuarios a cerrar
-        const nombres = activos.map(a => a.username || a.user || a.user_name || a.userId || a.user_id || 'usuario');
-        const preview = nombres.slice(0, 10).join(', ') + (nombres.length > 10 ? ` y ${nombres.length - 10} más` : '');
-        if (!confirm(`Se cerrarán TODAS las sesiones activas (${ids.length}), incluida la tuya.\nUsuarios: ${preview}\n\n¿Continuar?`)) return;
-
-        let ok = 0, fail = 0;
-        for (const id of ids) {
-            try {
-                const r = await fetch(base + '/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ activityId: Number(id) })
-                });
-                if (r.ok) ok++; else fail++;
-            } catch { fail++; }
-        }
-
-        alert(`Cierre completado. OK: ${ok}, Fallos: ${fail}. Se cerrará tu sesión ahora.`);
-        try { cerrarSesion(); } catch { sessionStorage.clear(); window.location.href = 'login.html'; }
-    } catch (e) {
-        console.error('cerrarTodasSesionesActivas:', e);
-        alert(e.message || 'Error cerrando sesiones.');
-    }
-}
-
-// Cerrar todas las sesiones activas excepto la mía (admin)
-async function cerrarOtrasSesionesActivas() {
-    try {
-        const token = sessionStorage.getItem('authToken');
-        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
-        const myActivityId = Number(sessionStorage.getItem('activityId'));
-        if (!token || !base) {
-            alert('No hay sesión válida o backend configurado.');
-            return;
-        }
-
-        const resp = await fetch(base + '/users/activity', { headers: { 'Authorization': 'Bearer ' + token }});
-        if (!resp.ok) {
-            const data = await resp.json().catch(()=>({error:'Error al consultar actividad'}));
-            throw new Error(data.error || 'Error consultando actividad');
-        }
-        const activities = await resp.json();
-        const activos = (Array.isArray(activities) ? activities : []).filter(a => !a.logout_time);
-        const cerrar = activos.filter(a => {
-            const id = a.activity_id ?? a.id ?? a.activityId;
-            return id != null && Number(id) !== myActivityId; // excluir mi sesión actual
-        }).map(a => Number(a.activity_id ?? a.id ?? a.activityId)).filter(n => !Number.isNaN(n));
-
-        if (!cerrar.length) {
-            alert('No hay otras sesiones activas para cerrar.');
-            return;
-        }
-
-        // Vista previa de usuarios a cerrar
-        const cerrarActividades = activos.filter(a => {
-            const id = a.activity_id ?? a.id ?? a.activityId;
-            return id != null && Number(id) !== myActivityId;
-        });
-        const nombres = cerrarActividades.map(a => a.username || a.user || a.user_name || a.userId || a.user_id || 'usuario');
-        const preview = nombres.slice(0, 10).join(', ') + (nombres.length > 10 ? ` y ${nombres.length - 10} más` : '');
-        if (!confirm(`Se cerrarán ${cerrar.length} sesión(es) activa(s) de otros usuarios.\nUsuarios: ${preview}\n\n¿Continuar?`)) return;
-
-        let ok = 0, fail = 0;
-        for (const id of cerrar) {
-            try {
-                const r = await fetch(base + '/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ activityId: Number(id) })
-                });
-                if (r.ok) ok++; else fail++;
-            } catch { fail++; }
-        }
-
-        alert(`Cierre completado. OK: ${ok}, Fallos: ${fail}.`);
-        try { await cargarRegistroActividad(); } catch {}
-    } catch (e) {
-        console.error('cerrarOtrasSesionesActivas:', e);
-        alert(e.message || 'Error cerrando sesiones.');
-    }
-}
-
-// Exportar a PDF la tabla de actividad y luego limpiar la tabla en pantalla
-function exportarActividadPDFyLimpiar() {
-    try {
-        const body = document.getElementById('userActivityTableBody');
-        if (!body) {
-            alert('No se encontró la tabla de actividad.');
-            return;
-        }
-
-        const rows = Array.from(body.querySelectorAll('tr'))
-          .map(tr => {
-            const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
-            // Solo exportar las primeras 4 columnas (Usuario, Inicio, Cierre, Duración)
-            return cells.slice(0, 4);
-          })
-          .filter(r => r.length);
-
-        if (!rows.length) {
-            alert('No hay datos para exportar.');
-            return;
-        }
-
-        // Requiere jsPDF y autoTable cargados desde CDN
-        const { jsPDF } = window.jspdf || {};
-        if (!jsPDF || !window.jspdf) {
-            alert('No fue posible cargar jsPDF. Verifique conexión e intente nuevamente.');
-            return;
-        }
-
-        const doc = new jsPDF('p', 'pt');
-        const headers = [[ 'Usuario', 'Inicio de Sesión', 'Cierre de Sesión', 'Duración (min)' ]];
-        const content = {
-            startY: 60,
-            head: headers,
-            body: rows,
-            styles: { fontSize: 9 }
-        };
-        doc.setFontSize(12);
-        doc.text('Actividad de Usuarios', 40, 40);
-        if (typeof doc.autoTable === 'function') {
-            doc.autoTable(content);
-        }
-        const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-        doc.save(`actividad-usuarios-${fecha}.pdf`);
-
-        // Luego de exportar, limpiar todo (según solicitud actual)
-        limpiarTablaActividadTodo();
-    } catch (err) {
-        console.error('Error exportando a PDF:', err);
-        alert('Ocurrió un error al exportar a PDF.');
-    }
-}
-
-// Limpia el tbody de la tabla de actividad y reinicia la visualización
-function limpiarTablaActividadTodo() {
-    try {
-        const body = document.getElementById('userActivityTableBody');
-        if (body) {
-            body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 18px; color: #6b7280;">Sin registros</td></tr>';
-        }
-        // Limpiar el gráfico
-        if (typeof renderUserActivityChart === 'function') {
-            renderUserActivityChart([]);
-        }
-    } catch (e) {
-        console.warn('No se pudo limpiar la tabla de actividad:', e);
-    }
-}
-
-// Exportar historial archivado (backup) a CSV
+// Exportar historial archivado (sesiones cerradas) a CSV
 function exportarActividadArchivadaCSV() {
-    let archive = [];
-    try { archive = JSON.parse(localStorage.getItem('userActivityArchive') || '[]'); } catch { archive = []; }
-    if (!Array.isArray(archive) || archive.length === 0) {
-        alert('No hay historial archivado para exportar.');
-        return;
+    try {
+        let archiveBucket = [];
+        try { archiveBucket = JSON.parse(localStorage.getItem('userActivityArchive') || '[]'); } catch { archiveBucket = []; }
+        if (!Array.isArray(archiveBucket) || archiveBucket.length === 0) {
+            alert('No hay historial archivado para exportar.');
+            return;
+        }
+        const headers = ['Usuario','Inicio de Sesión','Cierre de Sesión','Duración (min)'];
+        const rows = archiveBucket.map(a => {
+            const username = a.username || '';
+            const login = a.login_time ? new Date(a.login_time).toLocaleString() : '';
+            const logout = a.logout_time ? new Date(a.logout_time).toLocaleString() : '';
+            let dur = '';
+            if (a.logout_time && a.login_time) {
+                const ms = new Date(a.logout_time).getTime() - new Date(a.login_time).getTime();
+                dur = (ms/60000).toFixed(2);
+            } else if (typeof a.duration_minutes === 'number') {
+                dur = String(a.duration_minutes.toFixed ? a.duration_minutes.toFixed(2) : a.duration_minutes);
+            } else if (a.duration_minutes) {
+                dur = String(a.duration_minutes);
+            }
+            return [username, login, logout, dur];
+        });
+        const csv = [headers, ...rows]
+            .map(r => r.map(v => {
+                const s = String(v ?? '').replace(/"/g,'""');
+                return /[",\n]/.test(s) ? '"' + s + '"' : s;
+            }).join(','))
+            .join('\n') + '\n';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        a.download = `actividad-usuarios-archivo-${fecha}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Exportar historial CSV:', e);
+        alert('No se pudo exportar el historial a CSV.');
     }
-
-    // Armar CSV con columnas fijas
-    const headers = ['id','username','login_time','logout_time','duration_minutes'];
-    const rows = [headers.join(',')];
-
-    const csvEsc = (v) => {
-        if (v === null || v === undefined) return '';
-        const s = String(v);
-        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
-
-    archive.forEach(a => {
-        const id = a.activity_id ?? a.id ?? a.activityId ?? '';
-        const username = a.username || '';
-        const login = a.login_time ? new Date(a.login_time).toISOString() : '';
-        const logout = a.logout_time ? new Date(a.logout_time).toISOString() : '';
-        const dur = (typeof a.duration_minutes === 'number') ? a.duration_minutes : (a.duration_minutes ? Number(a.duration_minutes) : '');
-        rows.push([id, username, login, logout, dur].map(csvEsc).join(','));
-    });
-
-    const contenido = rows.join('\n') + '\n';
-    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-    a.download = `actividad-usuarios-archivo-${fecha}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 }
 
 // --- Modal bloqueante: cambio obligatorio de contraseña ---
@@ -444,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
 let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
 let activityInterval = null;
 let lastActivities = []; // Cache de la última respuesta del backend
+let userActivityOnlyActive = false; // Modo 'Solo activos' persistente mientras el modal esté abierto
 
 // Forzar cierre de sesión de una actividad específica (solo admin)
 async function forzarCierreSesion(activityId) {
@@ -688,7 +507,7 @@ async function cargarRegistroActividad() {
         if (!Array.isArray(archiveBucket)) archiveBucket = [];
 
         const toArchive = [];
-        const kept = [];
+        let kept = [];
         for (const a of activities) {
             const id = a.activity_id ?? a.id ?? a.activityId ?? null;
             const logoutTs = a.logout_time ? new Date(a.logout_time).getTime() : null;
@@ -716,6 +535,11 @@ async function cargarRegistroActividad() {
                 localStorage.setItem('userActivityArchive', JSON.stringify(archiveBucket));
                 localStorage.setItem('userActivityArchivedIds', JSON.stringify(Array.from(archivedIdSet)));
             } catch (e) { console.warn('No se pudo persistir el archivo de actividad:', e); }
+        }
+
+        // Aplicar filtro 'Solo activos' si está habilitado
+        if (userActivityOnlyActive) {
+            kept = kept.filter(a => !a.logout_time);
         }
 
         if (kept.length === 0) {
