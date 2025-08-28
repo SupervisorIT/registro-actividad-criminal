@@ -19,6 +19,11 @@ async function cerrarSesion() {
             console.error('Error al registrar el cierre de sesión:', err);
             // No bloquear el logout si la API falla, solo registrar el error.
         }
+    }
+    // Continuar cierre local siempre
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+}
 
 // Mostrar solo sesiones activas desde el cache (no toca backend)
 function mostrarSoloActivosFromCache() {
@@ -80,11 +85,6 @@ function exportarActividadExcelYFiltrarActivos() {
         console.error('Exportar Excel:', e);
         alert('No se pudo exportar a Excel.');
     }
-}
-    }
-    // Continuar cierre local siempre
-    sessionStorage.clear();
-    window.location.href = 'login.html';
 }
 
 // Cerrar TODAS las sesiones activas (incluida la mía)
