@@ -49,7 +49,10 @@ async function cerrarTodasSesionesActivas() {
             return;
         }
 
-        if (!confirm(`Se cerrarán TODAS las sesiones activas (${ids.length}), incluida la tuya. ¿Continuar?`)) return;
+        // Vista previa de usuarios a cerrar
+        const nombres = activos.map(a => a.username || a.user || a.user_name || a.userId || a.user_id || 'usuario');
+        const preview = nombres.slice(0, 10).join(', ') + (nombres.length > 10 ? ` y ${nombres.length - 10} más` : '');
+        if (!confirm(`Se cerrarán TODAS las sesiones activas (${ids.length}), incluida la tuya.\nUsuarios: ${preview}\n\n¿Continuar?`)) return;
 
         let ok = 0, fail = 0;
         for (const id of ids) {
@@ -99,7 +102,14 @@ async function cerrarOtrasSesionesActivas() {
             return;
         }
 
-        if (!confirm(`Se cerrarán ${cerrar.length} sesión(es) activa(s) de otros usuarios. ¿Continuar?`)) return;
+        // Vista previa de usuarios a cerrar
+        const cerrarActividades = activos.filter(a => {
+            const id = a.activity_id ?? a.id ?? a.activityId;
+            return id != null && Number(id) !== myActivityId;
+        });
+        const nombres = cerrarActividades.map(a => a.username || a.user || a.user_name || a.userId || a.user_id || 'usuario');
+        const preview = nombres.slice(0, 10).join(', ') + (nombres.length > 10 ? ` y ${nombres.length - 10} más` : '');
+        if (!confirm(`Se cerrarán ${cerrar.length} sesión(es) activa(s) de otros usuarios.\nUsuarios: ${preview}\n\n¿Continuar?`)) return;
 
         let ok = 0, fail = 0;
         for (const id of cerrar) {
@@ -131,7 +141,11 @@ function exportarActividadPDFyLimpiar() {
         }
 
         const rows = Array.from(body.querySelectorAll('tr'))
-          .map(tr => Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim()))
+          .map(tr => {
+            const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+            // Solo exportar las primeras 4 columnas (Usuario, Inicio, Cierre, Duración)
+            return cells.slice(0, 4);
+          })
           .filter(r => r.length);
 
         if (!rows.length) {
@@ -175,7 +189,7 @@ function limpiarTablaActividadTodo() {
     try {
         const body = document.getElementById('userActivityTableBody');
         if (body) {
-            body.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 18px; color: #6b7280;">Sin registros</td></tr>';
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 18px; color: #6b7280;">Sin registros</td></tr>';
         }
         // Limpiar el gráfico
         if (typeof renderUserActivityChart === 'function') {
@@ -570,11 +584,11 @@ async function cargarRegistroActividad() {
     const tableBody = document.getElementById('userActivityTableBody');
 
     if (!token || !base || !tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="4">Error de configuración o de sistema.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5">Error de configuración o de sistema.</td></tr>';
         return;
     }
 
-    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>';
 
     try {
         const response = await fetch(`${base.replace(/\/$/, '')}/users/activity`, {
@@ -636,7 +650,7 @@ async function cargarRegistroActividad() {
         }
 
         if (kept.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay registros de actividad.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay registros de actividad.</td></tr>';
             renderUserActivityChart([]); // Limpiar el gráfico si no hay datos
             return;
         }
@@ -650,6 +664,7 @@ async function cargarRegistroActividad() {
             const logoutDateObj = activity.logout_time ? new Date(activity.logout_time) : null;
             const logoutTime = logoutDateObj ? logoutDateObj.toLocaleString() : 'N/A';
             const isActive = !logoutDateObj;
+            const actId = activity.activity_id ?? activity.id ?? activity.activityId;
             const mins = isActive
                 ? (loginDateObj ? ((Date.now() - loginDateObj.getTime()) / 60000) : 0)
                 : (typeof activity.duration_minutes === 'number' ? activity.duration_minutes : Number(activity.duration_minutes || 0));
@@ -660,6 +675,11 @@ async function cargarRegistroActividad() {
                 <td>${loginTime}</td>
                 <td>${logoutTime}</td>
                 <td>${duration}</td>
+                <td>
+                  ${isActive && actId != null
+                    ? `<button class="btn btn-xs" style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:4px;" onclick="forzarCierreSesion(${Number(actId)})" title="Cerrar esta sesión">Cerrar</button>`
+                    : '<span style="color:#6b7280">—</span>'}
+                </td>
             `;
 
             tableBody.appendChild(row);
@@ -669,7 +689,7 @@ async function cargarRegistroActividad() {
 
     } catch (error) {
         console.error('Error al cargar el registro de actividad:', error);
-        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: red;">${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: red;">${error.message}</td></tr>`;
         renderUserActivityChart([]); // Limpiar gráfico en caso de error
     }
 }
