@@ -186,6 +186,8 @@
               <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cargarRegistroActividad()">Actualizar</button>
               <button class="btn btn-sm" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadArchivadaCSV()">Exportar historial</button>
               <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadPDFyLimpiar()">Exportar PDF</button>
+              <button class="btn btn-sm" style="background:#0ea5e9;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadExcelYFiltrarActivos()" title="Exportar a Excel y luego mostrar solo activos">Exportar Excel y dejar activos</button>
+              <button class="btn btn-sm" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="mostrarSoloActivosFromCache()" title="Limpiar tabla y dejar solo sesiones activas">Solo activos</button>
               <button class="btn btn-sm" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cerrarOtrasSesionesActivas()" title="Cerrar todas las sesiones activas excepto la mía">Cerrar otras activas</button>
               <button class="btn btn-sm" style="background:#111827;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cerrarTodasSesionesActivas()" title="Cerrar TODAS las sesiones activas, incluida la mía">Cerrar TODAS</button>
             </div>
@@ -1780,7 +1782,7 @@ function cerrarModalPerfilUsuario() {
     <script src="formatear-moneda.js"></script>
     <script src="formatear-cedula.js"></script>
     <script src="tipificacion-selector.js"></script>
-    <script src="admin.js?v=4"></script>
+    <script src="admin.js?v=5"></script>
     <script src="productos-persistentes.js"></script>
     <script src="script.js"></script>
     <!-- Módulo de persistencia a archivos (Excel) -->

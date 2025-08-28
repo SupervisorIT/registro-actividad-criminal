@@ -19,6 +19,68 @@ async function cerrarSesion() {
             console.error('Error al registrar el cierre de sesión:', err);
             // No bloquear el logout si la API falla, solo registrar el error.
         }
+
+// Mostrar solo sesiones activas desde el cache (no toca backend)
+function mostrarSoloActivosFromCache() {
+    const tableBody = document.getElementById('userActivityTableBody');
+    if (!tableBody) return;
+    const activos = (Array.isArray(lastActivities) ? lastActivities : []).filter(a => !a.logout_time);
+    if (activos.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 12px; color: #6b7280;">Sin sesiones activas</td></tr>';
+        renderUserActivityChart([]);
+        return;
+    }
+    tableBody.innerHTML = '';
+    activos.forEach(activity => {
+        const row = document.createElement('tr');
+        const loginDateObj = activity.login_time ? new Date(activity.login_time) : null;
+        const loginTime = loginDateObj ? loginDateObj.toLocaleString() : 'N/A';
+        const actId = activity.activity_id ?? activity.id ?? activity.activityId;
+        row.innerHTML = `
+            <td>${activity.username || ''}</td>
+            <td>${loginTime}</td>
+            <td>N/A</td>
+            <td>Sesión activa</td>
+            <td>${actId != null ? `<button class="btn btn-xs" style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:4px;" onclick="forzarCierreSesion(${Number(actId)})" title="Cerrar esta sesión">Cerrar</button>` : '<span style="color:#6b7280">—</span>'}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+    renderUserActivityChart(activos);
+}
+
+// Exportar tabla visible a Excel y luego mostrar solo activos
+function exportarActividadExcelYFiltrarActivos() {
+    try {
+        const body = document.getElementById('userActivityTableBody');
+        if (!body) { alert('No se encontró la tabla.'); return; }
+        const headers = ['Usuario','Inicio de Sesión','Cierre de Sesión','Duración (min)'];
+        const data = [headers];
+        const trs = Array.from(body.querySelectorAll('tr'));
+        trs.forEach(tr => {
+            const tds = Array.from(tr.querySelectorAll('td'));
+            if (tds.length >= 4) {
+                data.push([
+                    tds[0].innerText.trim(),
+                    tds[1].innerText.trim(),
+                    tds[2].innerText.trim(),
+                    tds[3].innerText.trim()
+                ]);
+            }
+        });
+        if (data.length <= 1) { alert('No hay datos para exportar.'); return; }
+        // Usar SheetJS (xlsx) ya incluida en index.html
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Actividad');
+        const fecha = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        XLSX.writeFile(wb, `actividad-usuarios-${fecha}.xlsx`);
+        // Después de exportar, mostrar solo activos
+        mostrarSoloActivosFromCache();
+    } catch (e) {
+        console.error('Exportar Excel:', e);
+        alert('No se pudo exportar a Excel.');
+    }
+}
     }
     // Continuar cierre local siempre
     sessionStorage.clear();
@@ -381,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Cargar y mostrar el registro de actividad de usuarios
 let userActivityChartInstance = null; // Guardar la instancia del gráfico para poder destruirla
 let activityInterval = null;
+let lastActivities = []; // Cache de la última respuesta del backend
 
 // Forzar cierre de sesión de una actividad específica (solo admin)
 async function forzarCierreSesion(activityId) {
@@ -608,6 +671,7 @@ async function cargarRegistroActividad() {
         }
 
         const activities = await response.json();
+        lastActivities = Array.isArray(activities) ? activities : [];
 
         // 1) Archivar actividades cerradas con más de 1 hora y evitar duplicados
         const ahora = Date.now();
