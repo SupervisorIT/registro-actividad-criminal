@@ -324,10 +324,15 @@ function abrirModalActividad() {
     }
     modal.style.display = 'block';
 
-    // Carga inmediata y auto-actualización cada 5s
+    // Carga inmediata y auto-actualización (configurable)
     try { cargarRegistroActividad(); } catch(_) {}
     if (activityInterval) clearInterval(activityInterval);
-    activityInterval = setInterval(cargarRegistroActividad, 5000);
+    let ms = 300000; // 5 minutos por defecto
+    try {
+        const cfg = Number(localStorage.getItem('USER_ACTIVITY_REFRESH_MS'));
+        if (!Number.isNaN(cfg) && cfg > 0) ms = cfg;
+    } catch {}
+    activityInterval = setInterval(cargarRegistroActividad, ms);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
