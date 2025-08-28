@@ -180,16 +180,31 @@
           <span class="close" onclick="cerrarModal('userActivityModal')" style="cursor:pointer; font-size:22px;">&times;</span>
         </div>
         <div style="padding:14px 16px; background:#fff;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <style>
+            /* Scoped to the activity modal */
+            #userActivityModal .toolbar { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+            #userActivityModal .btn.btn-sm { font-size:12px; padding:4px 8px; border-radius:6px; }
+            #userActivityModal .dropdown { position:relative; }
+            #userActivityModal .dropdown-menu { display:none; position:absolute; top:100%; left:0; background:#fff; border:1px solid #e6eaf0; border-radius:6px; min-width: 220px; box-shadow: 0 8px 18px rgba(0,0,0,0.08); z-index: 10; }
+            #userActivityModal .dropdown-menu.open { display:block; }
+            #userActivityModal .dropdown-menu button { display:block; width:100%; text-align:left; background:#fff; color:#334155; border:none; padding:8px 10px; border-radius:0; font-size:12px; }
+            #userActivityModal .dropdown-menu button:hover { background:#f1f5f9; }
+          </style>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
             <div style="font-weight:600; color:#334155;">Actividad de Usuarios</div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cargarRegistroActividad()">Actualizar</button>
-              <button class="btn btn-sm" style="background:#2563eb;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadArchivadaCSV()">Exportar historial</button>
-              <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadPDFyLimpiar()">Exportar PDF</button>
-              <button class="btn btn-sm" style="background:#0ea5e9;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="exportarActividadExcelYFiltrarActivos()" title="Exportar a Excel y luego mostrar solo activos">Exportar Excel y dejar activos</button>
-              <button class="btn btn-sm" style="background:#059669;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="mostrarSoloActivosFromCache()" title="Limpiar tabla y dejar solo sesiones activas">Solo activos</button>
-              <button class="btn btn-sm" style="background:#b91c1c;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cerrarOtrasSesionesActivas()" title="Cerrar todas las sesiones activas excepto la mía">Cerrar otras activas</button>
-              <button class="btn btn-sm" style="background:#111827;color:#fff;border:none;padding:6px 10px;border-radius:6px;" onclick="cerrarTodasSesionesActivas()" title="Cerrar TODAS las sesiones activas, incluida la mía">Cerrar TODAS</button>
+            <div class="toolbar">
+              <button class="btn btn-sm" style="background:#0d9488;color:#fff;border:none;" onclick="cargarRegistroActividad()">Actualizar</button>
+              <button class="btn btn-sm" style="background:#059669;color:#fff;border:none;" onclick="mostrarSoloActivosFromCache()" title="Limpiar tabla y dejar solo sesiones activas">Solo activos</button>
+              <div class="dropdown">
+                <button class="btn btn-sm" style="background:#2563eb;color:#fff;border:none;" onclick="document.getElementById('exportMenu').classList.toggle('open')">Exportar ▾</button>
+                <div id="exportMenu" class="dropdown-menu">
+                  <button onclick="exportarActividadPDFyLimpiar()">Exportar PDF</button>
+                  <button onclick="exportarActividadExcelYFiltrarActivos()">Exportar Excel y dejar activos</button>
+                  <button onclick="exportarActividadArchivadaCSV()">Exportar historial</button>
+                </div>
+              </div>
+              <button class="btn btn-sm" style="background:#b91c1c;color:#fff;border:none;" onclick="cerrarOtrasSesionesActivas()" title="Cerrar todas las sesiones activas excepto la mía">Cerrar otras activas</button>
+              <button class="btn btn-sm" style="background:#111827;color:#fff;border:none;" onclick="cerrarTodasSesionesActivas()" title="Cerrar TODAS las sesiones activas, incluida la mía">Cerrar TODAS</button>
             </div>
           </div>
           <div id="userActivityContainer" style="max-height: 340px; overflow-y: auto; border: 1px solid #e6eaf0; border-radius: 6px;">
