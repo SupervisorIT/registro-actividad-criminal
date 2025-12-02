@@ -17,6 +17,25 @@ Esta aplicación web permite registrar, visualizar y gestionar información sobr
 - **Almacenamiento:** LocalStorage (persistencia de datos en navegador)
 - **Despliegue:** Render (hosting)
 
+## Configurar backend con Neon (PostgreSQL gratis)
+
+Para usar la API con Neon (servidor Postgres gratuito):
+
+1. **Crear base en Neon** y copiar la Connection String (DATABASE_URL), p. ej.:
+   `postgresql://neondb_owner:PASS@ep-xxxxx-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require`
+2. **Variables de entorno del backend (`api/`)**:
+   - `DATABASE_URL` = URL completa de Neon (con `sslmode=require`)
+   - `PGSSL` = `1`
+   - `PGPOOL_MAX` = `5` (recomendado en free tier)
+   - Opcional: `PG_IDLE_TIMEOUT=30000`, `PG_CONN_TIMEOUT=10000`
+3. **Despliegue**: redeploy/restart de la API para que tome los cambios. El código ya carga env con `import 'dotenv/config';` en `api/server.js` y usa `pg` en `api/db.js`.
+4. **Migración de datos (opcional)** desde otra BD Postgres:
+   - Exportar: `pg_dump --no-owner --format=custom --file dump.backup "<DATABASE_URL_ORIGEN>?sslmode=require"`
+   - Importar: `pg_restore --no-owner --no-privileges --dbname "<DATABASE_URL_NEON>" dump.backup`
+   - Si el esquema destino ya tenía objetos y hay conflictos, puede limpiarse con: `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`
+
+Ejemplo de plantilla de variables: ver `.env.example` en la raíz (incluye formato de Neon y pool recomendado).
+
 ## Funcionalidades principales
 
 - **Registro de casos delictivos** por trimestre y empresa

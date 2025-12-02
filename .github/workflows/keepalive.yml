@@ -1,0 +1,29 @@
+name: Keep API Warm
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # cada 10 minutos
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl health endpoint (rac-auth-api)
+        shell: bash
+        run: |
+          URL="https://rac-auth-api.onrender.com/health"
+          echo "Pinging $URL"
+          for i in {1..3}; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)
+            DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            echo "[$DATE] Attempt $i -> HTTP $CODE"
+            if [ "$CODE" = "200" ]; then
+              echo "Service is up"
+              exit 0
+            fi
+            sleep 20
+          done
+          # No fallar el workflow para evitar alertas innecesarias
+          echo "Non-200 after retries; continuing without failing."
+          exit 0
