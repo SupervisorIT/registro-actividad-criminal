@@ -25,6 +25,25 @@ async function cerrarSesion() {
     window.location.href = 'login.html';
 }
 
+// --- Control de inactividad (auto logout) ---
+let inactivityTimer = null;
+const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 5 minutos
+
+function resetInactivityTimer() {
+    try {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        // Si no hay usuario autenticado, no programar nada
+        const usuarioActivo = sessionStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) return;
+        inactivityTimer = setTimeout(() => {
+            alert('La sesión se cerrará por inactividad (más de 5 minutos).');
+            cerrarSesion();
+        }, INACTIVITY_LIMIT_MS);
+    } catch (e) {
+        console.warn('No se pudo reiniciar el temporizador de inactividad:', e);
+    }
+}
+
 // Alternar filtro 'Solo activos' y recargar respetando el estado
 function mostrarSoloActivosFromCache() {
     userActivityOnlyActive = !userActivityOnlyActive;
@@ -221,6 +240,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!usuarioActivo) return;
     const usuario = JSON.parse(usuarioActivo);
 
+    // Iniciar control de inactividad y enganchar eventos de usuario
+    try {
+        resetInactivityTimer();
+        ['mousemove','keydown','click','scroll','touchstart'].forEach(evt => {
+            window.addEventListener(evt, resetInactivityTimer, { passive: true });
+        });
+    } catch (e) {
+        console.warn('No se pudieron registrar los listeners de inactividad:', e);
+    }
+
     // Adjuntar evento de logout al botón correspondiente (todos los roles)
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
@@ -287,6 +316,76 @@ async function forzarCierreSesion(activityId) {
     } catch (e) {
         console.error('forzarCierreSesion:', e);
         alert(e.message || 'Error al cerrar la sesión');
+    }
+}
+
+// Cerrar todas las sesiones activas excepto la mía (solo admin)
+async function cerrarOtrasSesionesActivas() {
+    try {
+        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+        const token = sessionStorage.getItem('authToken');
+        if (!base || !token) {
+            alert('No hay backend o sesión válida configurada.');
+            return;
+        }
+
+        if (!confirm('¿Cerrar todas las sesiones activas de otros usuarios?')) return;
+
+        const res = await fetch(base + '/auth/sessions/close-others', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'No se pudieron cerrar las sesiones de otros usuarios');
+        }
+
+        const data = await res.json().catch(() => ({ ok: true }));
+        alert(`Sesiones de otros usuarios cerradas. Cerradas: ${data.closed ?? 'N/D'}`);
+        cargarRegistroActividad();
+    } catch (e) {
+        console.error('cerrarOtrasSesionesActivas:', e);
+        alert(e.message || 'Error al cerrar las sesiones de otros usuarios');
+    }
+}
+
+// Cerrar TODAS las sesiones activas, incluida la mía (solo admin)
+async function cerrarTodasSesionesActivas() {
+    try {
+        const base = (localStorage.getItem('AUTH_API_BASE') || '').replace(/\/$/, '');
+        const token = sessionStorage.getItem('authToken');
+        if (!base || !token) {
+            alert('No hay backend o sesión válida configurada.');
+            return;
+        }
+
+        if (!confirm('¿Cerrar TODAS las sesiones activas, incluida la suya?')) return;
+
+        const res = await fetch(base + '/auth/sessions/close-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error || 'No se pudieron cerrar todas las sesiones');
+        }
+
+        const data = await res.json().catch(() => ({ ok: true }));
+        alert(`Todas las sesiones activas han sido cerradas. Cerradas: ${data.closed ?? 'N/D'}`);
+
+        // También cerrar la sesión local actual
+        cerrarSesion();
+    } catch (e) {
+        console.error('cerrarTodasSesionesActivas:', e);
+        alert(e.message || 'Error al cerrar todas las sesiones');
     }
 }
 

@@ -1,10 +1,11 @@
 import express from 'express';
 import { query } from '../db.js';
 import { verifyToken } from '../middleware/auth.js';
+import { subirBackupJSON } from '../drive-client.js';
 
 const router = express.Router();
 
-// POST /registros/backup - guarda un snapshot de datos del formulario para auditora interna
+// POST /registros/backup - guarda un snapshot de datos del formulario para auditora interna
 router.post('/backup', verifyToken, async (req, res) => {
   try {
     const username = req.user?.username || 'desconocido';
@@ -44,7 +45,15 @@ router.post('/backup', verifyToken, async (req, res) => {
       [String(username).toLowerCase(), fechaBase, JSON.stringify(payload)]
     );
 
-    return res.status(201).json({ ok: true });
+    // Responder al cliente sin esperar Drive (para no afectar UX)
+    res.status(201).json({ ok: true });
+
+    // Lanzar respaldo en Drive en segundo plano (sin await que bloquee al usuario)
+    try {
+      subirBackupJSON({ username, fechaBase, payload }).catch(() => {});
+    } catch {
+      // Ignorar errores de Drive aquí, ya se loguean en el cliente
+    }
   } catch (err) {
     console.error('POST /registros/backup error', err);
     return res.status(500).json({ error: 'Error interno al guardar respaldo' });

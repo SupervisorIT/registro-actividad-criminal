@@ -49,7 +49,16 @@ router.post('/login', async (req, res) => {
 
     const payload = mapUserRowToPayload(user);
 
-    // Registrar actividad
+    // Cerrar cualquier sesión previa abierta de este usuario antes de registrar una nueva
+    await query(
+      `UPDATE user_activity
+         SET logout_time = NOW(),
+             duration_minutes = GREATEST(1, ROUND(EXTRACT(EPOCH FROM (NOW() - login_time)) / 60.0))
+       WHERE user_id = $1 AND logout_time IS NULL`,
+      [user.id]
+    );
+
+    // Registrar nueva actividad (una sola sesión activa por usuario)
     const activityResult = await query(
       'INSERT INTO user_activity (user_id, username) VALUES ($1, $2) RETURNING id',
       [user.id, user.username]
@@ -113,6 +122,51 @@ router.post('/logout', async (req, res) => {
   } catch (err) {
     console.error('Logout error:', err);
     res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// Cerrar todas las sesiones abiertas (solo admin)
+router.post('/sessions/close-all', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user?.sub;
+    const rol = req.user?.rol;
+    if (!userId) return res.status(401).json({ error: 'No autenticado' });
+    if (rol !== 'admin') return res.status(403).json({ error: 'Solo administradores pueden cerrar todas las sesiones' });
+
+    const { rowCount } = await query(
+      `UPDATE user_activity
+         SET logout_time = NOW(),
+             duration_minutes = GREATEST(1, ROUND(EXTRACT(EPOCH FROM (NOW() - login_time)) / 60.0))
+       WHERE logout_time IS NULL`
+    );
+
+    return res.json({ ok: true, closed: rowCount });
+  } catch (err) {
+    console.error('POST /auth/sessions/close-all error', err);
+    return res.status(500).json({ error: 'Error interno' });
+  }
+});
+
+// Cerrar todas las sesiones abiertas excepto la del usuario actual (solo admin)
+router.post('/sessions/close-others', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user?.sub;
+    const rol = req.user?.rol;
+    if (!userId) return res.status(401).json({ error: 'No autenticado' });
+    if (rol !== 'admin') return res.status(403).json({ error: 'Solo administradores pueden cerrar sesiones de otros usuarios' });
+
+    const { rowCount } = await query(
+      `UPDATE user_activity
+         SET logout_time = NOW(),
+             duration_minutes = GREATEST(1, ROUND(EXTRACT(EPOCH FROM (NOW() - login_time)) / 60.0))
+       WHERE logout_time IS NULL AND user_id <> $1`,
+      [userId]
+    );
+
+    return res.json({ ok: true, closed: rowCount });
+  } catch (err) {
+    console.error('POST /auth/sessions/close-others error', err);
+    return res.status(500).json({ error: 'Error interno' });
   }
 });
 
