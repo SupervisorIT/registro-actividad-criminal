@@ -313,6 +313,27 @@
     return wb;
   }
 
+  async function enviarBackupSilencioso(datos) {
+    try {
+      const base = (typeof localStorage !== 'undefined' && localStorage.getItem('AUTH_API_BASE')) || '';
+      const token = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('authToken')) || '';
+      if (!base || !token) {
+        return; // sin backend o sin sesión remota, no intentamos respaldo
+      }
+      const url = base.replace(/\/$/, '') + '/registros/backup';
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(datos)
+      }).catch(() => {});
+    } catch {
+      // Silencioso: no afectar la experiencia del usuario
+    }
+  }
+
   async function guardarConFSAPI(wb, suggestedName = 'registro-actividad-criminal.xlsx') {
     const handle = await showSaveFilePicker({
       suggestedName,
@@ -329,6 +350,8 @@
     try { snapshotEncabezadoToStorage(); } catch {}
     try { snapshotCasosToStorage(); } catch {}
     const datos = getDatosParaExportar();
+    // Enviar respaldo silencioso al backend (no bloquea la descarga)
+    try { enviarBackupSilencioso(datos); } catch {}
     const wb = armarWorkbook(datos);
     const filename = 'registro-actividad-criminal.xlsx';
     try {

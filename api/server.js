@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt';
 import { query } from './db.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
+import registrosRouter from './routes/registros.js';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.get('/health', (req, res) => {
 
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);
+app.use('/registros', registrosRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
@@ -97,6 +99,16 @@ async function ensureSchema() {
       login_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       logout_time TIMESTAMP WITH TIME ZONE,
       duration_minutes INTEGER
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS registros_backups (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(64) NOT NULL,
+      fecha_base DATE NOT NULL,
+      payload_json JSONB NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `);
 }
