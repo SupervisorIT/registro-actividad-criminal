@@ -293,6 +293,16 @@ let activityInterval = null;
 let lastActivities = []; // Cache de la última respuesta del backend
 let userActivityOnlyActive = false; // Modo 'Solo activos' persistente mientras el modal esté abierto
 
+// Formatear duración (en minutos) a HH:MM:SS
+function formatDurationHHMMSS(minsNumber) {
+    const totalSeconds = Math.max(0, Math.round(Number(minsNumber || 0) * 60));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
 // Forzar cierre de sesión de una actividad específica (solo admin)
 async function forzarCierreSesion(activityId) {
     try {
@@ -660,7 +670,7 @@ async function cargarRegistroActividad() {
             const mins = isActive
                 ? (loginDateObj ? ((Date.now() - loginDateObj.getTime()) / 60000) : 0)
                 : (typeof activity.duration_minutes === 'number' ? activity.duration_minutes : Number(activity.duration_minutes || 0));
-            const duration = isActive ? 'Sesión activa' : `${mins.toFixed(2)} min`;
+            const duration = isActive ? 'Sesión activa' : formatDurationHHMMSS(mins);
 
             row.innerHTML = `
                 <td>${activity.username || ''}</td>
